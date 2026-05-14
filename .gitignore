@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+dist/
+temp-target/
+verify-repo/
+skills/.deepseek/
