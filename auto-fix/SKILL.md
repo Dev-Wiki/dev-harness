@@ -52,9 +52,10 @@ description: 从 bug 描述/issue URL 到 git commit 的全自动 bugfix 闭环�
 ### Step 0: 环境就绪检查
 
 ```
-0.0 读取项目级犯错记录：
+0.0 读取项目级犯错约束（Top 10 高频规则）：
     _LESSONS="$(git rev-parse --show-toplevel 2>/dev/null)/LESSONS.md"
-    → 文件存在 → 读取全部内容，视为本次修复的硬约束
+    → 文件存在 → 按触发次数倒序加载前 10 条活跃规则，视为本次修复的硬约束
+               （防止 context flooding；完整规则见 LESSONS.md）
     → 文件不存在 → 跳过，不报错
 0.1 检查 HARNESS.md 是否存在且含 build/quick 命令
     → 缺失 → STOP，提示先执行 dev-harness-commands
@@ -68,6 +69,24 @@ description: 从 bug 描述/issue URL 到 git commit 的全自动 bugfix 闭环�
     - 若为 Qt Client (Windows/Linux) + Shared C++ Core → 进入 Qt 优先链路
     - 若为 Harmony → 走既有 Harmony auto-fix 流程
     - 若为 WPF / Win32 → 标记 maintenance-only，触及底层 C++ 时强制人工确认
+0.7 输出执行计划（Inline Plan），供用户确认方向后再进入 Step 1：
+
+    ─────────────────────────────────────────
+    PLAN — dev-harness-auto-fix
+    ─────────────────────────────────────────
+    1. 拉取 Bug 上下文（GitHub/GitLab issue URL 或用户描述）
+    2. 复现收敛 → 产出 ReproCommand
+    3. 根因定位 → 产出 RootCauseCandidate
+    4. 生成修复代码 diff
+    5. 子 Agent 审查（或本轮自检）
+    6. 验证闭环（QuickCheck → TestCheck → BugfixCheck）
+    7. 分支创建 + git commit
+    8. 完成报告
+    链路：<项目画像，如 Qt/Linux 或 Harmony>
+    可用状态：<ONES/issue URL 是否可用>
+    审查委派：<available/降级为自检>
+    ─────────────────────────────────────────
+    → 如有调整请现在告知，否则直接进入 Step 1。
 ```
 
 > ⚠️ **HARD STOP**: HARNESS.md 不存在或无 build/quick 命令，不得继续。

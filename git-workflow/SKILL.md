@@ -16,8 +16,30 @@ description: Use when you need to enforce branch naming rules, commit message fo
 ```bash
 _LESSONS="$(git rev-parse --show-toplevel 2>/dev/null)/LESSONS.md"
 if [ -f "$_LESSONS" ]; then
-  echo "=== LESSONS（项目历史 AI 犯错规则，视为硬约束）==="
-  cat "$_LESSONS"
+  echo "=== LESSONS — 项目 AI 犯错约束（Top 10 高频，完整规则见 LESSONS.md）==="
+  _py=$(command -v python3 2>/dev/null || command -v python 2>/dev/null)
+  if [ -n "$_py" ]; then
+    "$_py" - "$_LESSONS" <<'PYEOF'
+import sys, re
+path = sys.argv[1]
+text = open(path, encoding='utf-8').read()
+m = re.search(r'## \u6d3b\u8dc3\u89c4\u5219[^\n]*\n((?:.*\n)*?)(?=## |\Z)', text)
+rows = [l for l in (m.group(1).splitlines() if m else []) if l.startswith('| L')]
+def cnt(r):
+    try: return int(r.split('|')[5].strip())
+    except: return 0
+top = sorted(rows, key=cnt, reverse=True)[:10]
+if top:
+    print('| ID | \u89c4\u5219 | \u7c7b\u578b | \u89e6\u53d1\u6b21\u6570 | \u6700\u8fd1\u89e6\u53d1 |')
+    print('|----|------|------|---------|---------|')
+    for r in top: print(r)
+    if len(rows) > 10: print(f'...\uff08\u5171 {len(rows)} \u6761\u6d3b\u8dc3\u89c4\u5219\uff09')
+else:
+    print('(\u6682\u65e0\u6d3b\u8dc3\u89c4\u5219)')
+PYEOF
+  else
+    cat "$_LESSONS"
+  fi
   echo "==="
 fi
 ```

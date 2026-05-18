@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## v1.0.1 — 2026-05-18
+
+### 上下文工程优化（基于 context-engineering 分析）
+
+**① 防止 Context Flooding**
+所有 skill preamble 由全量 `cat LESSONS.md` 改为 Python 过滤 Top 10 高频规则（按触发次数倒序），无 Python 环境时 fallback 到 `cat`。防止 LESSONS.md 增长后挤占 AI 上下文窗口。
+
+**② Inline Planning Pattern（auto-fix）**
+`dev-harness-auto-fix` Step 0.7 新增执行计划输出，列明 8 步链路、项目画像、可用状态和审查模式，供用户在进入 Step 1 前确认方向。
+
+**③ Trust Level 标注**
+`AGENTS.template.md` 新增 §1b「文件信任等级」，三级区分：✅ 可信源码 / ⚠️ 需核实配置与外部文档 / ❌ 不可信用户内容，防止 prompt injection。
+
+---
+
 ## v1.0.0 — 2026-05-14
 
 首个正式版本发布。
