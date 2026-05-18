@@ -12,9 +12,7 @@ description: 从 bug 描述/issue URL 到 git commit 的全自动 bugfix 闭环�
 | 依赖 | 级别 | 缺失时行为 |
 |------|------|-----------|
 | HARNESS.md（含 build/quick/bugfix/full 命令） | ✅ 强必需 | 停止，要求先执行 dev-harness-commands |
-| dev-harness-repro | ✅ 强必需 | 停止 |
-| dev-harness-triage | ✅ 强必需 | 停止 |
-| dev-harness-verify | ✅ 强必需 | 停止 |
+| 内置 bugfix-flow 参考（`references/bugfix-flow/*.md`） | ✅ 强必需 | 随本 skill 安装；缺失则停止并重装 bundle |
 | dev-harness-git-workflow | ✅ 强必需 | 停止 |
 | 子 Agent / 任务委派能力（Subagent / Task） | ❌ 可选 | 降级为本轮自检，并在完成报告中标记需提交后手动切换模型审查 |
 | ARCHITECTURE.md / AGENTS.md | ❌ 推荐 | 告警后降级为 grep 全仓搜索调用链 |
@@ -45,6 +43,18 @@ description: 从 bug 描述/issue URL 到 git commit 的全自动 bugfix 闭环�
 
 若两者都没有，必须停止并要求用户提供。
 
+## 内联 bugfix 阶段（非独立 skill）
+
+复现 / 定位 / 验证已内联；参考文件位于本 skill 安装目录 `references/bugfix-flow/`。**按需读取**：进入对应 Step 再读，勿预读。
+
+| Step | 参考文件 |
+|------|----------|
+| 2 repro | `references/bugfix-flow/repro.md` |
+| 3 triage | `references/bugfix-flow/triage.md` |
+| 6 verify | `references/bugfix-flow/verify.md` |
+
+影响面大或用户要求补回归时，可选读取 `references/bugfix-flow/regression.md`（Step 4 与 Step 6 之间）。
+
 ## 顺序化步骤
 
 > ⚠️ **每一步必须完整执行后才能进入下一步，不得跳步。**
@@ -61,7 +71,7 @@ description: 从 bug 描述/issue URL 到 git commit 的全自动 bugfix 闭环�
     → 缺失 → STOP，提示先执行 dev-harness-commands
 0.2 检查 ARCHITECTURE.md / AGENTS.md 是否存在
     → 缺失 → 告警：triage 将降级为 grep 全仓搜索，可能较慢
-0.3 检查子 skill（repro / triage / verify / git-workflow）是否可加载
+0.3 确认本 skill 目录下 `references/bugfix-flow/{repro,triage,verify}.md` 存在；检查 dev-harness-git-workflow 是否可加载
 0.4 检查当前 Agent 环境是否提供任务委派能力（Subagent / Task）：
     → 可用 → review_delegation_available=true
     → 不可用 → review_delegation_available=false，跳过子 Agent / B 模型审查，后续使用本轮自检并标记 ManualReviewRequired=true
@@ -83,7 +93,7 @@ description: 从 bug 描述/issue URL 到 git commit 的全自动 bugfix 闭环�
     7. 分支创建 + git commit
     8. 完成报告
     链路：<项目画像，如 Qt/Linux 或 Harmony>
-    可用状态：<ONES/issue URL 是否可用>
+    可用状态：<issue URL 是否可用>
     审查委派：<available/降级为自检>
     ─────────────────────────────────────────
     → 如有调整请现在告知，否则直接进入 Step 1。
@@ -112,10 +122,10 @@ description: 从 bug 描述/issue URL 到 git commit 的全自动 bugfix 闭环�
 
 > ⚠️ **HARD STOP**: 无 bug 描述、无现象、无复现步骤 → 停止，提示用户补充信息。
 
-### Step 2: 复现收敛 — 加载 dev-harness-repro
+### Step 2: 复现收敛 — repro 阶段
 
 ```
-2.1 加载 dev-harness-repro
+2.1 读取本 skill 目录 `references/bugfix-flow/repro.md` 并严格执行（勿预读 triage/verify）
 2.2 输入：Step 1 提取的 Symptom + 附件日志
 2.3 输出必须包含：
     - 最小复现步骤（ReproSteps）
@@ -125,10 +135,10 @@ description: 从 bug 描述/issue URL 到 git commit 的全自动 bugfix 闭环�
 
 > ⚠️ **HARD STOP**: 无法产出 ReproCommand 或最小复现步骤 → 停止，提示用户补充复现细节。
 
-### Step 3: 根因定位 — 加载 dev-harness-triage
+### Step 3: 根因定位 — triage 阶段
 
 ```
-3.1 加载 dev-harness-triage
+3.1 读取 `references/bugfix-flow/triage.md` 并严格执行
 3.2 输入：Step 2 的 ReproSteps + 附件日志 + 项目代码
 3.3 ARCHITECTURE.md 可用 → 按架构文档追踪调用链
     否则 → grep 全仓搜索关键函数/异常名
@@ -217,10 +227,10 @@ description: 从 bug 描述/issue URL 到 git commit 的全自动 bugfix 闭环�
 
 > ⚠️ **HARD STOP**: 审查输出为 FAIL 且 2 轮重试后仍不通过 → 停止，输出审查不通过报告。
 
-### Step 6: 验证闭环 — 加载 dev-harness-verify
+### Step 6: 验证闭环 — verify 阶段
 
 ```
-6.1 加载 dev-harness-verify
+6.1 读取 `references/bugfix-flow/verify.md` 并严格执行
 6.2 从 HARNESS.md 读取 quick / test / bugfix / full 命令
 6.3 执行 QuickCheck（编译/构建）：
     → 通过 → 进入 6.4
@@ -283,7 +293,7 @@ description: 从 bug 描述/issue URL 到 git commit 的全自动 bugfix 闭环�
 
 ## 交接边界
 
-- 消费 repro → triage → verify → git-workflow 的完整流水线
+- 内联 repro → triage → verify 阶段，并消费 dev-harness-git-workflow
 - 不负责架构级重构（超出 bugfix 范围的改动需人工决定）
 - 不负责 UI 渲染/布局类问题（需截图驱动验证）
 - 不负责 Shared C++ Core ABI / marshal / Win32 句柄管理的无确认自动修复

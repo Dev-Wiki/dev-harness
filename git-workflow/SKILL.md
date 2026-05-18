@@ -171,7 +171,7 @@ fi
 
 ## 交接边界
 
-- 与 `dev-harness-verify` 衔接：验证通过后进入 git-workflow 门禁
+- 与 auto-fix 内联 verify 阶段衔接：验证通过后进入 git-workflow 门禁
 - 默认执行 `git commit`（用户调用即表示意图提交），但可通过环境变量 `HARNESS_COMMIT_DRY_RUN=1` 跳过实际提交
 - 不负责 push、PR 创建或 CI 触发
 - 不依赖宿主项目构建系统，可独立运行

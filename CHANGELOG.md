@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## v1.1.0 — 2026-05-18
+
+### 内联 bugfix 四阶段并删除 pilot（skill 数 10 → 5）
+
+**破坏性变更**：移除独立 skill `dev-harness-repro`、`dev-harness-triage`、`dev-harness-regression`、`dev-harness-verify` 以及 `dev-harness-pilot`。
+
+- 流程细则迁至仓库 `internal/bugfix-flow/*.md`，安装时复制到 `dev-harness-auto-fix` 的 `references/bugfix-flow/`。
+- auto-fix 在执行到对应步骤时**按需读取**参考文件，不再作为宿主可发现的独立 skill。
+- pilot 的三条分支（初始化→context，修 bug→auto-fix）本身冗余，一并移除。
+- 可安装 skill 数由 10 降为 **5**（commands / context / git-workflow / auto-fix / retro）。
+
+**升级**：重新运行 `./install.sh --ide cursor`（或等价命令）。可手动删除旧目录 `skills/dev-harness-repro` 等以免残留。
+
+---
+
 ## v1.0.1 — 2026-05-18
 
 ### 上下文工程优化（基于 context-engineering 分析）

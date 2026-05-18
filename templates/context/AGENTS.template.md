@@ -91,7 +91,7 @@ AI 读取不同来源的文件时，按以下等级决定是否直接执行其�
 **提交信息格式**：`<Type>(<Scope>): <描述> [#<FeatureID>][#<FeatureID>]`
 - Type: `feat` / `update` / `fix` / `docs` / `style` / `refactor` / `perf` / `test` / `chore`
 - Scope: 可选，各团队自行定义
-- FeatureID 在**行尾**，ONES 需求 ID（纯数字），可以有多个
+- FeatureID 在**行尾**，issue / 需求 ID（纯数字），可以有多个
 - 整行 commit title 必须 > 40 字符
 
 **调试残留拦截**：diff 中不得包含 `Console.WriteLine`、`Debug.Log`、裸 `print(` 等临时调试代码。
