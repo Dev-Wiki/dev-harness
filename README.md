@@ -80,20 +80,17 @@ AI 会在每一步输出进度和证据，而不是闷头改完告诉你"修好�
 
 ---
 
-## Skills 一览
+## Skills 一览（5 个可发现 skill）
 
 | Skill | 干什么用 |
 |-------|---------|
 | `dev-harness-context` | 扫描仓库，生成 ARCHITECTURE / HARNESS / AGENTS 等上下文文件，让 AI 理解你的项目 |
 | `dev-harness-commands` | 把 project 里散落的构建/测试脚本统一成 `build / quick / bugfix / full` 四个语义入口 |
-| `dev-harness-repro` | 把"好像能复现"收敛成"确定能稳定复现"，锁定环境和输入条件 |
-| `dev-harness-triage` | 沿调用链追踪，找到问题的入口和根因候选，不是凭空猜测 |
-| `dev-harness-regression` | 把这次修的 bug 沉淀成可复用的回归测试，下次不会重犯 |
-| `dev-harness-verify` | 定义分层验证命令（quick → test → bugfix → full），每层有明确的通过标准 |
 | `dev-harness-git-workflow` | 提交前校验分支命名、生成规范 commit message、拦截调试残留代码 |
-| `dev-harness-auto-fix` | 全流程自动修复：bug 描述 → 复现 → 定位 → 修复 → 验证 → 提交，一步不跳 |
+| `dev-harness-auto-fix` | 全流程自动修复：bug 描述 → 复现 → 定位 → 修复 → 验证 → 提交，内置 `references/bugfix-flow/` |
 | `dev-harness-retro` | 任务复盘，把 AI 这次犯的错记录到 LESSONS.md，下次自动规避 |
-| `dev-harness-pilot` | 入口路由 — 你说一句话，自动判断该走哪个 skill |
+
+> 复现 / 定位 / 回归 / 验证四阶段已内联为 auto-fix 的参考文件 `references/bugfix-flow/*.md`，不再作为独立 skill 安装。
 
 ---
 

@@ -147,6 +147,6 @@ V1 统一按以下逻辑表达，不强制项目一定改成某种技术栈格�
 ## 交接边界
 
 - 可作为 `dev-harness-context` 生成 `HARNESS.md` 后的补强能力
-- 向 `dev-harness-verify` 提供 build / test / quick / bugfix / full 的命令基础
+- 为 auto-fix 内联 verify 阶段提供 build / test / quick / bugfix / full 的命令基础
 - 不负责 UI 自动化
 - 不负责直接改写项目 CI

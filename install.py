@@ -15,14 +15,11 @@ SCRIPT_DIR = Path(__file__).parent
 
 VERSION = (SCRIPT_DIR / "VERSION").read_text(encoding="utf-8").strip()
 
-ROOT_SKILL_SOURCE = SCRIPT_DIR / "SKILL.md"
 COMMANDS_SKILL_SOURCE = SCRIPT_DIR / "commands" / "SKILL.md"
 CONTEXT_SOURCE_DIR = SCRIPT_DIR / "context"
 CONTEXT_SKILL_SOURCE = SCRIPT_DIR / "context" / "SKILL.md"
-REPRO_SKILL_SOURCE = SCRIPT_DIR / "repro" / "SKILL.md"
-TRIAGE_SKILL_SOURCE = SCRIPT_DIR / "triage" / "SKILL.md"
-REGRESSION_SKILL_SOURCE = SCRIPT_DIR / "regression" / "SKILL.md"
-VERIFY_SKILL_SOURCE = SCRIPT_DIR / "verify" / "SKILL.md"
+INTERNAL_BUGFIX_FLOW_DIR = SCRIPT_DIR / "internal" / "bugfix-flow"
+INTERNAL_BUGFIX_FLOW_FILES = ("repro.md", "triage.md", "regression.md", "verify.md")
 GIT_WORKFLOW_SKILL_SOURCE = SCRIPT_DIR / "git-workflow" / "SKILL.md"
 AUTO_FIX_SKILL_SOURCE = SCRIPT_DIR / "auto-fix" / "SKILL.md"
 RETRO_SKILL_SOURCE = SCRIPT_DIR / "retro" / "SKILL.md"
@@ -42,39 +39,18 @@ CONTEXT_TEMPLATE_FILES = [
 ]
 
 SKILL_SOURCES = {
-    "dev-harness-pilot": ROOT_SKILL_SOURCE,
     "dev-harness-commands": COMMANDS_SKILL_SOURCE,
     "dev-harness-context": CONTEXT_SKILL_SOURCE,
-    "dev-harness-repro": REPRO_SKILL_SOURCE,
-    "dev-harness-triage": TRIAGE_SKILL_SOURCE,
-    "dev-harness-regression": REGRESSION_SKILL_SOURCE,
-    "dev-harness-verify": VERIFY_SKILL_SOURCE,
     "dev-harness-git-workflow": GIT_WORKFLOW_SKILL_SOURCE,
     "dev-harness-auto-fix": AUTO_FIX_SKILL_SOURCE,
     "dev-harness-retro": RETRO_SKILL_SOURCE,
 }
 
 SKILL_DEPENDENCIES = {
-    "dev-harness-pilot": (
-        "dev-harness-context",
-        "dev-harness-commands",
-        "dev-harness-repro",
-        "dev-harness-triage",
-        "dev-harness-regression",
-        "dev-harness-verify",
-        "dev-harness-git-workflow",
-    ),
     "dev-harness-commands": (),
     "dev-harness-context": (),
-    "dev-harness-repro": (),
-    "dev-harness-triage": (),
-    "dev-harness-regression": (),
-    "dev-harness-verify": (),
     "dev-harness-git-workflow": (),
     "dev-harness-auto-fix": (
-        "dev-harness-repro",
-        "dev-harness-triage",
-        "dev-harness-verify",
         "dev-harness-git-workflow",
     ),
     "dev-harness-retro": (),
@@ -133,6 +109,10 @@ def validate_sources() -> None:
     for skill_name, source in SKILL_SOURCES.items():
         if not source.exists():
             raise FileNotFoundError(f"Missing {skill_name} source: {source}")
+    for file_name in INTERNAL_BUGFIX_FLOW_FILES:
+        source = INTERNAL_BUGFIX_FLOW_DIR / file_name
+        if not source.exists():
+            raise FileNotFoundError(f"Missing internal bugfix-flow source: {source}")
     for file_name in CONTEXT_RUNTIME_FILES:
         source = CONTEXT_SOURCE_DIR / file_name
         if not source.exists():
@@ -288,6 +268,18 @@ def build_skill(skill_name: str, destination: Path) -> None:
     _inject_version_into_skill(SKILL_SOURCES[skill_name], destination / "SKILL.md")
 
 
+def _copy_bugfix_flow_references(destination: Path) -> None:
+    refs_dir = destination / "references" / "bugfix-flow"
+    refs_dir.mkdir(parents=True, exist_ok=True)
+    for file_name in INTERNAL_BUGFIX_FLOW_FILES:
+        shutil.copy2(INTERNAL_BUGFIX_FLOW_DIR / file_name, refs_dir / file_name)
+
+
+def build_dev_harness_auto_fix(_skill_name: str, destination: Path) -> None:
+    build_skill("dev-harness-auto-fix", destination)
+    _copy_bugfix_flow_references(destination)
+
+
 def build_dev_harness_context(_skill_name: str, destination: Path) -> None:
     destination.mkdir(parents=True, exist_ok=True)
     lib_dir = destination / "lib" / "context"
@@ -320,6 +312,7 @@ def build_dev_harness_context(_skill_name: str, destination: Path) -> None:
 
 
 BUILDERS = {skill_name: build_skill for skill_name in SKILL_SOURCES}
+BUILDERS["dev-harness-auto-fix"] = build_dev_harness_auto_fix
 BUILDERS["dev-harness-context"] = build_dev_harness_context
 
 
