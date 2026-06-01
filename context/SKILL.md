@@ -9,13 +9,17 @@ description: Use when you need to initialize AI project context by scanning a re
 
 增强版重点不是生成“简介型 AGENTS”，而是生成一份**约束型 AGENTS.md**，尽量把调用链、架构边界、高风险文件、禁止操作和探索建议沉淀出来。
 
-当前优先支持的客户端形态为：
+当前优先支持的项目形态为：
 
 - `Qt Client (Windows/Linux) -> Shared C++ Core`
 - `WPF`
 - `Harmony`
 - `Win32` 应用
 - `WPF + NativeBridge` 这类维护态混合项目
+- **`Go` 后端服务**
+- **`Flutter` 跨端客户端**
+- **`Node.js / TypeScript` 前端工具链与 SDK**
+- **`Node.js` 插件类项目 (含 `plugin.json`)**
 
 对 Qt / WPF / Win32 这类依赖共享 C++ 底层的高风险项目，还应额外输出：
 
@@ -23,6 +27,21 @@ description: Use when you need to initialize AI project context by scanning a re
 - Shared C++ Core、导出头文件、CMake 构建入口等自动识别候选
 - `DllImport` / `MarshalAs` / callback / observer / Win32 API 等自动识别候选
 - “需人工确认”的边界项，例如 ABI、线程模型、句柄生命周期、Qt signal/slot 跨线程调用、可信验证命令
+
+对 Go 后端服务，还应额外输出：
+
+- 核心分层设计（如 `cmd`, `internal`, `pkg`）
+- 关键模块依赖流向及防循环依赖约束
+
+对 Flutter 客户端，还应额外输出：
+
+- 状态管理方案和平台通道（Platform Channels）调用链
+- 原生目录（`android`, `ios` 等）中包含的特定平台实现与边界
+
+对 Node.js 插件与工具链，还应额外输出：
+
+- 工作空间（Workspace）包间依赖及入口点
+- `plugin.json` 约定的生命周期及扩展点隔离要求
 
 
 
@@ -98,6 +117,7 @@ fi
 5. 在 `AGENTS.md` 中优先输出约束信息：调用链、架构边界、高风险文件、禁改规则（含文件编码约束）、探索建议
 5b. 从仓库抽样生成「代码风格锚点」：真实文件路径 + 首条结构性声明截断行，约束 AI 对齐既有写法
 6. 对 Qt -> Shared C++ Core / NativeBridge 项目，补充“自动识别候选”和“需人工确认”区块
+6b. 对 Go、Flutter、Node.js 插件等项目，补充其特有的框架约束、组件识别候选和需人工确认的边界项
 7. 额外生成 `HARNESS.md`，记录项目类型、build/quick/bugfix/full 命令、高风险目录、禁改区域、自动识别候选和需人工确认项
 8. 若允许落盘，再写入目标仓库
 

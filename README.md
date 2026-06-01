@@ -104,6 +104,9 @@ AI 会在每一步输出进度和证据，而不是闷头改完告诉你"修好�
 | **Harmony** | ArkTS / HarmonyOS |
 | **Win32** | C++ / MSBuild |
 | **Qt** | Windows + Linux，含 Shared C++ Core 检测 |
+| **Go** | 后端服务，识别 CGO 边界与核心并发逻辑 |
+| **Flutter** | 跨端客户端，识别 Platform Channels 与原生代码边界 |
+| **Node.js** | 前端工具链与插件（识别跨 Workspace 与生命周期钩子） |
 
 其他项目类型会走安全回退路径，标记为 `Unknown` 并提示人工确认。
 

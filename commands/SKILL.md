@@ -114,7 +114,19 @@ V1 统一按以下逻辑表达，不强制项目一定改成某种技术栈格�
   - 若仓库存在 `buildScript/app_build.sh` + `buildScript/*_package.py`，应标记为 `package/release-only` 或 CI 打包链，不应占用本地 `full`
 - Android:
   - 本地 `test` → `device-required`（需连接设备/模拟器，不能自动执行）
-- 其他客户端项目：映射到真实存在的自定义脚本
+- Go 后端:
+  - 本地 `build` / `quick` 优先映射到 `go build ./...`
+  - 本地 `test` 优先映射到 `go test ./...`
+  - 本地 `full` 优先映射到 `go build -v ./... && go test -v ./...`
+- Flutter 跨端:
+  - 本地 `build` / `quick` 优先映射到 `flutter build <target>` 或 `flutter pub get`
+  - 本地 `test` 优先映射到 `flutter test`（无 UI 集成测试时可自动执行）
+  - 本地 `full` 优先映射到特定平台的 release 构建
+- Node.js (插件与工具链):
+  - 本地 `build` / `quick` 优先映射到 `npm run build` 或 `pnpm build`
+  - 本地 `test` 优先映射到 `npm test` 或 `pnpm test`
+  - 本地 `full` 优先映射到 `npm run build && npm test`
+- 其他项目：映射到真实存在的自定义脚本
 
 ### 测试命令平台门控规则
 
@@ -126,6 +138,9 @@ V1 统一按以下逻辑表达，不强制项目一定改成某种技术栈格�
 | Harmony | ❌ device-required | 需鸿蒙设备或模拟器，跳过自动测试 |
 | Android | ❌ device-required | 需 ADB 连接设备或模拟器，跳过自动测试 |
 | iOS | ❌ device-required | 需 macOS + 设备/模拟器，跳过自动测试 |
+| Go 后端 | ✅ 自动执行 | `go test ./...`，无设备依赖 |
+| Flutter | ✅ 自动执行 | `flutter test`，无物理设备依赖（若含 integration_test 则标 device-required） |
+| Node.js / TS | ✅ 自动执行 | `npm test` 或 `pnpm test`，无设备依赖 |
 
 ## 顺序化步骤
 

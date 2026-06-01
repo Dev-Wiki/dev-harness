@@ -23,16 +23,15 @@ description: 从 bug 描述/issue URL 到 git commit 的全自动 bugfix 闭环�
 - 用户说"auto fix"、"自动修复"
 - CI 流水线触发自动 bugfix
 
-## 当前优先链路
+## 优先链路与平台约束
 
-当前阶段优先打通 **Qt Client (Windows/Linux) -> Shared C++ Core** 链路。
+目前支持跨平台形态扩展，但需严格遵守各平台的防篡改底线：
 
-- **Qt**：优先支持 Qt UI / Controller / wrapper 到共享 C++ 底层库的定位、风险分级和验证闭环。Windows 和 Linux 两端共享同一 C++ 代码架构，仅编译命令和打包脚本不同，视为同一优先链路。
-- **Harmony**：已具备 auto-fix 基础能力，本阶段不扩张，保持现有 hvigor 验证路径
-- **WPF**：维护态，仅严重问题进入修复；复用 Windows Client -> Shared C++ Core 的底层风险规则
-- **Android**：暂缓，不进入本阶段 MVP
-
-> ⚠️ **HARD STOP**: 不得为了"多平台通吃"同时扩张 Qt / Harmony / Android / WPF。Qt Linux 属于已有 Qt 优先链路的平台扩展（同一代码架构），不违反此约束。
+- **Qt Client -> Shared C++ Core**：维持原有验证闭环。
+- **Go 后端**：重点拦截 CGO 内存越界和核心并发逻辑（Goroutines 泄露）。
+- **Flutter**：仅支持 Dart 层修复；若触及 Platform Channels 或原生侧代码，必须人工确认。
+- **Node.js (工具链/插件)**：拦截跨 Workspace 破坏和生命周期篡改。
+- **Harmony / Android**：若 TestCommand 报 `device-required`，则跳过自动化测试，依赖编译闭环。
 
 ## 输入要求
 
@@ -79,6 +78,7 @@ description: 从 bug 描述/issue URL 到 git commit 的全自动 bugfix 闭环�
     - 若为 Qt Client (Windows/Linux) + Shared C++ Core → 进入 Qt 优先链路
     - 若为 Harmony → 走既有 Harmony auto-fix 流程
     - 若为 WPF / Win32 → 标记 maintenance-only，触及底层 C++ 时强制人工确认
+    - 若为 Go / Flutter / Node.js → 挂载对应的平台风险拦截规则
 0.7 输出执行计划（Inline Plan），供用户确认方向后再进入 Step 1：
 
     ─────────────────────────────────────────
@@ -160,9 +160,11 @@ description: 从 bug 描述/issue URL 到 git commit 的全自动 bugfix 闭环�
 4.1 基于 RootCauseCandidate + CallChain 确定修改范围
 4.2 检查修改范围是否触及高风险区域：
     - 参考 HARNESS.md 中的禁改区域和高风险目录
-    - Qt 项目额外检查：Qt signal/slot 跨线程调用、Qt wrapper、Shared C++ Core、导出头文件
-    - WPF / Win32 维护态项目额外检查：DllImport / MarshalAs / callback / Win32 API
-    - C++/CLI / P/Invoke / ABI / 内核级代码
+    - Qt 项目：检查跨线程 signal/slot、导出头文件、Shared C++ Core
+    - WPF / Win32：检查 DllImport / MarshalAs / ABI 边界
+    - Go 项目：检查 CGO 边界、unsafe 包调用、全仓并发锁
+    - Flutter 项目：检查 Platform Channels、原生目录下的 C++/Java/ObjC
+    - Node.js 项目：检查跨 Workspace 包依赖覆盖、生命周期钩子
 4.3 若触及高风险区域 → STOP，展示风险分析，要求人工确认后再改
 4.4 若为安全区域 → 生成 diff：
     - 遵循项目现有代码风格（从 AGENTS.md / CONVENTIONS.md 获取）
@@ -237,8 +239,8 @@ description: 从 bug 描述/issue URL 到 git commit 的全自动 bugfix 闭环�
     → 失败 → 分析失败原因 → 回到 Step 4（最多 3 轮）
 6.4 执行 TestCheck（自动化测试，平台门控）：
     6.4.1 判定平台类型：
-        - 桌面端（Qt / WPF / Win32）→ 进入 6.4.2
-        - 移动端/设备端（Harmony / Android / iOS）→ TestSkipReason=device-required → 跳过，进入 6.5
+        - 桌面端（Qt / WPF / Win32）/ Go / Node.js / Flutter（无设备依赖的测试）→ 进入 6.4.2
+        - 移动端/设备端（Harmony / Android / iOS / 需物理设备的 Flutter）→ TestSkipReason=device-required → 跳过，进入 6.5
         - HARNESS.md 无 TestCommand → TestSkipReason=no-test-command → 跳过，进入 6.5
     6.4.2 执行 TestCommand
     6.4.3 TestCheck 结果判定：
