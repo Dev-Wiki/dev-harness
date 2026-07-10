@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## v1.3.0 — 2026-07-10
+
+### 新增规划阶段 skill 模板
+
+- 新增 `dev-harness-planning`，用于在进入实现前生成任务看板与任务详情。
+- 新增 `planning/templates/Dashboard.template.md` 与 `planning/templates/TaskDetails.template.md`，随安装包一起导出。
+- 调整 `install.py`，确保 planning skill 与其模板能被安装和打包。
+- 将 context 相关模板迁移到 `context/templates/`，安装后保持 skill-local 目录结构。
+- 更新 README / 英文文档 / 模板说明，并补充安装测试覆盖 planning 模板。
+
+---
+
 ## v1.2.0 — 2026-06-01
 
 ### 扩展多语言项目支持与安全拦截
@@ -15,7 +27,9 @@
 - 补充并更新了 `commands` 脚本中 Go 和 Node.js 对应的自动化测试指令及门控状态。
 - 更新了 README 项目支持矩阵。
 
----## v1.1.0 — 2026-05-18
+---
+
+## v1.1.0 — 2026-05-18
 
 ### 内联 bugfix 四阶段并删除 pilot（skill 数 10 → 5）
 
