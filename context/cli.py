@@ -28,6 +28,12 @@ from context.repo_walk import (
 )
 
 TARGET_FILES = ("README.md", "AGENTS.md", "ARCHITECTURE.md", "HARNESS.md")
+TEMPLATE_FILES = (
+    "README.template.md",
+    "AGENTS.template.md",
+    "ARCHITECTURE.template.md",
+    "HARNESS.template.md",
+)
 LANGUAGE_BY_SUFFIX = {
     ".py": "Python",
     ".ts": "TypeScript",
@@ -55,16 +61,17 @@ LANGUAGE_BY_SUFFIX = {
 def discover_template_dir(repo_root: Path | None = None) -> Path:
     if repo_root is not None:
         repo_template_dir = repo_root / "templates" / "context"
-        required_templates = [repo_template_dir / file_name for file_name in TARGET_FILES]
+        required_templates = [repo_template_dir / file_name for file_name in TEMPLATE_FILES]
         if all(path.exists() for path in required_templates):
             return repo_template_dir
 
     current = Path(__file__).resolve()
     for parent in [current.parent, *current.parents]:
-        candidate = parent / "templates" / "context"
-        if candidate.exists():
-            return candidate
-    raise FileNotFoundError("Cannot locate templates/context directory")
+        for candidate in (parent / "templates", parent / "templates" / "context"):
+            required_templates = [candidate / file_name for file_name in TEMPLATE_FILES]
+            if all(path.exists() for path in required_templates):
+                return candidate
+    raise FileNotFoundError("Cannot locate context templates directory")
 
 
 def read_template(name: str, repo_root: Path | None = None) -> str:

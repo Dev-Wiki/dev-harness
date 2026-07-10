@@ -18,6 +18,8 @@ VERSION = (SCRIPT_DIR / "VERSION").read_text(encoding="utf-8").strip()
 COMMANDS_SKILL_SOURCE = SCRIPT_DIR / "commands" / "SKILL.md"
 CONTEXT_SOURCE_DIR = SCRIPT_DIR / "context"
 CONTEXT_SKILL_SOURCE = SCRIPT_DIR / "context" / "SKILL.md"
+PLANNING_SOURCE_DIR = SCRIPT_DIR / "planning"
+PLANNING_SKILL_SOURCE = SCRIPT_DIR / "planning" / "SKILL.md"
 INTERNAL_BUGFIX_FLOW_DIR = SCRIPT_DIR / "internal" / "bugfix-flow"
 INTERNAL_BUGFIX_FLOW_FILES = ("repro.md", "triage.md", "regression.md", "verify.md")
 GIT_WORKFLOW_SKILL_SOURCE = SCRIPT_DIR / "git-workflow" / "SKILL.md"
@@ -30,17 +32,23 @@ CONTEXT_RUNTIME_FILES = [
     "platform_profiles.py",
     "repo_walk.py",
 ]
-CONTEXT_TEMPLATE_DIR = SCRIPT_DIR / "templates" / "context"
+CONTEXT_TEMPLATE_DIR = CONTEXT_SOURCE_DIR / "templates"
 CONTEXT_TEMPLATE_FILES = [
     "README.template.md",
     "AGENTS.template.md",
     "ARCHITECTURE.template.md",
     "HARNESS.template.md",
 ]
+PLANNING_TEMPLATE_DIR = PLANNING_SOURCE_DIR / "templates"
+PLANNING_TEMPLATE_FILES = [
+    "Dashboard.template.md",
+    "TaskDetails.template.md",
+]
 
 SKILL_SOURCES = {
     "dev-harness-commands": COMMANDS_SKILL_SOURCE,
     "dev-harness-context": CONTEXT_SKILL_SOURCE,
+    "dev-harness-planning": PLANNING_SKILL_SOURCE,
     "dev-harness-git-workflow": GIT_WORKFLOW_SKILL_SOURCE,
     "dev-harness-auto-fix": AUTO_FIX_SKILL_SOURCE,
     "dev-harness-retro": RETRO_SKILL_SOURCE,
@@ -49,6 +57,7 @@ SKILL_SOURCES = {
 SKILL_DEPENDENCIES = {
     "dev-harness-commands": (),
     "dev-harness-context": (),
+    "dev-harness-planning": (),
     "dev-harness-git-workflow": (),
     "dev-harness-auto-fix": (
         "dev-harness-git-workflow",
@@ -121,6 +130,10 @@ def validate_sources() -> None:
         source = CONTEXT_TEMPLATE_DIR / file_name
         if not source.exists():
             raise FileNotFoundError(f"Missing dev-harness-context template source: {source}")
+    for file_name in PLANNING_TEMPLATE_FILES:
+        source = PLANNING_TEMPLATE_DIR / file_name
+        if not source.exists():
+            raise FileNotFoundError(f"Missing dev-harness-planning template source: {source}")
 
 
 def remove_existing(path: Path) -> None:
@@ -284,7 +297,7 @@ def build_dev_harness_context(_skill_name: str, destination: Path) -> None:
     destination.mkdir(parents=True, exist_ok=True)
     lib_dir = destination / "lib" / "context"
     lib_dir.mkdir(parents=True, exist_ok=True)
-    templates_dir = destination / "templates" / "context"
+    templates_dir = destination / "templates"
     templates_dir.mkdir(parents=True, exist_ok=True)
 
     _inject_version_into_skill(CONTEXT_SOURCE_DIR / "SKILL.md", destination / "SKILL.md")
@@ -311,9 +324,18 @@ def build_dev_harness_context(_skill_name: str, destination: Path) -> None:
         shutil.copy2(CONTEXT_TEMPLATE_DIR / file_name, templates_dir / file_name)
 
 
+def build_dev_harness_planning(_skill_name: str, destination: Path) -> None:
+    build_skill("dev-harness-planning", destination)
+    templates_dir = destination / "templates"
+    templates_dir.mkdir(parents=True, exist_ok=True)
+    for file_name in PLANNING_TEMPLATE_FILES:
+        shutil.copy2(PLANNING_TEMPLATE_DIR / file_name, templates_dir / file_name)
+
+
 BUILDERS = {skill_name: build_skill for skill_name in SKILL_SOURCES}
 BUILDERS["dev-harness-auto-fix"] = build_dev_harness_auto_fix
 BUILDERS["dev-harness-context"] = build_dev_harness_context
+BUILDERS["dev-harness-planning"] = build_dev_harness_planning
 
 
 def install_bundle_to_root(bundle_root: Path, skills: list[str] | None = None) -> Path:

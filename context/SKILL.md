@@ -125,16 +125,16 @@ fi
 
 生成内容时按以下优先级选择模板：
 
-1. 仓库内模板（优先）：
+1. 目标仓库覆盖模板（兼容旧项目，可选）：
    - `templates/context/README.template.md`
    - `templates/context/AGENTS.template.md`
    - `templates/context/ARCHITECTURE.template.md`
    - `templates/context/HARNESS.template.md`
-2. 若仓库模板缺失或不完整，回退到 skill 自带模板：
-   - `templates/context/README.template.md`
-   - `templates/context/AGENTS.template.md`
-   - `templates/context/ARCHITECTURE.template.md`
-   - `templates/context/HARNESS.template.md`
+2. 若目标仓库模板缺失或不完整，回退到 skill 自带模板（源码中位于 `context/templates/`，安装后位于 skill 根目录的 `templates/`）：
+   - `templates/README.template.md`
+   - `templates/AGENTS.template.md`
+   - `templates/ARCHITECTURE.template.md`
+   - `templates/HARNESS.template.md`
 
 不得擅自扩展字段，不得输出模板之外的解释性文字。
 

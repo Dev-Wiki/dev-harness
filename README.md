@@ -80,15 +80,18 @@ AI 会在每一步输出进度和证据，而不是闷头改完告诉你"修好�
 
 ---
 
-## Skills 一览（5 个可发现 skill）
+## Skills 一览（6 个可发现 skill）
 
 | Skill | 干什么用 |
 |-------|---------|
 | `dev-harness-context` | 扫描仓库，生成 ARCHITECTURE / HARNESS / AGENTS 等上下文文件，让 AI 理解你的项目 |
+| `dev-harness-planning` | 根据需求文档、原型或参考格式生成 `docs/plan/Dashboard.md` 和 `TaskDetails.md` |
 | `dev-harness-commands` | 把 project 里散落的构建/测试脚本统一成 `build / quick / bugfix / full` 四个语义入口 |
 | `dev-harness-git-workflow` | 提交前校验分支命名、生成规范 commit message、拦截调试残留代码 |
 | `dev-harness-auto-fix` | 全流程自动修复：bug 描述 → 复现 → 定位 → 修复 → 验证 → 提交，内置 `references/bugfix-flow/` |
 | `dev-harness-retro` | 任务复盘，把 AI 这次犯的错记录到 LESSONS.md，下次自动规避 |
+
+> 每个 skill 的模板、references 和脚本跟随该 skill 自己安装，保持资源自包含。
 
 > 复现 / 定位 / 回归 / 验证四阶段已内联为 auto-fix 的参考文件 `references/bugfix-flow/*.md`，不再作为独立 skill 安装。
 

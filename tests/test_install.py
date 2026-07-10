@@ -8,6 +8,30 @@ from install import install_bundle_to_root
 
 
 class InstallBundleTests(unittest.TestCase):
+    def test_installed_context_templates_are_skill_local(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            bundle_root = root / "bundle"
+
+            install_bundle_to_root(bundle_root, ["dev-harness-context"])
+            skill_root = bundle_root / "skills" / "dev-harness-context"
+
+            self.assertTrue((skill_root / "templates" / "README.template.md").exists())
+            self.assertTrue((skill_root / "templates" / "AGENTS.template.md").exists())
+            self.assertFalse((skill_root / "templates" / "context").exists())
+
+    def test_installed_planning_skill_includes_templates(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            bundle_root = root / "bundle"
+
+            install_bundle_to_root(bundle_root, ["dev-harness-planning"])
+            skill_root = bundle_root / "skills" / "dev-harness-planning"
+
+            self.assertTrue((skill_root / "SKILL.md").exists())
+            self.assertTrue((skill_root / "templates" / "Dashboard.template.md").exists())
+            self.assertTrue((skill_root / "templates" / "TaskDetails.template.md").exists())
+
     def test_installed_context_launcher_can_scan_repo(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

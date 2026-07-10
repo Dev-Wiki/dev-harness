@@ -1,14 +1,11 @@
 # templates
 
-当前目录只做占位，供后续增强版 harness 使用。
+顶层 `templates/` 不再承载正式模板。
 
-计划中的模板类型：
+dev-harness 的资源约定是 **skill 自包含**：
 
-- 上下文初始化模板
-- 客户端项目准入模板
-- 测试命令约定模板
-- CI 片段模板
-- bugfix checklist 模板
-- `templates/<stack>/` 形式的语言栈模板
+- `context/templates/`：上下文初始化模板
+- `planning/templates/`：计划看板与任务详情模板
+- `auto-fix/references/`：自动修复流程参考资料
 
-当前版本已提供 `templates/context/` 下的固定上下文模板，并通过 `HARNESS.template.md` 承载客户端项目准入所需的最小运行规则；仍刻意不放任何语言栈专用模板，避免在没有明确约束时过度设计。
+新增模板应放到所属 skill 目录下，只有确实跨多个 skill 共享且无法归属时，才考虑新增顶层资源。

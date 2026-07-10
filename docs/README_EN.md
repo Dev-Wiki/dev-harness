@@ -146,14 +146,17 @@ dev-harness/
 │   ├── SKILL.md
 │   ├── cli.py                  # context CLI entry point
 │   ├── platform_profiles.py    # project type detection
-│   └── repo_walk.py            # file walking utilities
+│   ├── repo_walk.py            # file walking utilities
+│   └── templates/              # AGENTS / HARNESS / README / ARCHITECTURE templates
+├── planning/
+│   ├── SKILL.md
+│   └── templates/              # Dashboard / TaskDetails planning templates
 ├── git-workflow/SKILL.md
 ├── regression/SKILL.md
 ├── repro/SKILL.md
 ├── retro/SKILL.md
 ├── triage/SKILL.md
 ├── verify/SKILL.md
-├── templates/context/          # AGENTS / HARNESS / README / ARCHITECTURE templates
 ├── docs/                       # guides and reference docs
 ├── tests/                      # unittest suite
 ├── install.py                  # cross-platform install / export script
