@@ -35,7 +35,15 @@ python install.py
 使用 dev-harness-context 扫描本仓库
 ```
 
-这会生成/更新 `README.md`、`AGENTS.md`、`ARCHITECTURE.md`、`HARNESS.md`。
+首次执行使用 `scan`，只创建缺失的 `README.md`、`AGENTS.md`、`ARCHITECTURE.md`、`HARNESS.md`，不会覆盖现有文件。
+
+项目开发一段时间后需要同步自动识别信息时，使用 `refresh`。它只更新 `dev-harness:managed` 标记内的托管块，保留块外人工内容以及原文件编码、换行和权限：
+
+```bash
+dev-harness-context refresh <repo-path>
+```
+
+非交互环境默认只预览差异；确认后可使用 `--force` 应用有效托管块。旧版无标记文件仍必须在交互终端中确认迁移，`--force` 不会覆盖或强制迁移旧文件。
 
 然后用 `dev-harness-commands` 补齐真实命令映射：
 
@@ -68,7 +76,7 @@ auto fix
 
 | Skill | 用途 |
 |-------|------|
-| `dev-harness-context` | 扫描仓库并生成项目上下文与契约文件 |
+| `dev-harness-context` | 初始化上下文文件，并安全刷新自动识别托管块 |
 | `dev-harness-commands` | 补齐 build / quick / bugfix / full 的真实命令映射 |
 | `dev-harness-auto-fix` | 执行内置的复现、定位、修复、审查与验证流程 |
 | `dev-harness-git-workflow` | 校验分支与提交信息并拦截调试残留 |
@@ -99,21 +107,25 @@ auto fix
 
 AI Agent 在执行构建、测试或验证命令前必须先读取该文件，不得根据 README、CI 配置或生态经验猜测、替换或覆盖其中的命令。行为、安全和修改边界以 `AGENTS.md` 为准；具体命令和执行环境以 `HARNESS.md` 为准。
 
-### 必须包含的字段
+### 必须包含的区域
 
 ```markdown
-## 构建命令
-`<真实构建命令>`
+<!-- dev-harness:managed:start id=harness.detected-commands version=1 -->
+## 自动识别构建命令候选
+- **build**: `<自动识别候选或 Unknown>`
+- **quick**: `<自动识别候选或 Unknown>`
+- **bugfix**: `<自动识别候选或 Unknown>`
+- **full**: `<自动识别候选或 Unknown>`
+<!-- dev-harness:managed:end id=harness.detected-commands -->
 
-## 快速验证命令
-`<快速构建/编译检查命令>`
-
-## Bugfix 验证命令
-`<bugfix 验证命令>`
-
-## 完整验证命令
-`<完整构建+测试命令>`
+## 已确认命令（人工维护）
+- **build**: `<真实构建命令或 Unknown>`
+- **quick**: `<真实快速验证命令或 Unknown>`
+- **bugfix**: `<真实问题专项验证命令或 Unknown>`
+- **full**: `<真实完整验证命令或 Unknown>`
 ```
+
+自动识别结果只作为候选；`dev-harness-commands` 只能更新“已确认命令（人工维护）”，不得写入或覆盖托管候选块。执行时以已确认命令为准；仍为 `Unknown` 时必须停止并补齐，不能直接执行候选。
 
 ### 推荐包含的字段
 

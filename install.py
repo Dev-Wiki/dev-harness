@@ -29,6 +29,7 @@ CONTEXT_RUNTIME_FILES = [
     "SKILL.md",
     "__init__.py",
     "cli.py",
+    "managed.py",
     "platform_profiles.py",
     "repo_walk.py",
 ]

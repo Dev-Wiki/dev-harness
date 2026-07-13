@@ -146,7 +146,7 @@ V1 统一按以下逻辑表达，不强制项目一定改成某种技术栈格�
 
 1. 扫描真实构建入口、测试入口和本地脚本
 2. 判断哪些命令可以安全映射为 `build / test / quick / bugfix / full`
-3. 把映射结果写入 `HARNESS.md` 或等价上下文文件
+3. 把映射结果写入 `HARNESS.md` 的 `## 已确认命令（人工维护）`；不得写入 `harness.detected-commands` 托管候选块
 4. 报告缺失项和不可自动推断项
 5. 若命令不存在，只能标记 `Unknown` 或 `Missing`，不得编造
 
@@ -162,6 +162,7 @@ V1 统一按以下逻辑表达，不强制项目一定改成某种技术栈格�
 ## 交接边界
 
 - 可作为 `dev-harness-context` 生成 `HARNESS.md` 后的补强能力
+- 只维护人工确认命令；不得覆盖 Context 在托管块中生成的自动识别候选
 - 为 auto-fix 内联 verify 阶段提供 build / test / quick / bugfix / full 的命令基础
 - 不负责 UI 自动化
 - 不负责直接改写项目 CI

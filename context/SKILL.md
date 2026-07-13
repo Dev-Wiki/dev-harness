@@ -1,11 +1,11 @@
 ---
 name: dev-harness-context
-description: Use when you need to initialize AI project context by scanning a real repository and generating README.md, ARCHITECTURE.md, HARNESS.md, and a constraint-oriented AGENTS.md with repository-preferred templates and overwrite confirmation
+description: Use when you need to initialize or safely refresh AI project context by scanning a real repository and maintaining managed sections in README.md, ARCHITECTURE.md, HARNESS.md, and AGENTS.md
 ---
 
 # dev-harness-context
 
-负责扫描真实仓库结构，初始化面向开发者、AI Agent 和架构分析的项目上下文文件。
+负责扫描真实仓库结构，初始化面向开发者、AI Agent 和架构分析的项目上下文文件，并在后续开发中安全刷新自动识别区块。
 
 增强版重点不是生成“简介型 AGENTS”，而是生成一份**约束型 AGENTS.md**，尽量把调用链、架构边界、高风险文件、禁止操作和探索建议沉淀出来。
 
@@ -81,6 +81,7 @@ fi
 ## 适用场景
 
 - 新仓库第一次接入 AI 辅助开发
+- 项目开发一段时间后，需要刷新自动识别的结构、命令候选和约束索引
 - 需要补齐 `README.md`、`AGENTS.md`、`ARCHITECTURE.md`
 - 需要让 AI 更快理解目录结构、语言、构建系统和模块关系
 - 需要用固定模板产出可解析上下文文件
@@ -90,9 +91,7 @@ fi
 至少需要以下输入：
 
 - 目标仓库根目录
-- 是否允许覆盖已有同名文件
-
-如果未明确覆盖策略，默认先读取现有文件并提示风险，不得直接覆盖。
+- 操作模式：首次初始化使用 `scan`，后续同步使用 `refresh`
 
 ## 输出契约
 
@@ -107,6 +106,10 @@ fi
   - `ARCHITECTURE.md`
   - `HARNESS.md`
 - **严禁修改任何文件的编码格式**（UTF-8 / UTF-8 BOM / UTF-16 / GBK / GB2312 / Latin-1 等）。若编码变更看似必要，必须先获得人工确认，不得绕过
+- `scan` 只创建缺失文件，现有文件即使使用 `--force` 也不得覆盖
+- `refresh` 只更新 `dev-harness:managed` 标记内的自动识别内容，标记外文本归用户所有
+- 无标记旧文件只能在交互终端中保守迁移；`--force` 不得绕过迁移确认
+- 混合换行、未知编码或损坏标记必须停止写入并报告错误
 
 ## 顺序化步骤
 
@@ -119,7 +122,7 @@ fi
 6. 对 Qt -> Shared C++ Core / NativeBridge 项目，补充“自动识别候选”和“需人工确认”区块
 6b. 对 Go、Flutter、Node.js 插件等项目，补充其特有的框架约束、组件识别候选和需人工确认的边界项
 7. 额外生成 `HARNESS.md`，记录项目类型、build/quick/bugfix/full 命令、高风险目录、禁改区域、自动识别候选和需人工确认项
-8. 若允许落盘，再写入目标仓库
+8. 首次初始化只创建缺失文件；后续刷新先展示托管块差异，再按确认结果原子写入
 
 ## 固定模板要求
 
@@ -144,15 +147,17 @@ fi
 
 ```bash
 dev-harness-context scan <repo-path>
+dev-harness-context refresh <repo-path>
 ```
 
 默认行为：
 
-- 目标仓库缺少上下文文件时，直接写入 `README.md`、`AGENTS.md`、`ARCHITECTURE.md`、`HARNESS.md`
-- 已存在同名文件且内容不同，先逐文件输出差异对比，再逐文件由用户决定是否覆盖
-- 逐文件交互允许以下输入：`y` / `n` / `all` / `none` / `quit`
-- `all` 表示覆盖当前及后续所有差异文件；`none` 表示跳过当前及后续所有差异文件；`quit` 表示立即停止并保留未处理文件
-- 使用 `--force` 时，直接覆盖存在差异的文件
+- `scan` 仅在上下文文件缺失时创建；已有同名文件保持原样，返回码 `2` 提示改用 `refresh`
+- `scan --force` 为兼容旧调用保留，但仍不得覆盖现有文件
+- `refresh` 只比较和更新托管块，保持块外用户内容、原编码/BOM、CRLF/LF、末尾换行状态和文件权限
+- 非交互 `refresh` 发现差异时只输出预览并返回 `2`；`refresh --force` 可直接应用有效托管块更新
+- 交互刷新支持 `y` / `n` / `all` / `none` / `quit`；`quit` 返回 `130`
+- 无标记旧文件必须交互确认迁移，`refresh --force` 会保留文件并返回 `2`
 - 不得暴露“兼容模式”之类的自定义术语；仓库模板缺失时应直接回退到 skill 自带模板继续生成，不再额外询问模板模式选择
 
 ## 停止条件
@@ -160,7 +165,8 @@ dev-harness-context scan <repo-path>
 - 无法访问目标仓库
 - 仓库结构扫描结果被截断
 - 关键配置文件无法读取
-- 用户未说明是否允许覆盖现有上下文文件且仓库中已存在同名文件
+- 旧文件没有托管标记且当前会话不可交互
+- 文件包含混合换行、无法解码的编码、重复/嵌套/不闭合标记或未知标记版本
 - 仓库模板缺失且 skill 自带模板也不可用
 - AI 提议或尝试修改文件编码且用户未明确确认
 

@@ -53,6 +53,42 @@ class InstallBundleTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertTrue((repo_root / "HARNESS.md").exists())
 
+    def test_installed_context_launcher_can_refresh_managed_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            bundle_root = root / "bundle"
+            repo_root = root / "demo-repo"
+            repo_root.mkdir()
+            (repo_root / "package.json").write_text('{"name":"demo-repo"}', encoding="utf-8")
+
+            install_bundle_to_root(bundle_root, ["dev-harness-context"])
+            skill_root = bundle_root / "skills" / "dev-harness-context"
+            launcher = skill_root / "dev-harness-context"
+            scan = subprocess.run(
+                [sys.executable, str(launcher), "scan", str(repo_root)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(scan.returncode, 0, scan.stderr)
+            agents_path = repo_root / "AGENTS.md"
+            agents_path.write_text(
+                agents_path.read_text(encoding="utf-8") + "\n团队自定义约束\n",
+                encoding="utf-8",
+            )
+            (repo_root / "CMakeLists.txt").write_text("project(Demo)\n", encoding="utf-8")
+
+            refresh = subprocess.run(
+                [sys.executable, str(launcher), "refresh", str(repo_root), "--force"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertEqual(refresh.returncode, 0, refresh.stderr)
+            self.assertIn("团队自定义约束", agents_path.read_text(encoding="utf-8"))
+            self.assertTrue((skill_root / "lib" / "context" / "managed.py").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
