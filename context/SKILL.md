@@ -108,12 +108,14 @@ fi
 - **严禁修改任何文件的编码格式**（UTF-8 / UTF-8 BOM / UTF-16 / GBK / GB2312 / Latin-1 等）。若编码变更看似必要，必须先获得人工确认，不得绕过
 - `scan` 只创建缺失文件，现有文件即使使用 `--force` 也不得覆盖
 - `refresh` 只更新 `dev-harness:managed` 标记内的自动识别内容，标记外文本归用户所有
+- `AGENTS.md` 的“项目规范索引”只记录专业文档路径，不复制 Git、代码、发布或 changelog 规则正文
+- 识别已有 Git 工作流、代码规范、发布规范和 changelog 文档；Context 不负责创建这些专业文档
 - 无标记旧文件只能在交互终端中保守迁移；`--force` 不得绕过迁移确认
 - 混合换行、未知编码或损坏标记必须停止写入并报告错误
 
 ## 顺序化步骤
 
-1. 扫描仓库目录结构
+1. 扫描仓库目录结构，并识别 AGENTS 已引用或约定路径中的项目规范文档
 2. 识别编程语言、构建系统、入口文件和核心模块
 3. 搜索关键类、接口、模块边界和依赖关系
 4. 无法确认的项标记为 `Unknown`
@@ -155,6 +157,9 @@ dev-harness-context refresh <repo-path>
 - `scan` 仅在上下文文件缺失时创建；已有同名文件保持原样，返回码 `2` 提示改用 `refresh`
 - `scan --force` 为兼容旧调用保留，但仍不得覆盖现有文件
 - `refresh` 只比较和更新托管块，保持块外用户内容、原编码/BOM、CRLF/LF、末尾换行状态和文件权限
+- 新增或调整项目自己的 Git、代码、发布、changelog 文档后，运行 `refresh` 更新 AGENTS 索引
+- 代码规范只识别现有文档，不根据 formatter/linter 配置自动生成规则文档
+- `CHANGELOG.md` 不由 Context 创建；它由用户确认后或首次发布流程通过 `dev-harness-git-workflow` 初始化
 - 非交互 `refresh` 发现差异时只输出预览并返回 `2`；`refresh --force` 可直接应用有效托管块更新
 - 交互刷新支持 `y` / `n` / `all` / `none` / `quit`；`quit` 返回 `130`
 - 无标记旧文件必须交互确认迁移，`refresh --force` 会保留文件并返回 `2`
@@ -174,7 +179,8 @@ dev-harness-context refresh <repo-path>
 
 ## 交接边界
 
-- 可作为 `dev-harness-pilot` 的前置补充能力
+- 可作为 `dev-harness-auto-fix` 的前置上下文补充能力
+- Git、提交、tag、发布与 changelog 规范的识别/初始化决策交给 `dev-harness-git-workflow`
 - 不负责修 bug、补测试或定义验证命令
 - 不得臆测架构模式、模块职责或接口关系
 - 不得擅自转换文件编码；若检测到编码不一致，应标记到 AGENTS.md 第 4 节交由人工决策

@@ -45,6 +45,8 @@ dev-harness-context refresh <repo-path>
 
 非交互环境默认只预览差异；确认后可使用 `--force` 应用有效托管块。旧版无标记文件仍必须在交互终端中确认迁移，`--force` 不会覆盖或强制迁移旧文件。
 
+AGENTS 中只保留轻量的项目规范索引。Context 会识别已有 Git 工作流、代码规范、发布规范和 changelog 文档并刷新路径，但不会创建这些专业文档。Git/提交/tag/发布规范缺失时由 `dev-harness-git-workflow` 在用户确认后初始化；代码规范不自动生成；`CHANGELOG.md` 仅在确认初始化或首次发布时创建。
+
 然后用 `dev-harness-commands` 补齐真实命令映射：
 
 ```
@@ -79,7 +81,7 @@ auto fix
 | `dev-harness-context` | 初始化上下文文件，并安全刷新自动识别托管块 |
 | `dev-harness-commands` | 补齐 build / quick / bugfix / full 的真实命令映射 |
 | `dev-harness-auto-fix` | 执行内置的复现、定位、修复、审查与验证流程 |
-| `dev-harness-git-workflow` | 校验分支与提交信息并拦截调试残留 |
+| `dev-harness-git-workflow` | 遵循项目已有 Git 规范；缺失时确认并初始化提交、tag、changelog 和发布约定 |
 | `dev-harness-retro` | 复盘并更新 `LESSONS.md` |
 
 复现（repro）、定位（triage）、回归（regression）和验证（verify）已内置为 `dev-harness-auto-fix` 的流程阶段，不再作为 `dev-harness-repro`、`dev-harness-triage`、`dev-harness-regression`、`dev-harness-verify` 独立安装或调用。

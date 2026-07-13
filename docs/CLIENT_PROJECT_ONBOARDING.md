@@ -23,6 +23,15 @@ V1 目标不是自动化一切，而是先让 AI 具备最基本的工程操作�
 
 如果这些文件缺失，可先通过 `dev-harness-context` 初始化。
 
+`AGENTS.md` 只保留轻量的“项目规范索引”。以下专业文档按项目需要存在，不要求全部创建：
+
+- Git 工作流：项目已有规范，或确认后由 `dev-harness-git-workflow` 初始化的 `docs/GIT_WORKFLOW.md`
+- 代码规范：项目已有的 `docs/CODE_STYLE.md`、`CODE_STYLE.md` 或 contribution 文档；Context 只识别，不自动生成
+- 发布规范：`docs/RELEASE.md`，也可以继续放在 `docs/GIT_WORKFLOW.md`
+- 变更日志：`CHANGELOG.md`；仅在确认初始化或开始首次发布时创建
+
+新增或移动这些文档后运行 `dev-harness-context refresh <repo-path>`，只更新 AGENTS 托管索引，不覆盖人工内容。
+
 ## 3. 首次准入检查
 
 对客户端项目，至少补齐以下信息：
@@ -83,3 +92,4 @@ V1 目标不是自动化一切，而是先让 AI 具备最基本的工程操作�
 3. AI 能找到 quick / bugfix / full 至少其中 2 个验证入口；缺失的明确写 `Unknown`
 4. AI 知道高风险目录和禁改区域
 5. 没有命令时，系统会报告缺失，而不是伪造完成
+6. Git、代码、发布和 changelog 规范若存在，AGENTS 索引能指向其权威文档；不存在时明确为 `Unknown`

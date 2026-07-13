@@ -30,6 +30,9 @@ dev-harness 给 AI 加了一套**固定的排查流程**：
 # 初始化一个新仓库（让 AI 理解你的项目结构）
 扫描这个仓库并生成上下文文件
 
+# 开发一段时间后刷新自动识别区块和规范索引
+刷新这个仓库的项目上下文
+
 # 修 bug（提供 bug 描述或 GitHub issue 链接）
 自动修这个 bug：登录后点击设置崩溃，复现步骤：1. 登录 2. 点设置
 
@@ -84,10 +87,10 @@ AI 会在每一步输出进度和证据，而不是闷头改完告诉你"修好�
 
 | Skill | 干什么用 |
 |-------|---------|
-| `dev-harness-context` | 扫描仓库，生成 ARCHITECTURE / HARNESS / AGENTS 等上下文文件，让 AI 理解你的项目 |
+| `dev-harness-context` | 初始化上下文文件，并安全刷新自动识别区块与项目规范索引 |
 | `dev-harness-planning` | 根据需求文档、原型或参考格式生成 `docs/plan/Dashboard.md` 和 `TaskDetails.md` |
 | `dev-harness-commands` | 把 project 里散落的构建/测试脚本统一成 `build / quick / bugfix / full` 四个语义入口 |
-| `dev-harness-git-workflow` | 提交前校验分支命名、生成规范 commit message、拦截调试残留代码 |
+| `dev-harness-git-workflow` | 优先遵循项目 Git 规范；缺失时确认并初始化提交、tag、changelog 和发布约定 |
 | `dev-harness-auto-fix` | 全流程自动修复：bug 描述 → 复现 → 定位 → 修复 → 验证 → 提交，内置 `references/bugfix-flow/` |
 | `dev-harness-retro` | 任务复盘，把 AI 这次犯的错记录到 LESSONS.md，下次自动规避 |
 
@@ -112,6 +115,15 @@ AI 会在每一步输出进度和证据，而不是闷头改完告诉你"修好�
 | **Node.js** | 前端工具链与插件（识别跨 Workspace 与生命周期钩子） |
 
 其他项目类型会走安全回退路径，标记为 `Unknown` 并提示人工确认。
+
+### 项目规范如何组织
+
+`AGENTS.md` 保持为轻量索引：构建与验证指向 `HARNESS.md`，Git、代码风格、发布和 changelog 指向各自的专业文档。详细规则不全部塞入 AGENTS。
+
+- `dev-harness-context` 只识别这些文档并在 `refresh` 时更新索引，不自动创建 Git、代码或发布规范，也不自动创建 `CHANGELOG.md`。
+- `dev-harness-git-workflow` 先读取项目或团队已有规范；没有规范时才分析历史、展示候选，并在用户确认后初始化默认规范。
+- 代码规范文档只做识别，不根据 lint/formatter 配置自动生成。
+- `CHANGELOG.md` 在用户确认初始化或开始首次发布时创建；默认发布分类为 Breaking Changes、Added、Changed、Deprecated、Fixed、Removed、Security，空分类不进入 tag message 或 release notes。
 
 ---
 
