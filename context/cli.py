@@ -14,6 +14,7 @@ from context.managed import (
     atomic_write_document,
     decode_document,
     merge_managed_blocks,
+    migrate_legacy_document,
     parse_managed_blocks,
 )
 from context.platform_profiles import (
@@ -1191,6 +1192,9 @@ def write_initial_context_files(repo_root: Path, generated_files: dict[str, str]
 def refresh_context_files(repo_root: Path, generated_files: dict[str, str], force: bool = False) -> int:
     pending: list[tuple[str, Path, str, DocumentFormat, list[str], str]] = []
     missing: list[tuple[str, Path, bytes]] = []
+    errors: list[tuple[str, str]] = []
+    legacy_blocked: list[str] = []
+    interactive = sys.stdin.isatty()
 
     for file_name, content in generated_files.items():
         target_path = repo_root / file_name
@@ -1200,14 +1204,64 @@ def refresh_context_files(repo_root: Path, generated_files: dict[str, str], forc
             continue
         try:
             existing, document_format = decode_document(target_path.read_bytes())
+        except ManagedDocumentError as exc:
+            errors.append((file_name, str(exc)))
+            continue
+
+        try:
+            existing_blocks = parse_managed_blocks(existing)
+        except ManagedDocumentError as exc:
+            errors.append((file_name, str(exc)))
+            continue
+
+        if not existing_blocks:
+            if force or not interactive:
+                legacy_blocked.append(file_name)
+                continue
+            try:
+                migration = migrate_legacy_document(existing, generated)
+            except ManagedDocumentError as exc:
+                errors.append((file_name, str(exc)))
+                continue
+            if not migration.safe_section_ids:
+                legacy_blocked.append(file_name)
+                continue
+            merged = migration.merged_text
+            changed_ids = list(migration.safe_section_ids)
+            diff_text = "\n".join(
+                difflib.unified_diff(
+                    existing.splitlines(),
+                    merged.splitlines(),
+                    fromfile=f"{file_name}:legacy (existing)",
+                    tofile=f"{file_name}:legacy (managed)",
+                    lineterm="",
+                )
+            )
+            pending.append((file_name, target_path, merged, document_format, changed_ids, diff_text))
+            continue
+
+        try:
             merged, changed_ids = merge_managed_blocks(existing, generated)
         except ManagedDocumentError as exc:
-            print(f"Error: cannot refresh {file_name}: {exc}")
-            return 1
+            errors.append((file_name, str(exc)))
+            continue
         if not changed_ids:
             continue
         diff_text = summarize_managed_diffs(file_name, existing, merged, changed_ids)
         pending.append((file_name, target_path, merged, document_format, changed_ids, diff_text))
+
+    if errors:
+        for file_name, message in errors:
+            print(f"Error: cannot refresh {file_name}: {message}")
+        return 1
+
+    if legacy_blocked:
+        print("Legacy context files require interactive migration and were left unchanged:")
+        for file_name in legacy_blocked:
+            print(f"- {file_name}")
+        if force:
+            print("--force cannot bypass legacy migration confirmation.")
+        return 2
 
     for file_name, target_path, content in missing:
         target_path.write_bytes(content)
@@ -1220,7 +1274,7 @@ def refresh_context_files(repo_root: Path, generated_files: dict[str, str], forc
     for file_name, _, _, _, changed_ids, _ in pending:
         print(f"- {file_name}: {', '.join(changed_ids)}")
 
-    if not force and not sys.stdin.isatty():
+    if not force and not interactive:
         for file_name, _, _, _, _, diff_text in pending:
             print(f"--- BEGIN MANAGED DIFF: {file_name} ---")
             print(diff_text)

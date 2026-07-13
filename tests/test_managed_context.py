@@ -11,6 +11,7 @@ from context.managed import (
     decode_document,
     encode_document,
     merge_managed_blocks,
+    migrate_legacy_document,
     parse_managed_blocks,
 )
 
@@ -128,6 +129,22 @@ class ManagedContextTests(unittest.TestCase):
 
             self.assertEqual(path.read_bytes(), b"after\n")
             self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o640)
+
+    def test_legacy_migration_wraps_exact_blocks_and_preserves_conflicts(self) -> None:
+        generated = (
+            "# Demo\n\n## Human\nGenerated placeholder\n\n"
+            "<!-- dev-harness:managed:start id=demo.detected version=1 -->\n"
+            "## Detected\nPython\n"
+            "<!-- dev-harness:managed:end id=demo.detected -->\n"
+        )
+        legacy = "# Demo\n\n## Human\nTeam-authored text\n\n## Detected\nPython\n"
+
+        migration = migrate_legacy_document(legacy, generated)
+
+        self.assertEqual(migration.safe_section_ids, ("demo.detected",))
+        self.assertIn("## Human\nTeam-authored text", migration.merged_text)
+        self.assertIn("id=demo.detected", migration.merged_text)
+        self.assertEqual(migration.merged_text.count("## Detected"), 1)
 
 
 if __name__ == "__main__":

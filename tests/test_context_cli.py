@@ -243,6 +243,85 @@ class ContextCliTests(unittest.TestCase):
             self.assertIn("团队自定义内容", raw[len(codecs.BOM_UTF8) :].decode("utf-8"))
             self.assertEqual(stat.S_IMODE(agents_path.stat().st_mode), 0o640)
 
+    def test_legacy_refresh_requires_interactive_confirmation(self) -> None:
+        for extra_args in ([], ["--force"]):
+            with self.subTest(extra_args=extra_args), tempfile.TemporaryDirectory() as tmp:
+                repo_root = Path(tmp) / "demo-repo"
+                repo_root.mkdir()
+                (repo_root / "package.json").write_text('{"name":"demo-repo"}', encoding="utf-8")
+                self.assertEqual(main(["scan", str(repo_root)]), 0)
+                readme_path = repo_root / "README.md"
+                legacy = "\n".join(
+                    line for line in readme_path.read_text(encoding="utf-8").splitlines()
+                    if not line.startswith("<!-- dev-harness:managed:")
+                ) + "\n"
+                readme_path.write_text(legacy, encoding="utf-8")
+                before = readme_path.read_bytes()
+
+                self.assertEqual(main(["refresh", str(repo_root), *extra_args]), 2)
+                self.assertEqual(readme_path.read_bytes(), before)
+
+    def test_legacy_migration_preserves_conflicting_sections(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp) / "demo-repo"
+            repo_root.mkdir()
+            (repo_root / "package.json").write_text('{"name":"demo-repo"}', encoding="utf-8")
+            self.assertEqual(main(["scan", str(repo_root)]), 0)
+            readme_path = repo_root / "README.md"
+            legacy = "\n".join(
+                line for line in readme_path.read_text(encoding="utf-8").splitlines()
+                if not line.startswith("<!-- dev-harness:managed:")
+            ) + "\n"
+            legacy = legacy.replace("## 项目简介\nUnknown", "## 项目简介\n团队维护的项目说明")
+            readme_path.write_text(legacy, encoding="utf-8")
+
+            with patch("sys.stdin.isatty", return_value=True), patch("builtins.input", return_value="yes"):
+                self.assertEqual(main(["refresh", str(repo_root)]), 0)
+
+            migrated = readme_path.read_text(encoding="utf-8")
+            self.assertIn("## 项目简介\n团队维护的项目说明", migrated)
+            self.assertIn("id=readme.detected-context", migrated)
+            self.assertEqual(migrated.count("## 编程语言"), 1)
+
+    def test_refresh_rejects_malformed_markers_without_writing(self) -> None:
+        corruptions = (
+            lambda text: text.replace("version=1", "version=2", 1),
+            lambda text: text.replace("id=agents.contract-index -->", "id=wrong -->", 1),
+            lambda text: text.replace("<!-- dev-harness:managed:end id=agents.contract-index -->\n", "", 1),
+            lambda text: text + text,
+            lambda text: text.replace(
+                "<!-- dev-harness:managed:start id=agents.contract-index version=1 -->",
+                "<!-- dev-harness:managed:start id=agents.contract-index version=1 -->\n"
+                "<!-- dev-harness:managed:start id=nested version=1 -->",
+                1,
+            ),
+        )
+        for corrupt in corruptions:
+            with self.subTest(corrupt=corrupt), tempfile.TemporaryDirectory() as tmp:
+                repo_root = Path(tmp) / "demo-repo"
+                repo_root.mkdir()
+                (repo_root / "package.json").write_text('{"name":"demo-repo"}', encoding="utf-8")
+                self.assertEqual(main(["scan", str(repo_root)]), 0)
+                agents_path = repo_root / "AGENTS.md"
+                agents_path.write_text(corrupt(agents_path.read_text(encoding="utf-8")), encoding="utf-8")
+                before = agents_path.read_bytes()
+
+                self.assertEqual(main(["refresh", str(repo_root), "--force"]), 1)
+                self.assertEqual(agents_path.read_bytes(), before)
+
+    def test_refresh_rejects_mixed_line_endings_and_unknown_encoding(self) -> None:
+        for raw in (b"A\r\nB\n", b"\xff\xfe\x00"):
+            with self.subTest(raw=raw), tempfile.TemporaryDirectory() as tmp:
+                repo_root = Path(tmp) / "demo-repo"
+                repo_root.mkdir()
+                (repo_root / "package.json").write_text('{"name":"demo-repo"}', encoding="utf-8")
+                self.assertEqual(main(["scan", str(repo_root)]), 0)
+                agents_path = repo_root / "AGENTS.md"
+                agents_path.write_bytes(raw)
+
+                self.assertEqual(main(["refresh", str(repo_root), "--force"]), 1)
+                self.assertEqual(agents_path.read_bytes(), raw)
+
     def test_scan_summarizes_diff_without_overwriting_existing_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             repo_root = Path(tmp) / "demo-repo"

@@ -40,6 +40,13 @@ class ManagedBlock:
     body: str
 
 
+@dataclass(frozen=True)
+class LegacyMigration:
+    merged_text: str
+    safe_section_ids: tuple[str, ...]
+    conflict_headings: tuple[str, ...]
+
+
 def _decode_with_bom(raw: bytes) -> tuple[str, str, bytes]:
     if raw.startswith(codecs.BOM_UTF8):
         bom = codecs.BOM_UTF8
@@ -189,6 +196,33 @@ def merge_managed_blocks(existing: str, generated: str) -> tuple[str, list[str]]
         changed_ids.append(block_id)
 
     return merged, changed_ids
+
+
+def migrate_legacy_document(existing: str, generated: str) -> LegacyMigration:
+    if parse_managed_blocks(existing):
+        raise ManagedDocumentError("document already contains managed blocks")
+    generated_blocks = parse_managed_blocks(generated)
+    if not generated_blocks:
+        raise ManagedDocumentError("generated document has no managed blocks")
+
+    merged = existing
+    safe_ids: list[str] = []
+    conflicts: list[str] = []
+    for block_id, block in generated_blocks.items():
+        body = block.body
+        if body and merged.count(body) == 1:
+            managed_text = _block_text(generated, block)
+            merged = merged.replace(body, managed_text, 1)
+            safe_ids.append(block_id)
+            continue
+        headings = re.findall(r"^#{1,2}\s+.+$", body, flags=re.MULTILINE)
+        conflicts.extend(headings or [block_id])
+
+    return LegacyMigration(
+        merged_text=merged,
+        safe_section_ids=tuple(safe_ids),
+        conflict_headings=tuple(conflicts),
+    )
 
 
 def atomic_write_document(path: Path, text: str, document_format: DocumentFormat) -> None:
