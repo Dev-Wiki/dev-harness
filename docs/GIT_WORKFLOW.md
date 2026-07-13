@@ -1,102 +1,97 @@
 # Git 工作流规范
 
-通用 Git 工作流规范，覆盖分支命名、提交信息格式和调试残留拦截。
+本文件是 dev-harness 仓库自己的 Git、提交、tag、changelog 与发布消息契约。其他项目应优先使用其仓库内已有规范；本文件不是强加给目标项目的公司级规则。
 
-由 `dev-harness-git-workflow` skill 执行，本文档作为参考。
+## 1. 分支模式
 
----
+本仓库确认使用 `single-branch`：允许在当前默认分支直接开发和提交，不要求自动创建功能分支。
 
-## 1. 分支命名规范
+其他项目没有规范时，`dev-harness-git-workflow` 会请用户在以下模式中确认一个：
 
-### 1.1 字符合集
+- `single-branch`：按项目约定直接在默认分支工作。
+- `feature-branch`：使用 `feat/`、`fix/`、`docs/`、`refactor/`、`test/`、`perf/`、`chore/` 前缀。
 
-分支名只能由小写字母 `a-z`、数字 `0-9`、中划线 `-`、斜杠 `/` 组成。
+仓库已有分支规范时始终以仓库规范为准。
 
-### 1.2 合法格式
+## 2. 提交规范
 
-遵循 [Conventional Branches](https://www.conventionalcommits.org/) 风格：
+使用 Conventional Commits：
 
-| 格式 | 说明 | 示例 |
-|------|------|------|
-| `feat/<描述>` | 新功能 | `feat/user-login` |
-| `fix/<描述>` | Bug 修复 | `fix/token-refresh-null` |
-| `chore/<描述>` | 构建/工具/维护 | `chore/update-deps` |
-| `docs/<描述>` | 文档 | `docs/api-readme` |
-| `refactor/<描述>` | 重构 | `refactor/auth-service` |
-| `test/<描述>` | 测试 | `test/login-unit` |
-| `perf/<描述>` | 性能优化 | `perf/reduce-bundle-size` |
-| `release/<版本>` | 发布分支 | `release/1.2.0` |
-| `main` / `master` | 主干（不在上面直接提交）| — |
-
-不符合以上格式时，`dev-harness-git-workflow` 会警告但不强制拦截。
-
----
-
-## 2. 提交信息格式
-
-遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范：
-
-```
-<type>(<scope>): <描述>
-
-[可选 body]
-
-[可选 footer]
+```text
+<type>(<scope>): <description>
 ```
 
-### 2.1 Type 列表
+`scope` 可选。默认 type：
 
-| Type | 说明 |
-|------|------|
-| `feat` | 新功能 |
-| `fix` | Bug 修复 |
-| `docs` | 仅文档变更 |
-| `style` | 格式（不影响代码逻辑） |
-| `refactor` | 重构（不是新功能也不是 bugfix） |
-| `perf` | 性能优化 |
-| `test` | 添加或修改测试 |
-| `chore` | 构建过程或辅助工具变更 |
+- `feat`
+- `fix`
+- `docs`
+- `style`
+- `refactor`
+- `perf`
+- `test`
+- `build`
+- `ci`
+- `chore`
+- `revert`
 
-### 2.2 规则
+description 应说明改动的具体目的，不使用 “fix bug” 或 “update code” 等笼统描述。
 
-- **type** 必填，从上表选择
-- **scope** 可选，表示影响模块（如 `auth`、`api`、`ui`）
-- **描述** 不能使用笼统词汇（"fix bug"、"update code"等）
-- 整行 commit title 建议 < 72 字符
+提交前必须检查完整工作区和暂存区。已有暂存内容时仅提交已暂存文件；发现疑似密钥、`.env`、意外大文件、无关改动或临时调试输出时停止确认。
 
-### 2.3 示例
+## 3. Tag 规范
 
+- 使用 SemVer annotated tag：`vMAJOR.MINOR.PATCH`。
+- 预发布版本可用 `vMAJOR.MINOR.PATCH-PRERELEASE`。
+- 未收到明确 tag 或发布请求时不得创建、移动或覆盖 tag。
+
+## 4. Changelog 规范
+
+默认变更日志为根目录 `CHANGELOG.md`。Context 的 `scan` 和 `refresh` 只识别路径，不负责创建该文件。
+
+版本内容按以下固定顺序组织：
+
+1. `Breaking Changes`
+2. `Added`
+3. `Changed`
+4. `Deprecated`
+5. `Fixed`
+6. `Removed`
+7. `Security`
+
+使用 `Removed` 表示移除。版本定稿时省略空分类。
+
+## 5. Tag Annotation 与 Release Notes
+
+annotated tag message 与 release notes 都从 `CHANGELOG.md` 中匹配的版本生成：
+
+```text
+Release vMAJOR.MINOR.PATCH
+
+<只包含非空分类及条目>
 ```
-feat(auth): 添加 OAuth2 登录支持
 
-fix(api): 修复 token 过期后未自动刷新的问题
+分类保持第 4 节顺序，并省略空分类。如果对应版本不存在，必须停止并请求补齐或确认；不得未经确认从 commit subject 编造发布说明。
 
-chore(deps): 升级 requests 到 2.31.0
-```
+## 6. 调试残留与敏感文件
 
----
-
-## 3. 调试残留拦截
-
-提交前扫描 diff 新增行，以下内容被视为调试残留，会被拦截：
+提交前扫描新增 diff，重点检查：
 
 - `Console.WriteLine`
 - `Debug.Log`
-- 裸 `print(`（不含 `file=` 参数的临时调试输出）
+- 裸 `print(`
+- `.env`、密钥、凭据和意外大文件
 
----
+检出内容不一定都是错误，但必须先确认其为有意变更才能提交。
 
-## 4. 机器可读输出块
+## 7. 规范初始化
 
-`dev-harness-git-workflow` 在回复末尾追加固定格式输出块：
+目标仓库没有 Git 规范时，`dev-harness-git-workflow` 先读取至多 100 条历史提交、分支、tag 和 contribution 文件，展示候选并取得显式确认，然后才可从 skill 模板创建 `docs/GIT_WORKFLOW.md`。
 
+`CHANGELOG.md` 只在用户确认初始化或开始第一次发布时创建。创建或选择规范后运行：
+
+```bash
+dev-harness-context refresh <repo-path>
 ```
----OUTPUT---
-format=conventional-commits/v1
-status=<pass|fail>
-branch=<分支名>
-commit_title=<提交说明首行>
-commit_sha=<40位SHA>
-fail_reason=<debug_print|branch_invalid|other>（仅失败时）
----END---
-```
+
+这只更新 AGENTS 的规范路径索引，不把详细规则塞入 AGENTS。
