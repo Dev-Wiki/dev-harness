@@ -1,3 +1,4 @@
+<!-- dev-harness:managed:start id=readme.detected-context version=1 -->
 # 项目名称
 {项目名称或 Unknown}
 
@@ -19,3 +20,4 @@
 - 安装: {步骤或 Unknown}
 - 构建: {步骤或 Unknown}
 - 运行: {步骤或 Unknown}
+<!-- dev-harness:managed:end id=readme.detected-context -->

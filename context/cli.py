@@ -1120,25 +1120,24 @@ def prompt_overwrite_action(file_name: str) -> str:
         print("Invalid choice. Enter one of: y, n, all, none, quit.")
 
 
-def write_context_files(repo_root: Path, generated_files: dict[str, str], force: bool = False) -> int:
-    differing_files: dict[str, tuple[str, str]] = {}
+def write_initial_context_files(repo_root: Path, generated_files: dict[str, str], force: bool = False) -> int:
+    differing_files: list[str] = []
     created_files: list[str] = []
     unchanged_files: list[str] = []
 
     for file_name, content in generated_files.items():
         target_path = repo_root / file_name
+        generated_bytes = (content + "\n").encode("utf-8")
         if not target_path.exists():
-            target_path.write_text(content + "\n", encoding="utf-8")
+            target_path.write_bytes(generated_bytes)
             created_files.append(file_name)
             continue
 
-        existing = target_path.read_text(encoding="utf-8")
-        normalized_generated = content + "\n"
-        if existing == normalized_generated:
+        if target_path.read_bytes() == generated_bytes:
             unchanged_files.append(file_name)
             continue
 
-        differing_files[file_name] = summarize_diff(file_name, existing, normalized_generated)
+        differing_files.append(file_name)
 
     if created_files:
         print("Created files:")
@@ -1153,79 +1152,13 @@ def write_context_files(repo_root: Path, generated_files: dict[str, str], force:
     if not differing_files:
         return 0
 
-    print("Differing existing files detected:")
-    for summary, _ in differing_files.values():
-        print(f"- {summary}")
-    print()
-
-    if not force and not sys.stdin.isatty():
-        print("Skipped overwriting existing files because this session is non-interactive. Re-run with --force to overwrite.")
-        return 2
-
-    overwritten_files: list[str] = []
-    skipped_files: list[str] = []
-    interactive_mode = "ask"
-
-    for file_name, content in generated_files.items():
-        if file_name not in differing_files:
-            continue
-
-        _, diff_text = differing_files[file_name]
-        print(f"--- BEGIN DIFF: {file_name} ---")
-        print(diff_text)
-        print(f"--- END DIFF: {file_name} ---")
-
-        if force or interactive_mode == "all":
-            action = "yes"
-        elif interactive_mode == "none":
-            action = "no"
-        else:
-            action = prompt_overwrite_action(file_name)
-
-        if action == "quit":
-            skipped_files.append(file_name)
-            print(f"Quit requested. Left unchanged: {file_name}")
-            print()
-            remaining_files = [name for name in differing_files if name not in overwritten_files and name not in skipped_files]
-            skipped_files.extend(remaining_files)
-            if overwritten_files:
-                print("Overwritten files:")
-                for overwritten_file in overwritten_files:
-                    print(f"- {overwritten_file}")
-            if skipped_files:
-                print("Skipped files:")
-                for skipped_file in skipped_files:
-                    print(f"- {skipped_file}")
-            return 130
-
-        if action == "all":
-            interactive_mode = "all"
-            action = "yes"
-        elif action == "none":
-            interactive_mode = "none"
-            action = "no"
-
-        should_overwrite = action == "yes"
-        if should_overwrite:
-            (repo_root / file_name).write_text(content + "\n", encoding="utf-8")
-            overwritten_files.append(file_name)
-            print(f"Overwritten: {file_name}")
-        else:
-            skipped_files.append(file_name)
-            print(f"Skipped: {file_name}")
-        print()
-
-    if overwritten_files:
-        print("Overwritten files:")
-        for file_name in overwritten_files:
-            print(f"- {file_name}")
-
-    if skipped_files:
-        print("Skipped files:")
-        for file_name in skipped_files:
-            print(f"- {file_name}")
-
-    return 0
+    print("Existing context files differ and were left unchanged:")
+    for file_name in differing_files:
+        print(f"- {file_name}")
+    if force:
+        print("--force cannot overwrite existing context files during scan.")
+    print("Run `dev-harness-context refresh <repo-path>` to preview managed-block updates.")
+    return 2
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -1252,7 +1185,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     generated_files = generate_context_files(repo_root)
-    return write_context_files(repo_root, generated_files, force=args.force)
+    return write_initial_context_files(repo_root, generated_files, force=args.force)
 
 
 def cli_main() -> int:

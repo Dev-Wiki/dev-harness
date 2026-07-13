@@ -1,3 +1,4 @@
+<!-- dev-harness:managed:start id=architecture.detected-context version=1 -->
 # 项目架构分析
 
 ## 模块依赖关系图
@@ -16,3 +17,4 @@
 ## 关键模块标记
 - {模块1: 上游/下游/核心功能说明或 Unknown}
 - {模块2: 上游/下游/核心功能说明或 Unknown}
+<!-- dev-harness:managed:end id=architecture.detected-context -->

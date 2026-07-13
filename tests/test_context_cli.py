@@ -176,6 +176,21 @@ class ContextCliTests(unittest.TestCase):
             self.assertIn("# HARNESS — 项目构建与验证契约", harness_content)
             self.assertIn("构建、验证和执行环境的唯一事实源", harness_content)
 
+    def test_scan_creates_managed_context_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp) / "demo-repo"
+            repo_root.mkdir()
+            (repo_root / "package.json").write_text('{"name":"demo-repo"}', encoding="utf-8")
+
+            exit_code = main(["scan", str(repo_root)])
+
+            self.assertEqual(exit_code, 0)
+            for file_name in ("README.md", "AGENTS.md", "ARCHITECTURE.md", "HARNESS.md"):
+                content = (repo_root / file_name).read_text(encoding="utf-8")
+                self.assertIn("<!-- dev-harness:managed:start", content, file_name)
+            self.assertIn("id=agents.contract-index", (repo_root / "AGENTS.md").read_text(encoding="utf-8"))
+            self.assertIn("id=harness.detected-context", (repo_root / "HARNESS.md").read_text(encoding="utf-8"))
+
     def test_scan_summarizes_diff_without_overwriting_existing_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             repo_root = Path(tmp) / "demo-repo"
@@ -192,18 +207,20 @@ class ContextCliTests(unittest.TestCase):
             self.assertIn("README.md", buffer.getvalue())
             self.assertIn("diff", buffer.getvalue().lower())
 
-    def test_force_overwrites_existing_files(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            repo_root = Path(tmp) / "demo-repo"
-            repo_root.mkdir()
-            (repo_root / "package.json").write_text('{"name":"demo-repo"}', encoding="utf-8")
-            readme_path = repo_root / "README.md"
-            readme_path.write_text("# Existing\n", encoding="utf-8")
+    def test_scan_never_overwrites_existing_files_even_with_force(self) -> None:
+        for extra_args in ([], ["--force"]):
+            with self.subTest(extra_args=extra_args), tempfile.TemporaryDirectory() as tmp:
+                repo_root = Path(tmp) / "demo-repo"
+                repo_root.mkdir()
+                (repo_root / "package.json").write_text('{"name":"demo-repo"}', encoding="utf-8")
+                readme_path = repo_root / "README.md"
+                original = b"# Human README\n"
+                readme_path.write_bytes(original)
 
-            exit_code = main(["scan", str(repo_root), "--force"])
+                exit_code = main(["scan", str(repo_root), *extra_args])
 
-            self.assertEqual(exit_code, 0)
-            self.assertNotEqual(readme_path.read_text(encoding="utf-8"), "# Existing\n")
+                self.assertEqual(exit_code, 2)
+                self.assertEqual(readme_path.read_bytes(), original)
 
     def test_scan_detects_wpf_project_and_dotnet_commands_in_harness(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
