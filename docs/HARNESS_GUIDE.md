@@ -2,7 +2,9 @@
 
 面向 **Cursor** 环境，使用 **`dev-harness-*`** skills 时的通用操作说明。
 
-业务仓库需已具备 **`AGENTS.md`**、**`HARNESS.md`**，且 **`harness:quick` / `harness:build` / `harness:bugfix` / `harness:full`** 映射为**真实可执行**命令（缺失时用 **`dev-harness-commands`** 补齐，禁止编造）。各项目具体命令以该仓库根目录 `HARNESS.md` 为唯一事实源。
+业务仓库需已具备 **`AGENTS.md`** 和作为“项目构建与验证契约”的 **`HARNESS.md`**，且 **`harness:quick` / `harness:build` / `harness:bugfix` / `harness:full`** 映射为**真实可执行**命令（缺失时用 **`dev-harness-commands`** 补齐，禁止编造）。
+
+各项目的具体命令和执行环境以仓库根目录 `HARNESS.md` 为唯一事实源；行为、安全和修改边界以 `AGENTS.md` 为准。
 
 ---
 
@@ -62,22 +64,23 @@ auto fix
 
 **流水线顺序**：Bug 上下文 → 复现收敛 → 根因定位 → 修复生成 → 审查 → 验证闭环 → 分支提交
 
-### 2.2 手动分步使用
+### 2.2 配套 Skills
 
-| 步骤 | Skill | 说明 |
-|------|-------|------|
-| 1. 复现收敛 | `dev-harness-repro` | 收敛最小复现步骤和证据 |
-| 2. 根因定位 | `dev-harness-triage` | 追踪调用链，定位根因 |
-| 3. 验证 | `dev-harness-verify` | 运行 build / test / bugfix check |
-| 4. 提交 | `dev-harness-git-workflow` | 校验分支命名，生成规范 commit |
-| 5. 复盘 | `dev-harness-retro` | 提取 AI 犯错记录，更新 LESSONS.md |
+| Skill | 用途 |
+|-------|------|
+| `dev-harness-context` | 扫描仓库并生成项目上下文与契约文件 |
+| `dev-harness-commands` | 补齐 build / quick / bugfix / full 的真实命令映射 |
+| `dev-harness-auto-fix` | 执行内置的复现、定位、修复、审查与验证流程 |
+| `dev-harness-git-workflow` | 校验分支与提交信息并拦截调试残留 |
+| `dev-harness-retro` | 复盘并更新 `LESSONS.md` |
 
-**典型 Prompt（手动模式）**：
+复现（repro）、定位（triage）、回归（regression）和验证（verify）已内置为 `dev-harness-auto-fix` 的流程阶段，不再作为 `dev-harness-repro`、`dev-harness-triage`、`dev-harness-regression`、`dev-harness-verify` 独立安装或调用。
+
+**典型 Prompt**：
 
 ```
-帮我定位这个 bug：<描述现象>
-按 dev-harness-repro 收敛最小复现与证据（日志/截图/版本）。
-按 dev-harness-triage 做根因定位；在我明确确认根因前不要改代码。
+使用 dev-harness-auto-fix 处理这个 bug：<描述现象>。
+先收敛最小复现与证据（日志/截图/版本），确认根因后再修改代码。
 ```
 
 ### 2.3 回归测试
@@ -85,23 +88,31 @@ auto fix
 影响面大时，追加：
 
 ```
-按 dev-harness-regression 给出回归落点（自动化或手工检查表）。
+使用 dev-harness-auto-fix 时给出回归落点（自动化或手工检查表）。
 ```
 
 ---
 
-## 三、HARNESS.md 规范
+## 三、HARNESS.md 项目构建与验证契约
 
-HARNESS.md 是 dev-harness 的核心契约文件，定义了项目的构建/测试命令映射。
+`HARNESS.md` 是项目构建、验证和执行环境的唯一事实源，记录真实可执行命令、运行条件和验证边界。
+
+AI Agent 在执行构建、测试或验证命令前必须先读取该文件，不得根据 README、CI 配置或生态经验猜测、替换或覆盖其中的命令。行为、安全和修改边界以 `AGENTS.md` 为准；具体命令和执行环境以 `HARNESS.md` 为准。
 
 ### 必须包含的字段
 
 ```markdown
 ## 构建命令
-- **build**: <真实构建命令>
-- **quick**: <快速构建/编译检查命令>
-- **bugfix**: <bugfix 验证命令>
-- **full**: <完整构建+测试命令>
+`<真实构建命令>`
+
+## 快速验证命令
+`<快速构建/编译检查命令>`
+
+## Bugfix 验证命令
+`<bugfix 验证命令>`
+
+## 完整验证命令
+`<完整构建+测试命令>`
 ```
 
 ### 推荐包含的字段

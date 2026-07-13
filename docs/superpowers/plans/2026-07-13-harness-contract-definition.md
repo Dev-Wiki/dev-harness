@@ -14,6 +14,7 @@
 - `AGENTS.md` remains authoritative for behavior, safety, and modification boundaries.
 - Do not change command detection, CLI arguments, template field names, README files, or installation behavior.
 - Preserve repository file encodings.
+- This repository uses single-branch development; implement directly on the current branch without creating a Git worktree.
 
 ---
 
@@ -146,7 +147,7 @@ Run:
 
 ```bash
 rg -n "dev-harness-(repro|triage|regression|verify)" docs/HARNESS_GUIDE.md
-git diff --check
+git -c core.whitespace=cr-at-eol diff --check
 ```
 
 Expected: `rg` finds only the explanatory sentence saying these are internal stages, and `git diff --check` exits successfully without whitespace errors.
@@ -183,7 +184,7 @@ Expected: exit code 0 with all discovered tests passing.
 Run:
 
 ```bash
-git diff --check HEAD~2..HEAD
+git -c core.whitespace=cr-at-eol diff --check HEAD~2..HEAD
 git status --short
 ```
 
