@@ -32,6 +32,17 @@ class InstallBundleTests(unittest.TestCase):
             self.assertTrue((skill_root / "templates" / "Dashboard.template.md").exists())
             self.assertTrue((skill_root / "templates" / "TaskDetails.template.md").exists())
 
+    def test_installed_git_workflow_includes_default_templates(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            bundle_root = root / "bundle"
+
+            install_bundle_to_root(bundle_root, ["dev-harness-git-workflow"])
+            skill_root = bundle_root / "skills" / "dev-harness-git-workflow"
+
+            self.assertTrue((skill_root / "templates" / "GIT_WORKFLOW.template.md").exists())
+            self.assertTrue((skill_root / "templates" / "CHANGELOG.template.md").exists())
+
     def test_installed_context_launcher_can_scan_repo(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

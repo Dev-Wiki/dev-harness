@@ -23,6 +23,11 @@ PLANNING_SKILL_SOURCE = SCRIPT_DIR / "planning" / "SKILL.md"
 INTERNAL_BUGFIX_FLOW_DIR = SCRIPT_DIR / "internal" / "bugfix-flow"
 INTERNAL_BUGFIX_FLOW_FILES = ("repro.md", "triage.md", "regression.md", "verify.md")
 GIT_WORKFLOW_SKILL_SOURCE = SCRIPT_DIR / "git-workflow" / "SKILL.md"
+GIT_WORKFLOW_TEMPLATE_DIR = SCRIPT_DIR / "git-workflow" / "templates"
+GIT_WORKFLOW_TEMPLATE_FILES = (
+    "GIT_WORKFLOW.template.md",
+    "CHANGELOG.template.md",
+)
 AUTO_FIX_SKILL_SOURCE = SCRIPT_DIR / "auto-fix" / "SKILL.md"
 RETRO_SKILL_SOURCE = SCRIPT_DIR / "retro" / "SKILL.md"
 CONTEXT_RUNTIME_FILES = [
@@ -136,6 +141,10 @@ def validate_sources() -> None:
         source = PLANNING_TEMPLATE_DIR / file_name
         if not source.exists():
             raise FileNotFoundError(f"Missing dev-harness-planning template source: {source}")
+    for file_name in GIT_WORKFLOW_TEMPLATE_FILES:
+        source = GIT_WORKFLOW_TEMPLATE_DIR / file_name
+        if not source.exists():
+            raise FileNotFoundError(f"Missing dev-harness-git-workflow template source: {source}")
 
 
 def remove_existing(path: Path) -> None:
@@ -334,10 +343,19 @@ def build_dev_harness_planning(_skill_name: str, destination: Path) -> None:
         shutil.copy2(PLANNING_TEMPLATE_DIR / file_name, templates_dir / file_name)
 
 
+def build_dev_harness_git_workflow(_skill_name: str, destination: Path) -> None:
+    build_skill("dev-harness-git-workflow", destination)
+    templates_dir = destination / "templates"
+    templates_dir.mkdir(parents=True, exist_ok=True)
+    for file_name in GIT_WORKFLOW_TEMPLATE_FILES:
+        shutil.copy2(GIT_WORKFLOW_TEMPLATE_DIR / file_name, templates_dir / file_name)
+
+
 BUILDERS = {skill_name: build_skill for skill_name in SKILL_SOURCES}
 BUILDERS["dev-harness-auto-fix"] = build_dev_harness_auto_fix
 BUILDERS["dev-harness-context"] = build_dev_harness_context
 BUILDERS["dev-harness-planning"] = build_dev_harness_planning
+BUILDERS["dev-harness-git-workflow"] = build_dev_harness_git_workflow
 
 
 def install_bundle_to_root(bundle_root: Path, skills: list[str] | None = None) -> Path:
