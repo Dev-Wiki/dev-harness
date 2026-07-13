@@ -8,6 +8,14 @@ import sys
 from itertools import islice
 from pathlib import Path
 
+from context.managed import (
+    DocumentFormat,
+    ManagedDocumentError,
+    atomic_write_document,
+    decode_document,
+    merge_managed_blocks,
+    parse_managed_blocks,
+)
 from context.platform_profiles import (
     detect_high_risk_directories as profile_detect_high_risk_directories,
     detect_project_type as profile_detect_project_type,
@@ -1103,6 +1111,25 @@ def summarize_diff(file_name: str, existing: str, generated: str) -> tuple[str, 
     return summary, "\n".join(diff)
 
 
+def summarize_managed_diffs(file_name: str, existing: str, merged: str, changed_ids: list[str]) -> str:
+    existing_blocks = parse_managed_blocks(existing)
+    merged_blocks = parse_managed_blocks(merged)
+    rendered: list[str] = []
+    for block_id in changed_ids:
+        existing_body = existing_blocks[block_id].body if block_id in existing_blocks else ""
+        merged_body = merged_blocks[block_id].body
+        rendered.extend(
+            difflib.unified_diff(
+                existing_body.splitlines(),
+                merged_body.splitlines(),
+                fromfile=f"{file_name}:{block_id} (existing)",
+                tofile=f"{file_name}:{block_id} (generated)",
+                lineterm="",
+            )
+        )
+    return "\n".join(rendered)
+
+
 def prompt_overwrite_action(file_name: str) -> str:
     prompt = f"Action for {file_name}? [y]es / [n]o / [all] / [none] / [quit]: "
     while True:
@@ -1161,13 +1188,90 @@ def write_initial_context_files(repo_root: Path, generated_files: dict[str, str]
     return 2
 
 
+def refresh_context_files(repo_root: Path, generated_files: dict[str, str], force: bool = False) -> int:
+    pending: list[tuple[str, Path, str, DocumentFormat, list[str], str]] = []
+    missing: list[tuple[str, Path, bytes]] = []
+
+    for file_name, content in generated_files.items():
+        target_path = repo_root / file_name
+        generated = content + "\n"
+        if not target_path.exists():
+            missing.append((file_name, target_path, generated.encode("utf-8")))
+            continue
+        try:
+            existing, document_format = decode_document(target_path.read_bytes())
+            merged, changed_ids = merge_managed_blocks(existing, generated)
+        except ManagedDocumentError as exc:
+            print(f"Error: cannot refresh {file_name}: {exc}")
+            return 1
+        if not changed_ids:
+            continue
+        diff_text = summarize_managed_diffs(file_name, existing, merged, changed_ids)
+        pending.append((file_name, target_path, merged, document_format, changed_ids, diff_text))
+
+    for file_name, target_path, content in missing:
+        target_path.write_bytes(content)
+        print(f"Created: {file_name}")
+
+    if not pending:
+        return 0
+
+    print("Managed-block updates detected:")
+    for file_name, _, _, _, changed_ids, _ in pending:
+        print(f"- {file_name}: {', '.join(changed_ids)}")
+
+    if not force and not sys.stdin.isatty():
+        for file_name, _, _, _, _, diff_text in pending:
+            print(f"--- BEGIN MANAGED DIFF: {file_name} ---")
+            print(diff_text)
+            print(f"--- END MANAGED DIFF: {file_name} ---")
+        print("Preview only; re-run with --force or use an interactive terminal to apply managed-block updates.")
+        return 2
+
+    updated: list[str] = []
+    skipped: list[str] = []
+    interactive_mode = "ask"
+    for file_name, target_path, merged, document_format, _, diff_text in pending:
+        print(f"--- BEGIN MANAGED DIFF: {file_name} ---")
+        print(diff_text)
+        print(f"--- END MANAGED DIFF: {file_name} ---")
+        if force or interactive_mode == "all":
+            action = "yes"
+        elif interactive_mode == "none":
+            action = "no"
+        else:
+            action = prompt_overwrite_action(file_name)
+        if action == "quit":
+            print(f"Quit requested. Left unchanged: {file_name}")
+            return 130
+        if action == "all":
+            interactive_mode = "all"
+            action = "yes"
+        elif action == "none":
+            interactive_mode = "none"
+            action = "no"
+        if action == "yes":
+            atomic_write_document(target_path, merged, document_format)
+            updated.append(file_name)
+            print(f"Updated managed blocks: {file_name}")
+        else:
+            skipped.append(file_name)
+            print(f"Skipped: {file_name}")
+
+    return 2 if skipped else 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Generate README.md, AGENTS.md, and ARCHITECTURE.md from a real repository scan.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     scan_parser = subparsers.add_parser("scan", help="scan repository and generate context files")
     scan_parser.add_argument("repo_path", type=Path, help="target repository root path")
-    scan_parser.add_argument("--force", action="store_true", help="overwrite existing differing files without prompting")
+    scan_parser.add_argument("--force", action="store_true", help="accepted for compatibility; existing files are never overwritten")
+
+    refresh_parser = subparsers.add_parser("refresh", help="refresh only dev-harness managed blocks")
+    refresh_parser.add_argument("repo_path", type=Path, help="target repository root path")
+    refresh_parser.add_argument("--force", action="store_true", help="apply managed-block updates without prompting")
 
     return parser
 
@@ -1176,16 +1280,17 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    if args.command != "scan":
-        parser.error("unknown command")
-
     repo_root = args.repo_path.resolve()
     if not repo_root.exists() or not repo_root.is_dir():
         print(f"Error: repository path does not exist or is not a directory: {repo_root}")
         return 1
 
     generated_files = generate_context_files(repo_root)
-    return write_initial_context_files(repo_root, generated_files, force=args.force)
+    if args.command == "scan":
+        return write_initial_context_files(repo_root, generated_files, force=args.force)
+    if args.command == "refresh":
+        return refresh_context_files(repo_root, generated_files, force=args.force)
+    parser.error("unknown command")
 
 
 def cli_main() -> int:

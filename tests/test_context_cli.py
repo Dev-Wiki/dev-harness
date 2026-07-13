@@ -1,4 +1,6 @@
 import io
+import codecs
+import stat
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -190,6 +192,56 @@ class ContextCliTests(unittest.TestCase):
                 self.assertIn("<!-- dev-harness:managed:start", content, file_name)
             self.assertIn("id=agents.contract-index", (repo_root / "AGENTS.md").read_text(encoding="utf-8"))
             self.assertIn("id=harness.detected-context", (repo_root / "HARNESS.md").read_text(encoding="utf-8"))
+
+    def test_refresh_updates_only_managed_blocks_and_preserves_user_content(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp) / "demo-repo"
+            repo_root.mkdir()
+            (repo_root / "package.json").write_text('{"name":"demo-repo"}', encoding="utf-8")
+            self.assertEqual(main(["scan", str(repo_root)]), 0)
+            readme_path = repo_root / "README.md"
+            readme_path.write_text(
+                readme_path.read_text(encoding="utf-8") + "\n## 团队备注\n不要改动这里。\n",
+                encoding="utf-8",
+            )
+            before = readme_path.read_bytes()
+            (repo_root / "CMakeLists.txt").write_text("project(Demo)\n", encoding="utf-8")
+
+            preview = io.StringIO()
+            with redirect_stdout(preview):
+                preview_exit = main(["refresh", str(repo_root)])
+
+            self.assertEqual(preview_exit, 2)
+            self.assertEqual(readme_path.read_bytes(), before)
+            self.assertIn("readme.detected", preview.getvalue())
+            self.assertIn("README.md:readme.detected-context (existing)", preview.getvalue())
+
+            with patch("sys.stdin.isatty", return_value=True), patch("builtins.input", return_value="all"):
+                self.assertEqual(main(["refresh", str(repo_root)]), 0)
+            refreshed = readme_path.read_text(encoding="utf-8")
+            self.assertIn("CMake", refreshed)
+            self.assertIn("## 团队备注\n不要改动这里。\n", refreshed)
+
+    def test_refresh_force_preserves_format_final_newline_and_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp) / "demo-repo"
+            repo_root.mkdir()
+            (repo_root / "package.json").write_text('{"name":"demo-repo"}', encoding="utf-8")
+            self.assertEqual(main(["scan", str(repo_root)]), 0)
+            agents_path = repo_root / "AGENTS.md"
+            text = agents_path.read_text(encoding="utf-8").rstrip("\n") + "\n\n团队自定义内容"
+            agents_path.write_bytes(codecs.BOM_UTF8 + text.replace("\n", "\r\n").encode("utf-8"))
+            agents_path.chmod(0o640)
+            (repo_root / "CMakeLists.txt").write_text("project(Demo)\n", encoding="utf-8")
+
+            self.assertEqual(main(["refresh", str(repo_root), "--force"]), 0)
+
+            raw = agents_path.read_bytes()
+            self.assertTrue(raw.startswith(codecs.BOM_UTF8))
+            self.assertNotIn(b"\n", raw.replace(b"\r\n", b""))
+            self.assertFalse(raw.endswith(b"\r\n"))
+            self.assertIn("团队自定义内容", raw[len(codecs.BOM_UTF8) :].decode("utf-8"))
+            self.assertEqual(stat.S_IMODE(agents_path.stat().st_mode), 0o640)
 
     def test_scan_summarizes_diff_without_overwriting_existing_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
