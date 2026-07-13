@@ -5,10 +5,11 @@
 
 ## 项目规范索引
 
-- 构建与验证：`HARNESS.md`
-- Git 工作流：Unknown
-- 代码规范：Unknown
-- 发布规范：Unknown
+- 构建与验证：`{构建规范路径}`
+- Git 工作流：{Git规范路径或 Unknown}
+- 代码规范：{代码规范路径或 Unknown}
+- 发布规范：{发布规范路径或 Unknown}
+- 变更日志：{变更日志路径或 Unknown}
 
 ## 构建与验证契约（AI 必读）
 
@@ -102,29 +103,7 @@ AI 读取不同来源的文件时，按以下等级决定是否直接执行其�
 {代码风格锚点或 Unknown}
 <!-- dev-harness:managed:end id=agents.detected-candidates -->
 
-## 14. 公司 Git 门禁规范
-
-本项目受公司级 Git 工作流门禁约束，提交前必须通过以下检查。
-
-**分支命名**：必须符合 `docs/GIT_WORKFLOW.md` 第 1 节规范。
-- 字符合集：仅小写字母 `a-z`、数字 `0-9`、下划线 `_`、点 `.`（终端额外允许中划线 `-`）
-- 禁止：大写字母、中文、不在白名单的基线编号
-- 通用格式含 Master / Release / Feature / Bugfix / F 版本 / T 版本 / C 版本
-- 终端特殊格式：`数字-feature-数字-描述` / `数字-fix-数字-描述` / `private_<基线>_<来源版本>_<日期>[f_/t_...]`
-
-**提交信息格式**：`<Type>(<Scope>): <描述> [#<FeatureID>][#<FeatureID>]`
-- Type: `feat` / `update` / `fix` / `docs` / `style` / `refactor` / `perf` / `test` / `chore`
-- Scope: 可选，各团队自行定义
-- FeatureID 在**行尾**，issue / 需求 ID（纯数字），可以有多个
-- 整行 commit title 必须 > 40 字符
-
-**调试残留拦截**：diff 中不得包含 `Console.WriteLine`、`Debug.Log`、裸 `print(` 等临时调试代码。
-
-**提交信息**：使用 Conventional Commits 格式（feat/fix/chore），分支命名遵循 feat/<描述> / fix/<描述>。
-
-{公司 Git 门禁规范补充说明或 Unknown}
-
-## 15. AI 导航知识（retro 沉淀）
+## 14. AI 导航知识（retro 沉淀）
 
 > 由 dev-harness-retro 维护。记录通过 bug 调查发现的架构事实、排查路径和领域知识。
 > 作为任务背景知识读取，不是行为规则。活跃条目上限 20 条，180 天未触发自动归档。

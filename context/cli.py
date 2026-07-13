@@ -8,6 +8,7 @@ import sys
 from itertools import islice
 from pathlib import Path
 
+from context.contracts import ContractIndex, discover_contract_index
 from context.managed import (
     DocumentFormat,
     ManagedDocumentError,
@@ -913,6 +914,7 @@ def render_readme(
 def render_agents(
     repo_root: Path,
     project_name: str,
+    contract_index: ContractIndex,
     language_framework_summary: str,
     architecture_pattern: str,
     core_entry: str,
@@ -932,8 +934,14 @@ def render_agents(
     style_anchors: str,
 ) -> str:
     template = read_template("AGENTS.template.md", repo_root)
+    contract_value = lambda value: f"`{value}`" if value != "Unknown" else "Unknown"
     return (
         template.replace("{项目名称或 Unknown}", project_name or "Unknown", 1)
+        .replace("{构建规范路径}", contract_index.build, 1)
+        .replace("{Git规范路径或 Unknown}", contract_value(contract_index.git_workflow), 1)
+        .replace("{代码规范路径或 Unknown}", contract_value(contract_index.code_style), 1)
+        .replace("{发布规范路径或 Unknown}", contract_value(contract_index.release), 1)
+        .replace("{变更日志路径或 Unknown}", contract_value(contract_index.changelog), 1)
         .replace("{语言框架摘要或 Unknown}", language_framework_summary, 1)
         .replace("{架构模式或 Unknown}", architecture_pattern, 1)
         .replace("{核心入口或 Unknown}", core_entry, 1)
@@ -1001,6 +1009,7 @@ def render_harness(
 
 def generate_context_files(repo_root: Path) -> dict[str, str]:
     project_name = detect_project_name(repo_root)
+    contract_index = discover_contract_index(repo_root)
     languages = detect_languages(repo_root)
     build_systems = detect_build_systems(repo_root)
     core_modules = detect_core_modules(repo_root)
@@ -1054,6 +1063,7 @@ def generate_context_files(repo_root: Path) -> dict[str, str]:
         "AGENTS.md": render_agents(
             repo_root,
             project_name,
+            contract_index,
             language_framework_summary,
             architecture_pattern,
             core_entry,

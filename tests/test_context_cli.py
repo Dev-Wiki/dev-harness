@@ -193,6 +193,41 @@ class ContextCliTests(unittest.TestCase):
             self.assertIn("id=agents.contract-index", (repo_root / "AGENTS.md").read_text(encoding="utf-8"))
             self.assertIn("id=harness.detected-context", (repo_root / "HARNESS.md").read_text(encoding="utf-8"))
 
+    def test_scan_indexes_known_contract_documents(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp) / "demo-repo"
+            repo_root.mkdir()
+            (repo_root / "docs").mkdir()
+            (repo_root / "package.json").write_text('{"name":"demo-repo"}', encoding="utf-8")
+            for relative in ("docs/GIT_WORKFLOW.md", "docs/CODE_STYLE.md", "docs/RELEASE.md", "CHANGELOG.md"):
+                (repo_root / relative).write_text(f"# {relative}\n", encoding="utf-8")
+
+            self.assertEqual(main(["scan", str(repo_root)]), 0)
+
+            agents = (repo_root / "AGENTS.md").read_text(encoding="utf-8")
+            for relative in ("HARNESS.md", "docs/GIT_WORKFLOW.md", "docs/CODE_STYLE.md", "docs/RELEASE.md", "CHANGELOG.md"):
+                self.assertIn(f"`{relative}`", agents)
+
+    def test_refresh_updates_only_contract_index_after_document_is_added(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp) / "demo-repo"
+            repo_root.mkdir()
+            (repo_root / "package.json").write_text('{"name":"demo-repo"}', encoding="utf-8")
+            self.assertEqual(main(["scan", str(repo_root)]), 0)
+            agents_path = repo_root / "AGENTS.md"
+            agents_path.write_text(
+                agents_path.read_text(encoding="utf-8") + "\n团队自定义内容\n",
+                encoding="utf-8",
+            )
+            (repo_root / "docs").mkdir()
+            (repo_root / "docs" / "GIT_WORKFLOW.md").write_text("# Team Git\n", encoding="utf-8")
+
+            self.assertEqual(main(["refresh", str(repo_root), "--force"]), 0)
+
+            agents = agents_path.read_text(encoding="utf-8")
+            self.assertIn("- Git 工作流：`docs/GIT_WORKFLOW.md`", agents)
+            self.assertIn("团队自定义内容", agents)
+
     def test_refresh_updates_only_managed_blocks_and_preserves_user_content(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             repo_root = Path(tmp) / "demo-repo"
