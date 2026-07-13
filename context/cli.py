@@ -1047,7 +1047,7 @@ def generate_context_files(repo_root: Path) -> dict[str, str]:
         full_step,
     )
     auto_detected_candidates = format_bullets(auto_detected_candidates_list)
-    manual_review_items = format_bullets(manual_review_items_list)
+    agents_manual_review_items = format_bullets(manual_review_items_list + list(contract_index.manual_review))
 
     return {
         "README.md": render_readme(
@@ -1079,7 +1079,7 @@ def generate_context_files(repo_root: Path) -> dict[str, str]:
             logging_rules,
             exploration_suggestions,
             auto_detected_candidates,
-            manual_review_items,
+            agents_manual_review_items,
             style_anchors,
         ),
         "ARCHITECTURE.md": render_architecture(

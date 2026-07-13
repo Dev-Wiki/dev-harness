@@ -228,6 +228,35 @@ class ContextCliTests(unittest.TestCase):
             self.assertIn("- Git 工作流：`docs/GIT_WORKFLOW.md`", agents)
             self.assertIn("团队自定义内容", agents)
 
+    def test_refresh_reports_conflicting_contract_references_for_manual_review(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp) / "demo-repo"
+            repo_root.mkdir()
+            (repo_root / "package.json").write_text('{"name":"demo-repo"}', encoding="utf-8")
+            self.assertEqual(main(["scan", str(repo_root)]), 0)
+            for directory in ("team-a", "team-b"):
+                (repo_root / directory).mkdir()
+                (repo_root / directory / "GIT.md").write_text(f"# {directory}\n", encoding="utf-8")
+            agents_path = repo_root / "AGENTS.md"
+            agents_path.write_text(
+                agents_path.read_text(encoding="utf-8").replace(
+                    "- Git 工作流：Unknown",
+                    "- Git 工作流：`team-a/GIT.md`\n- Git 工作流：`team-b/GIT.md`",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+
+            self.assertEqual(main(["refresh", str(repo_root), "--force"]), 0)
+
+            agents = agents_path.read_text(encoding="utf-8")
+            self.assertIn("- Git 工作流：Unknown", agents)
+            self.assertIn("Git 工作流存在多个有效规范引用，需人工选择权威文档", agents)
+            self.assertNotIn(
+                "Git 工作流存在多个有效规范引用，需人工选择权威文档",
+                (repo_root / "HARNESS.md").read_text(encoding="utf-8"),
+            )
+
     def test_refresh_updates_only_managed_blocks_and_preserves_user_content(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             repo_root = Path(tmp) / "demo-repo"

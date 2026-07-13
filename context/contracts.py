@@ -14,6 +14,7 @@ class ContractIndex:
     code_style: str
     release: str
     changelog: str
+    manual_review: tuple[str, ...] = ()
 
 
 LABEL_TO_FIELD = {
@@ -68,34 +69,44 @@ def _valid_relative_file(repo_root: Path, relative: str) -> str | None:
     return resolved.relative_to(root).as_posix()
 
 
-def _existing_index_references(repo_root: Path) -> dict[str, str]:
+def _existing_index_references(repo_root: Path) -> tuple[dict[str, str], set[str]]:
     agents_path = repo_root / "AGENTS.md"
     if not agents_path.is_file():
-        return {}
+        return {}, set()
     try:
         text, _ = decode_document(agents_path.read_bytes())
         block = parse_managed_blocks(text).get("agents.contract-index")
     except (OSError, ManagedDocumentError):
-        return {}
+        return {}, set()
     if block is None:
-        return {}
+        return {}, set()
 
     references: dict[str, str] = {}
+    conflicts: set[str] = set()
     for line in block.body.splitlines():
         match = INDEX_ENTRY_RE.fullmatch(line)
         if match is None:
             continue
         field = LABEL_TO_FIELD[match.group("label")]
         valid = _valid_relative_file(repo_root, match.group("path"))
-        if valid is not None:
+        if valid is None or field in conflicts:
+            continue
+        previous = references.get(field)
+        if previous is not None and previous != valid:
+            references.pop(field)
+            conflicts.add(field)
+        else:
             references[field] = valid
-    return references
+    return references, conflicts
 
 
 def discover_contract_index(repo_root: Path) -> ContractIndex:
-    existing = _existing_index_references(repo_root)
+    existing, conflicts = _existing_index_references(repo_root)
     discovered: dict[str, str] = {}
     for field, candidates in CANDIDATES.items():
+        if field in conflicts:
+            discovered[field] = "Unknown"
+            continue
         if field in existing:
             discovered[field] = existing[field]
             continue
@@ -103,4 +114,10 @@ def discover_contract_index(repo_root: Path) -> ContractIndex:
             (valid for relative in candidates if (valid := _valid_relative_file(repo_root, relative)) is not None),
             "Unknown",
         )
-    return ContractIndex(build="HARNESS.md", **discovered)
+    field_labels = {field: label for label, field in LABEL_TO_FIELD.items()}
+    manual_review = tuple(
+        f"{field_labels[field]}存在多个有效规范引用，需人工选择权威文档"
+        for field in CANDIDATES
+        if field in conflicts
+    )
+    return ContractIndex(build="HARNESS.md", manual_review=manual_review, **discovered)

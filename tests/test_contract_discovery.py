@@ -57,6 +57,30 @@ class ContractDiscoveryTests(unittest.TestCase):
             self.assertEqual(contracts.release, "docs/RELEASE.md")
             self.assertEqual(contracts.changelog, "CHANGELOG.md")
 
+    def test_conflicting_agents_references_require_manual_selection(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp)
+            (repo_root / "team-a").mkdir()
+            (repo_root / "team-b").mkdir()
+            (repo_root / "docs").mkdir()
+            for relative in ("team-a/GIT.md", "team-b/GIT.md", "docs/GIT_WORKFLOW.md"):
+                (repo_root / relative).write_text(f"# {relative}\n", encoding="utf-8")
+            (repo_root / "AGENTS.md").write_text(
+                "<!-- dev-harness:managed:start id=agents.contract-index version=1 -->\n"
+                "- Git 工作流：`team-a/GIT.md`\n"
+                "- Git 工作流：`team-b/GIT.md`\n"
+                "<!-- dev-harness:managed:end id=agents.contract-index -->\n",
+                encoding="utf-8",
+            )
+
+            contracts = discover_contract_index(repo_root)
+
+            self.assertEqual(contracts.git_workflow, "Unknown")
+            self.assertEqual(
+                contracts.manual_review,
+                ("Git 工作流存在多个有效规范引用，需人工选择权威文档",),
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
