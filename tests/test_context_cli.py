@@ -158,6 +158,24 @@ class ContextCliTests(unittest.TestCase):
             self.assertIn("项目类型", harness_content)
             self.assertIn("构建命令", harness_content)
 
+    def test_scan_links_agents_to_harness_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp) / "demo-repo"
+            repo_root.mkdir()
+            (repo_root / "package.json").write_text('{"name":"demo-repo"}', encoding="utf-8")
+
+            exit_code = main(["scan", str(repo_root)])
+
+            self.assertEqual(exit_code, 0)
+            agents_content = (repo_root / "AGENTS.md").read_text(encoding="utf-8")
+            harness_content = (repo_root / "HARNESS.md").read_text(encoding="utf-8")
+            self.assertIn("构建与验证契约（AI 必读）", agents_content)
+            self.assertIn("执行构建、测试或验证命令前，必须读取项目根目录的 `HARNESS.md`", agents_content)
+            self.assertIn("不得猜测、替换或覆盖", agents_content)
+            self.assertIn("`Unknown` 或 `Missing`", agents_content)
+            self.assertIn("# HARNESS — 项目构建与验证契约", harness_content)
+            self.assertIn("构建、验证和执行环境的唯一事实源", harness_content)
+
     def test_scan_summarizes_diff_without_overwriting_existing_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             repo_root = Path(tmp) / "demo-repo"
