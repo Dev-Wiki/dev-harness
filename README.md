@@ -15,7 +15,7 @@
 dev-harness 给 AI 加了一套**固定的排查流程**：
 
 ```
-复现确认 → 调用链定位 → 根因分析 → 生成修复 → 分层验证 → 规范提交
+复现确认 → 可证伪根因 → 回归 RED → 最小修复 → GREEN → 审查 → 最终验证
 ```
 
 每一步都有明确的停止条件和交付物，AI 必须在当前步完成验证后才能进入下一步。**本质上是把"资深工程师修 bug 的 SOP"交给了 AI。**
@@ -33,12 +33,16 @@ dev-harness 给 AI 加了一套**固定的排查流程**：
 # 开发一段时间后刷新自动识别区块和规范索引
 刷新这个仓库的项目上下文
 
-# 修 bug（提供 bug 描述或 GitHub issue 链接）
-自动修这个 bug：登录后点击设置崩溃，复现步骤：1. 登录 2. 点设置
+# 只分析，不改代码
+分析这个 bug：登录后点击设置崩溃，使用 analyze 模式
+
+# 修 bug，但不提交
+自动修这个 bug：登录后点击设置崩溃，使用 fix 模式
 
 # AI 会按流程走：
-#   1. 确认能复现 → 2. 追踪调用链 → 3. 定位根因
-#   → 4. 生成修复 → 5. 跑验证命令 → 6. 提交代码
+#   1. 固定工作区快照 → 2. 确认复现 → 3. 用探测证伪根因
+#   → 4. 回归先失败 → 5. 最小修复 → 6. 回归通过
+#   → 7. 按当前 diff 审查并最终验证
 
 # 提交代码（自动检查分支命名、拦截调试残留）
 帮我提交当前修改
@@ -91,12 +95,23 @@ AI 会在每一步输出进度和证据，而不是闷头改完告诉你"修好�
 | `dev-harness-planning` | 根据需求文档、原型或参考格式生成 `docs/plan/Dashboard.md` 和 `TaskDetails.md` |
 | `dev-harness-commands` | 把 project 里散落的构建/测试脚本统一成 `build / quick / bugfix / full` 四个语义入口 |
 | `dev-harness-git-workflow` | 优先遵循项目 Git 规范；缺失时确认并初始化提交、tag、changelog 和发布约定 |
-| `dev-harness-auto-fix` | 全流程自动修复：bug 描述 → 复现 → 定位 → 修复 → 验证 → 提交，内置 `references/bugfix-flow/` |
+| `dev-harness-auto-fix` | 可选择 analyze / fix / commit / unattended；用运行时约束复现、可证伪根因、RED/GREEN、diff 绑定审查与精确提交 |
 | `dev-harness-retro` | 任务复盘，把 AI 这次犯的错记录到 LESSONS.md，下次自动规避 |
 
 > 每个 skill 的模板、references 和脚本跟随该 skill 自己安装，保持资源自包含。
 
 > 复现 / 定位 / 回归 / 验证四阶段已内联为 auto-fix 的参考文件 `references/bugfix-flow/*.md`，不再作为独立 skill 安装。
+
+### Auto-fix 的 dirty worktree 策略
+
+开始任务时，auto-fix 会把已有修改记录进 `WorkspaceSnapshot`。这些修改可以原样保留，不要求 stash 或清空；AI 只维护本轮对话产生的 `AutoFixChangedFiles`。
+
+- 已有脏文件不被修改、暂存或提交。
+- 如果目标文件在任务开始时已经脏，流程停止，让用户决定如何合并语义。
+- commit 模式只逐文件暂存本轮集合；暂存区含其他内容时报告冲突，不替用户取消暂存。
+- HEAD、分支、已有修改或未声明文件发生漂移时停止，避免把别的工作误算成本轮结果。
+
+`auto-fix/runtime.py` 只负责快照、状态机和 diff 证据，不是替代 AI Agent 的一键修复器。
 
 ---
 
@@ -131,6 +146,7 @@ AI 会在每一步输出进度和证据，而不是闷头改完告诉你"修好�
 
 **dev-harness 做了什么：**
 - 给 AI 一套可执行的排查 SOP，每一步有证据、有停止条件
+- 用 Git 私有状态、工作区快照和 diff hash 把关键边界变成可测试契约
 - 让 bugfix 过程可追溯、可验证、可复盘
 - 跨平台、跨 IDE，纯 skills bundle，不需要改你的项目工具链
 

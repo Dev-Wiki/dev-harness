@@ -43,6 +43,18 @@ class InstallBundleTests(unittest.TestCase):
             self.assertTrue((skill_root / "templates" / "GIT_WORKFLOW.template.md").exists())
             self.assertTrue((skill_root / "templates" / "CHANGELOG.template.md").exists())
 
+    def test_installed_auto_fix_includes_runtime_and_all_references(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle_root = Path(tmp) / "bundle"
+
+            install_bundle_to_root(bundle_root, ["dev-harness-auto-fix"])
+            skill_root = bundle_root / "skills" / "dev-harness-auto-fix"
+            refs = skill_root / "references" / "bugfix-flow"
+
+            self.assertTrue((skill_root / "runtime.py").exists())
+            for file_name in ("repro.md", "triage.md", "regression.md", "verify.md"):
+                self.assertTrue((refs / file_name).exists(), file_name)
+
     def test_installed_context_launcher_can_scan_repo(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

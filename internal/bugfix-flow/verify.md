@@ -20,6 +20,7 @@
 - **FullCheck**：完整回归命令
 - **PassCriteria**：通过标准
 - **FailureReport**：失败时最少要记录的信息
+- **FreshVerificationEvidence**：绑定当前 diff hash 的命令、时间、退出码和关键输出
 - **TestSkipReason**：若 TestCheck 被跳过，必须记录跳过原因
 - **ManualReviewBoundary**：UI、资源、原生层、打包层中哪些必须人工确认
 
@@ -32,7 +33,6 @@ TestCheck 执行前必须判定平台是否可自动执行测试：
 | Qt / WPF / WinForms / Win32 C++ 桌面项目 | 执行 TestCommand（`ctest` / `dotnet test` / `vstest.console.exe`） |
 | Harmony / Android / iOS | 跳过 TestCheck，`TestSkipReason=device-required` |
 | HARNESS.md 中 TestCommand 为 `device-required` 或不存在 | 跳过 TestCheck，记录原因 |
-| 用户明确声明跳过测试 | 跳过 TestCheck，`TestSkipReason=user-requested` |
 
 ## 顺序化步骤
 
@@ -40,9 +40,10 @@ TestCheck 执行前必须判定平台是否可自动执行测试：
 2. 标注每层要证明什么，不得重复堆命令
 3. TestCheck 执行前必须过平台门控（桌面端自动执行，移动端跳过）
 4. 指定失败时必须记录的输入、输出、日志、错误码
-5. 要求 fresh verification evidence（含 test 通过的证据）
+5. 记录 FreshVerificationEvidence（含 test 通过证据和当前 diff hash）
 6. 只有满足证据门槛，才允许声称完成
 7. 对客户端项目，若修改触及高风险层，必须额外注明人工复核点
+8. 最终 diff hash 与 ReviewDiffHash 不一致时，旧审查与验证证据全部失效，必须重新 review 和 verify
 
 ## 停止条件
 

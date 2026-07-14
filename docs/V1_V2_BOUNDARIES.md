@@ -2,7 +2,7 @@
 
 ## V1 定位
 
-`dev-harness` V1 的目标是：让**已有客户端项目**先具备最基本的 AI 工程化接入能力。
+`dev-harness` V1 的目标是：让已有项目具备最基本、可执行的 AI 工程化接入与 bugfix 证据闭环。
 
 适用项目：
 
@@ -11,6 +11,7 @@
 - Win32 应用
 - WPF + NativeBridge + Win32 / C++ SDK 这类混合项目
 - Qt 客户端（当前保留接入能力，但不作为本轮优先增强目标）
+- Go、Flutter、Node.js 项目（按各自高风险边界门控）
 
 V1 解决的问题：
 
@@ -19,6 +20,8 @@ V1 解决的问题：
 - AI 不知道哪些目录和文件是高风险区域
 - AI 在 NativeBridge / Win32 / C++ SDK 上容易盲改
 - Bugfix 没有固定的复现、定位、回归、验证基线
+- AI 容易把已有工作区修改混入本轮修复或提交
+- “已验证”和“已审查”没有绑定到最终代码 diff
 
 ## V1 已包含
 
@@ -54,12 +57,22 @@ V1 解决的问题：
 - `harness:bugfix`
 - `harness:full`
 
-### 5. Bugfix Flow 基线
+### 5. Bugfix Flow 与可执行契约
 
-- `dev-harness-repro`
-- `dev-harness-triage`
-- `dev-harness-regression`
-- `dev-harness-verify`
+- `dev-harness-auto-fix` 内联 repro / triage / regression / verify 四阶段参考
+- analyze / fix / commit / unattended 四种显式授权模式
+- 可证伪假设（Claim / Prediction / Probe / Observation / Status）
+- 回归测试默认要求修复前 RED、修复后 GREEN
+- review 与最终验证绑定 diff hash
+- DONE / DONE_WITH_CONCERNS / BLOCKED / NEEDS_CONTEXT 完成状态
+
+`auto-fix/runtime.py` 把以下边界变为可执行、可测试行为：
+
+- WorkspaceSnapshot 保存任务开始时的 HEAD、分支和已有修改指纹
+- 已有 dirty worktree 可以保留，但 Agent 不得触碰
+- AutoFixChangedFiles 只包含本轮对话产生的变更
+- 状态保存在 Git 私有目录，支持进程中断后的阶段恢复
+- 非法阶段跳转、未声明变更、已有修改漂移和提交越权会被拒绝
 
 并已补上客户端项目的风险边界：
 
@@ -73,17 +86,17 @@ V1 解决的问题：
 - UI 自动化
 - 截图驱动验证
 - 日志 / 指标 / Trace 平台接入
-- 多 worktree 并行 runtime
-- 自动 PR / review loop
+- 多 worktree 并行调度器（单个 worktree 的 Git 私有状态路径已支持）
+- 自动 PR / 多 Agent review 调度器
 - Native 层自动修复
 - ABI / marshaling 正确性自动证明
 - Win32 句柄 / 线程 / 消息循环的深语义验证
 
 ## V2 候选方向
 
-### 1. Runtime Harness
+### 1. Runtime Harness 编排
 
-- 每任务独立运行目录
+- 在现有 auto-fix 状态契约上增加每任务独立运行目录
 - worktree 启动
 - 运行状态探针
 - 自动清理运行环境
@@ -124,3 +137,5 @@ V1 解决的问题：
 3. 能显式标出高风险区域与禁改边界
 4. 对 NativeBridge 项目能输出“自动识别候选 / 需人工确认”
 5. 不会在缺少命令或证据时伪造完成
+6. 已有 dirty worktree 不会被本轮修复误改、误暂存或误提交
+7. 完成证据与最终 diff 一致，代码变化会使旧证据失效

@@ -29,6 +29,7 @@ GIT_WORKFLOW_TEMPLATE_FILES = (
     "CHANGELOG.template.md",
 )
 AUTO_FIX_SKILL_SOURCE = SCRIPT_DIR / "auto-fix" / "SKILL.md"
+AUTO_FIX_RUNTIME_SOURCE = SCRIPT_DIR / "auto-fix" / "runtime.py"
 RETRO_SKILL_SOURCE = SCRIPT_DIR / "retro" / "SKILL.md"
 CONTEXT_RUNTIME_FILES = [
     "SKILL.md",
@@ -129,6 +130,8 @@ def validate_sources() -> None:
         source = INTERNAL_BUGFIX_FLOW_DIR / file_name
         if not source.exists():
             raise FileNotFoundError(f"Missing internal bugfix-flow source: {source}")
+    if not AUTO_FIX_RUNTIME_SOURCE.exists():
+        raise FileNotFoundError(f"Missing dev-harness-auto-fix runtime: {AUTO_FIX_RUNTIME_SOURCE}")
     for file_name in CONTEXT_RUNTIME_FILES:
         source = CONTEXT_SOURCE_DIR / file_name
         if not source.exists():
@@ -301,6 +304,7 @@ def _copy_bugfix_flow_references(destination: Path) -> None:
 
 def build_dev_harness_auto_fix(_skill_name: str, destination: Path) -> None:
     build_skill("dev-harness-auto-fix", destination)
+    shutil.copy2(AUTO_FIX_RUNTIME_SOURCE, destination / "runtime.py")
     _copy_bugfix_flow_references(destination)
 
 

@@ -103,11 +103,13 @@ Context 只刷新 AGENTS 托管索引，不复制规范正文。
 
 用户明确要求提交时：
 
-1. 读取完整 `git status --short`、工作区 diff 和暂存区 diff。
-2. 若已有暂存内容，只提交已暂存内容；不要自动追加其他文件。
-3. 若暂存区为空，提交前检查所有候选文件，发现 `.env`、密钥、凭据、大文件或明显无关变更时停止并确认。
-4. 扫描新增行中的临时调试输出，如 `Console.WriteLine`、`Debug.Log`、裸 `print(`；疑似残留时停止并确认。
-5. 按项目规范生成 commit message；只有项目没有该主题且用户已确认默认契约时才使用上述 Conventional Commits。
+1. 读取完整 `git status --short`、工作区 diff 和暂存区 diff；若调用方提供 `WorkspaceSnapshot`，先确认 HEAD、分支和已有修改指纹未漂移。
+2. 提交范围必须来自本轮明确维护的 `AutoFixChangedFiles`，而不是笼统的当前 diff。已有暂存内容不属于该集合时，报告 `staged_scope_conflict` 并停止，不得混入或擅自取消用户暂存。
+3. 对集合内每个文件逐个执行 `git add -- <file>`；删除文件也使用同一精确形式。禁止使用全量暂存命令。
+4. 暂存后重新比较 staged 文件集合与 AutoFixChangedFiles；不相等即报告 `staged_scope_conflict` 并停止。
+5. 检查候选文件，发现 `.env`、密钥、凭据、大文件或明显无关变更时停止并确认。
+6. 扫描新增行中的临时调试输出，如 `Console.WriteLine`、`Debug.Log`、裸 `print(`；疑似残留时停止并确认。
+7. 按项目规范生成 commit message；只有项目没有该主题且用户已确认默认契约时才使用上述 Conventional Commits。
 
 ### Tag 和发布消息
 

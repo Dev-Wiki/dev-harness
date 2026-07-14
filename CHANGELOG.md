@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## Unreleased
+
+### Auto-fix 可执行契约
+
+- 新增 `auto-fix/runtime.py`，提供 WorkspaceSnapshot、工作区归属校验、稳定 diff hash、Git 私有状态文件和阶段状态机。
+- 新增 analyze / fix / commit / unattended 四种授权模式；fix 不再隐式提交，Issue 回写、push、PR、发布仍需独立授权。
+- dirty worktree 允许保留：快照时已有修改归用户所有；本轮只允许修改和精确暂存 AutoFixChangedFiles，检测到已有修改漂移或未声明变更即停止。
+- 根因判断改为 Claim / Prediction / Probe / Observation / Status 可证伪结构；连续假设失败时返回 NEEDS_CONTEXT/BLOCKED。
+- 回归测试成为写模式默认门禁，要求修复前 RED、修复后 GREEN；客观无法自动化时显式降级为 DONE_WITH_CONCERNS。
+- review 与最终验证绑定 diff hash；实现变化会清空旧 Review/Verify 证据。
+- 安装包现包含 auto-fix runtime，并新增运行时、契约及安装产物测试。
+
+---
+
 ## v1.3.0 — 2026-07-10
 
 ### 新增规划阶段 skill 模板
