@@ -115,9 +115,11 @@ AI 会在每一步输出进度和证据，而不是闷头改完告诉你"修好�
 
 ---
 
-## 支持的项目类型
+## 通用项目识别与增强 Profile
 
-`dev-harness-context` 能自动识别以下项目类型并生成对应的 AGENTS.md 约束：
+`dev-harness-context` 默认由 AI 基于仓库证据识别语言、框架、架构和验证入口，不要求先为新技术栈增加扫描器分支。确定性代码负责证据收集、结论校验，并按固定 Markdown 标题安全更新章节，不向文档注入管理标记。
+
+当前内置以下增强 Profile，用于离线规则回退和专业风险补充：
 
 | 类型 | 覆盖 |
 |------|------|
@@ -128,8 +130,17 @@ AI 会在每一步输出进度和证据，而不是闷头改完告诉你"修好�
 | **Go** | 后端服务，识别 CGO 边界与核心并发逻辑 |
 | **Flutter** | 跨端客户端，识别 Platform Channels 与原生代码边界 |
 | **Node.js** | 前端工具链与插件（识别跨 Workspace 与生命周期钩子） |
+| **FastAPI** | Python 后端服务，识别 ASGI 入口、router/service 调用链与 pytest 验证命令 |
 
-其他项目类型会走安全回退路径，标记为 `Unknown` 并提示人工确认。
+其他项目类型通过 `evidence → AI semantic analysis → validator → safe writer` 主路径识别。只有证据不足的单项标记为 `Unknown`；低置信度结论进入“需人工确认”。
+
+```bash
+dev-harness-context evidence /path/to/repo
+dev-harness-context scan /path/to/repo --analysis /tmp/context-analysis.json
+dev-harness-context refresh /path/to/repo --analysis /tmp/context-analysis.json
+```
+
+每个 AI 结论都必须引用仓库内证据并绑定扫描快照指纹；无证据命令、越界路径或仓库漂移会在写入前被拒绝。
 
 ### 项目规范如何组织
 

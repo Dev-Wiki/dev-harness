@@ -93,19 +93,22 @@ summarize what went wrong this session
 
 ```bash
 dev-harness-context scan /path/to/repo
-dev-harness-context scan /path/to/repo --force
+dev-harness-context evidence /path/to/repo
+dev-harness-context scan /path/to/repo --analysis /tmp/context-analysis.json
+dev-harness-context refresh /path/to/repo --analysis /tmp/context-analysis.json
 ```
 
 Behavior:
-- Missing files are created automatically
-- Existing files with differing content show a diff summary before overwriting
-- `--force` overwrites without prompting
+- `evidence` emits a framework-agnostic repository inventory, analysis contract, and snapshot fingerprint
+- AI-authored semantic analysis must cite repository-local evidence for every non-Unknown conclusion
+- Commands without evidence, paths outside the repository, and stale fingerprints are rejected before writing
+- `scan` creates only missing files; `refresh` updates fixed Markdown sections without injecting markers, while preserving user-owned sections and file format
 
 ---
 
-## Scanner Support
+## Generic AI Recognition and Enhancement Profiles
 
-`dev-harness-context` detects project type and produces constraint-oriented `AGENTS.md`. Currently well-supported stacks:
+`dev-harness-context` uses AI to identify new languages and architectures from repository evidence, without requiring a new hard-coded detector. Built-in profiles remain as offline fallbacks and domain-risk enhancements:
 
 | Stack | Notes |
 |-------|-------|
@@ -114,7 +117,7 @@ Behavior:
 | **Win32** | C++ / MSBuild |
 | **Qt** | Windows + Linux, with Shared C++ Core detection |
 
-Other stacks: safe detection with `Unknown` fallback and manual confirmation prompts.
+Other stacks use the same evidence → AI analysis → deterministic validation pipeline. Only insufficiently supported claims become `Unknown`; low-confidence claims are routed to manual review.
 
 The generated `AGENTS.md` includes: call chain candidates, architecture boundary rules, forbidden operations list, high-risk file annotations, exploration suggestions, NativeBridge auto-detection candidates.
 

@@ -37,13 +37,13 @@ python install.py
 
 首次执行使用 `scan`，只创建缺失的 `README.md`、`AGENTS.md`、`ARCHITECTURE.md`、`HARNESS.md`，不会覆盖现有文件。
 
-项目开发一段时间后需要同步自动识别信息时，使用 `refresh`。它只更新 `dev-harness:managed` 标记内的托管块，保留块外人工内容以及原文件编码、换行和权限：
+项目开发一段时间后需要同步自动识别信息时，使用 `refresh`。它按模板约定的固定 Markdown 标题更新章节，不注入 HTML 管理标记，并保留其他人工章节以及原文件编码、换行和权限：
 
 ```bash
 dev-harness-context refresh <repo-path>
 ```
 
-非交互环境默认只预览差异；确认后可使用 `--force` 应用有效托管块。旧版无标记文件仍必须在交互终端中确认迁移，`--force` 不会覆盖或强制迁移旧文件。
+非交互环境默认只预览差异；确认后可使用 `--force` 应用成功定位的章节。固定标题缺失、重复或层级变化时停止更新；旧版合法 managed 标记会在首次刷新时无损移除。
 
 AGENTS 中只保留轻量的项目规范索引。Context 会识别已有 Git 工作流、代码规范、发布规范和 changelog 文档并刷新路径，但不会创建这些专业文档。Git/提交/tag/发布规范缺失时由 `dev-harness-git-workflow` 在用户确认后初始化；代码规范不自动生成；`CHANGELOG.md` 仅在确认初始化或首次发布时创建。
 
@@ -78,7 +78,7 @@ auto fix
 
 | Skill | 用途 |
 |-------|------|
-| `dev-harness-context` | 初始化上下文文件，并安全刷新自动识别托管块 |
+| `dev-harness-context` | 初始化上下文文件，并按固定 Markdown 标题安全刷新自动识别章节 |
 | `dev-harness-commands` | 补齐 build / quick / bugfix / full 的真实命令映射 |
 | `dev-harness-auto-fix` | 执行内置的复现、定位、修复、审查与验证流程 |
 | `dev-harness-git-workflow` | 遵循项目已有 Git 规范；缺失时确认并初始化提交、tag、changelog 和发布约定 |
@@ -112,13 +112,11 @@ AI Agent 在执行构建、测试或验证命令前必须先读取该文件，�
 ### 必须包含的区域
 
 ```markdown
-<!-- dev-harness:managed:start id=harness.detected-commands version=1 -->
 ## 自动识别构建命令候选
 - **build**: `<自动识别候选或 Unknown>`
 - **quick**: `<自动识别候选或 Unknown>`
 - **bugfix**: `<自动识别候选或 Unknown>`
 - **full**: `<自动识别候选或 Unknown>`
-<!-- dev-harness:managed:end id=harness.detected-commands -->
 
 ## 已确认命令（人工维护）
 - **build**: `<真实构建命令或 Unknown>`
@@ -127,7 +125,7 @@ AI Agent 在执行构建、测试或验证命令前必须先读取该文件，�
 - **full**: `<真实完整验证命令或 Unknown>`
 ```
 
-自动识别结果只作为候选；`dev-harness-commands` 只能更新“已确认命令（人工维护）”，不得写入或覆盖托管候选块。执行时以已确认命令为准；仍为 `Unknown` 时必须停止并补齐，不能直接执行候选。
+自动识别结果只作为候选；`dev-harness-context` 按该固定标题刷新候选章节，`dev-harness-commands` 只能更新“已确认命令（人工维护）”，不得写入或覆盖候选章节。执行时以已确认命令为准；仍为 `Unknown` 时必须停止并补齐，不能直接执行候选。
 
 ### 推荐包含的字段
 

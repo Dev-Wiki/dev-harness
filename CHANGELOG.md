@@ -2,6 +2,36 @@
 
 ## Unreleased
 
+---
+
+## v1.5.0 — 2026-07-16
+
+### 通用 AI 语义识别
+
+- 新增框架无关的 `evidence` 命令，输出仓库清单、分析字段契约、截断状态和快照指纹。
+- 新增 AI Semantic Analysis JSON 协议；未知语言或框架无需先增加硬编码 profile 即可生成项目类型、架构、调用链、风险边界和命令候选。
+- 所有非 `Unknown` 结论必须携带仓库内证据路径与 high/medium/low 置信度，并在 AGENTS/HARNESS 中保留证据台账。
+- 低置信度结论自动转入人工确认；无证据命令、仓库外路径、未知字段和过期快照在写入前拒绝。
+- 内置 WPF、Qt、Harmony、Win32、FastAPI 等 profile 调整为兼容回退和专业风险增强，不再作为项目识别白名单。
+- 安装包新增 `evidence.py` 与 `semantic.py` 运行时，并覆盖安装后 evidence/analysis 调用。
+
+---
+
+## v1.4.0 — 2026-07-16
+
+### Context 安全刷新与 FastAPI 支持
+
+- 新增 `refresh` 固定 Markdown 章节刷新，不注入管理标记，并保留其他用户章节、编码、换行和文件权限。
+- `scan` 改为只创建缺失文件，即使传入 `--force` 也不会覆盖已有上下文文档。
+- 新增项目自有 Git、代码、发布和 changelog 规范索引，并对冲突引用给出人工确认项。
+- 新增 FastAPI 项目识别，基于依赖和源码证据发现 ASGI 入口、router/service/core 调用链及高风险边界。
+- 自动生成 FastAPI 的 Python 编译检查、uvicorn 运行命令和 pytest quick/bugfix/full 候选。
+
+### 构建与验证契约
+
+- 将 `HARNESS.md` 明确为构建、验证和执行环境的唯一事实源。
+- 安装包新增 Git workflow 默认模板与 Context 固定章节刷新运行时。
+
 ### Auto-fix 可执行契约
 
 - 新增 `auto-fix/runtime.py`，提供 WorkspaceSnapshot、工作区归属校验、稳定 diff hash、Git 私有状态文件和阶段状态机。
