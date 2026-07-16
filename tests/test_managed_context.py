@@ -7,12 +7,13 @@ from pathlib import Path
 
 from context.managed import (
     ManagedDocumentError,
+    SectionSpec,
     atomic_write_document,
     decode_document,
     encode_document,
-    merge_managed_blocks,
-    migrate_legacy_document,
-    parse_managed_blocks,
+    merge_markdown_sections,
+    parse_markdown_sections,
+    strip_legacy_managed_markers,
 )
 
 
@@ -48,75 +49,49 @@ class ManagedContextTests(unittest.TestCase):
         with self.assertRaisesRegex(ManagedDocumentError, "unsupported or undecodable"):
             decode_document(b"\xff\xfe\x00")
 
-    def test_parses_unique_non_nested_blocks(self) -> None:
+    def test_parses_fixed_heading_and_ignores_heading_inside_fence(self) -> None:
         text = (
-            "before\n"
-            "<!-- dev-harness:managed:start id=demo version=1 -->\n"
-            "value\n"
-            "<!-- dev-harness:managed:end id=demo -->\n"
-            "after\n"
+            "# Demo\n\n"
+            "```markdown\n## Managed\n```\n\n"
+            "## Managed\nvalue\n\n"
+            "## Human\nafter\n"
         )
+        specs = (SectionSpec("demo", 2, "Managed"),)
 
-        blocks = parse_managed_blocks(text)
+        sections = parse_markdown_sections(text, specs)
 
-        self.assertEqual(list(blocks), ["demo"])
-        self.assertEqual(blocks["demo"].body, "value\n")
+        self.assertEqual(list(sections), ["demo"])
+        self.assertEqual(sections["demo"].body, "value\n\n")
 
-    def test_rejects_invalid_blocks(self) -> None:
+    def test_rejects_missing_duplicate_and_wrong_level_headings(self) -> None:
         invalid_documents = (
-            (
-                "<!-- dev-harness:managed:start id=x version=1 -->\n"
-                "a\n"
-                "<!-- dev-harness:managed:end id=x -->\n"
-                "<!-- dev-harness:managed:start id=x version=1 -->\n"
-                "b\n"
-                "<!-- dev-harness:managed:end id=x -->\n"
-            ),
-            (
-                "<!-- dev-harness:managed:start id=x version=1 -->\n"
-                "<!-- dev-harness:managed:start id=y version=1 -->\n"
-                "<!-- dev-harness:managed:end id=y -->\n"
-                "<!-- dev-harness:managed:end id=x -->\n"
-            ),
-            "<!-- dev-harness:managed:start id=x version=1 -->\nunclosed\n",
-            (
-                "<!-- dev-harness:managed:start id=x version=1 -->\n"
-                "value\n"
-                "<!-- dev-harness:managed:end id=y -->\n"
-            ),
-            (
-                "<!-- dev-harness:managed:start id=x version=2 -->\n"
-                "value\n"
-                "<!-- dev-harness:managed:end id=x -->\n"
-            ),
+            "# Demo\n",
+            "## Managed\na\n## Managed\nb\n",
+            "### Managed\na\n",
         )
+        specs = (SectionSpec("demo", 2, "Managed"),)
         for text in invalid_documents:
             with self.subTest(text=text):
                 with self.assertRaises(ManagedDocumentError):
-                    parse_managed_blocks(text)
+                    parse_markdown_sections(text, specs)
 
-    def test_merge_replaces_matching_blocks_and_preserves_user_text(self) -> None:
+    def test_merge_replaces_matching_sections_and_preserves_user_text(self) -> None:
         existing = (
-            "user before\n"
-            "<!-- dev-harness:managed:start id=demo version=1 -->\n"
-            "old\n"
-            "<!-- dev-harness:managed:end id=demo -->\n"
-            "user after\n"
+            "# Demo\n\n## Managed\nold\n\n## Human\nuser after\n"
         )
         generated = (
-            "generated title\n"
-            "<!-- dev-harness:managed:start id=demo version=1 -->\n"
-            "new\n"
-            "<!-- dev-harness:managed:end id=demo -->\n"
+            "# Generated title\n\n## Managed\nnew\n\n## Human\ngenerated text\n"
         )
+        specs = (SectionSpec("demo", 2, "Managed"),)
 
-        merged, changed_ids = merge_managed_blocks(existing, generated)
+        merged, changed_ids, legacy_ids = merge_markdown_sections(existing, generated, specs)
 
         self.assertEqual(changed_ids, ["demo"])
-        self.assertIn("user before\n", merged)
+        self.assertEqual(legacy_ids, ())
+        self.assertIn("# Demo\n", merged)
         self.assertIn("new\n", merged)
-        self.assertIn("user after\n", merged)
-        self.assertNotIn("generated title", merged)
+        self.assertIn("## Human\nuser after\n", merged)
+        self.assertNotIn("Generated title", merged)
 
     def test_atomic_write_preserves_file_mode(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -130,21 +105,32 @@ class ManagedContextTests(unittest.TestCase):
             self.assertEqual(path.read_bytes(), b"after\n")
             self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o640)
 
-    def test_legacy_migration_wraps_exact_blocks_and_preserves_conflicts(self) -> None:
-        generated = (
-            "# Demo\n\n## Human\nGenerated placeholder\n\n"
+    def test_legacy_marker_migration_removes_markers_and_preserves_body(self) -> None:
+        legacy = (
+            "# Demo\n\n"
             "<!-- dev-harness:managed:start id=demo.detected version=1 -->\n"
             "## Detected\nPython\n"
             "<!-- dev-harness:managed:end id=demo.detected -->\n"
         )
-        legacy = "# Demo\n\n## Human\nTeam-authored text\n\n## Detected\nPython\n"
 
-        migration = migrate_legacy_document(legacy, generated)
+        cleaned, legacy_ids = strip_legacy_managed_markers(legacy)
 
-        self.assertEqual(migration.safe_section_ids, ("demo.detected",))
-        self.assertIn("## Human\nTeam-authored text", migration.merged_text)
-        self.assertIn("id=demo.detected", migration.merged_text)
-        self.assertEqual(migration.merged_text.count("## Detected"), 1)
+        self.assertEqual(legacy_ids, ("demo.detected",))
+        self.assertEqual(cleaned, "# Demo\n\n## Detected\nPython\n")
+
+    def test_legacy_marker_text_inside_fence_is_not_removed(self) -> None:
+        example = (
+            "```markdown\n"
+            "<!-- dev-harness:managed:start id=example version=1 -->\n"
+            "content\n"
+            "<!-- dev-harness:managed:end id=example -->\n"
+            "```\n"
+        )
+
+        cleaned, legacy_ids = strip_legacy_managed_markers(example)
+
+        self.assertEqual(legacy_ids, ())
+        self.assertEqual(cleaned, example)
 
 
 if __name__ == "__main__":

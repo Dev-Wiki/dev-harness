@@ -95,6 +95,36 @@ def get_qt_quick_command(repo_root: Path) -> str:
     return "Unknown"
 
 
+def find_fastapi_entry(repo_root: Path) -> Path | None:
+    """Return an ASGI module that constructs a FastAPI application."""
+    candidates = sample_matching_files(repo_root, 200, "*.py")
+    candidates.sort(
+        key=lambda path: (
+            path.parent != repo_root,
+            "tests" in path.relative_to(repo_root).parts,
+            path.name not in {"main.py", "app.py"},
+            len(path.relative_to(repo_root).parts),
+            path.relative_to(repo_root).as_posix(),
+        )
+    )
+    for path in candidates:
+        if _file_contains_any(path, ["FastAPI("]) and _file_contains_any(
+            path,
+            ["from fastapi import", "import fastapi"],
+        ):
+            return path
+    return None
+
+
+def _has_fastapi_dependency(repo_root: Path) -> bool:
+    dependency_files = [
+        *repo_root.glob("requirements*.txt"),
+        *repo_root.glob("pyproject.toml"),
+        *repo_root.glob("Pipfile"),
+    ]
+    return any("fastapi" in _read_text(path).lower() for path in dependency_files)
+
+
 def detect_project_type(repo_root: Path) -> str:
     if any(repo_root.glob("*.csproj")):
         app_xaml = repo_root / "App.xaml"
@@ -140,6 +170,9 @@ def detect_project_type(repo_root: Path) -> str:
         ):
             return "Win32"
 
+    if _has_fastapi_dependency(repo_root) or find_fastapi_entry(repo_root):
+        return "FastAPI"
+
     return "Unknown"
 
 
@@ -169,6 +202,10 @@ def detect_validation_commands(repo_root: Path, project_type: str, build_step: s
     elif project_type == "Win32":
         quick_step = get_win32_build_command(repo_root)
         full_step = get_win32_full_command(repo_root)
+    elif project_type == "FastAPI" and (repo_root / "tests").is_dir():
+        quick_step = "python -m pytest -q"
+        bugfix_step = quick_step
+        full_step = quick_step
 
     if build_step != "Unknown" and quick_step == "Unknown":
         quick_step = build_step
@@ -214,5 +251,17 @@ def detect_high_risk_directories(repo_root: Path, project_type: str) -> list[str
             risks.append("*.vcxproj: Visual C++ build graph, toolchain, and linker settings")
         if repo_contains_pattern(repo_root, "*.rc"):
             risks.append("*.rc: Win32 resource script and packaging metadata")
+    elif project_type == "FastAPI":
+        for candidate, description in [
+            ("app/routers", "HTTP route definitions and public API surface"),
+            ("app/core", "application configuration, security, and shared infrastructure"),
+            ("app/services", "business logic and external integration boundary"),
+            ("migrations", "database schema migrations"),
+        ]:
+            if (repo_root / candidate).exists():
+                risks.append(f"{candidate}: {description}")
+        entry = find_fastapi_entry(repo_root)
+        if entry:
+            risks.append(f"{_relative_display(entry, repo_root)}: ASGI application bootstrap and middleware wiring")
 
     return risks or ["Unknown"]

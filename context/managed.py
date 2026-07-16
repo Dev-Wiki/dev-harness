@@ -41,10 +41,69 @@ class ManagedBlock:
 
 
 @dataclass(frozen=True)
-class LegacyMigration:
-    merged_text: str
-    safe_section_ids: tuple[str, ...]
-    conflict_headings: tuple[str, ...]
+class SectionSpec:
+    section_id: str
+    level: int
+    title: str
+
+
+@dataclass(frozen=True)
+class MarkdownSection:
+    section_id: str
+    level: int
+    title: str
+    start: int
+    body_start: int
+    end: int
+    body: str
+
+
+SECTION_SPECS: dict[str, tuple[SectionSpec, ...]] = {
+    "README.md": (
+        SectionSpec("readme.languages", 2, "编程语言"),
+        SectionSpec("readme.build-systems", 2, "构建系统"),
+        SectionSpec("readme.core-modules", 2, "核心模块"),
+        SectionSpec("readme.usage", 2, "使用说明"),
+    ),
+    "AGENTS.md": (
+        SectionSpec("agents.contract-index", 2, "项目规范索引"),
+        SectionSpec("agents.build-contract", 2, "构建与验证契约（AI 必读）"),
+        SectionSpec("agents.context", 2, "1. 项目上下文速查"),
+        SectionSpec("agents.trust", 2, "1b. 文件信任等级"),
+        SectionSpec("agents.style", 2, "2. 命名与风格约束"),
+        SectionSpec("agents.architecture", 2, "3. 架构边界规则"),
+        SectionSpec("agents.forbidden", 2, "4. 禁止操作清单"),
+        SectionSpec("agents.high-risk", 2, "5. 高风险文件标注"),
+        SectionSpec("agents.feature-path", 2, "6. 新增功能标准路径"),
+        SectionSpec("agents.safety", 2, "7. 代码安全规范"),
+        SectionSpec("agents.versions", 2, "8. 多版本/多定制注意事项"),
+        SectionSpec("agents.logging", 2, "9. 日志规范"),
+        SectionSpec("agents.exploration", 2, "10. 提问与探索建议"),
+        SectionSpec("agents.candidates", 2, "11. 自动识别候选"),
+        SectionSpec("agents.manual-review", 2, "12. 需人工确认"),
+        SectionSpec("agents.style-anchors", 2, "13. 代码风格锚点（仓库抽样）"),
+    ),
+    "ARCHITECTURE.md": (
+        SectionSpec("architecture.dependencies", 2, "模块依赖关系图"),
+        SectionSpec("architecture.flow", 2, "核心功能流"),
+        SectionSpec("architecture.pattern", 2, "架构模式"),
+        SectionSpec("architecture.interfaces", 2, "模块接口与通信方式"),
+        SectionSpec("architecture.modules", 2, "关键模块标记"),
+    ),
+    "HARNESS.md": (
+        SectionSpec("harness.project-type", 2, "项目类型"),
+        SectionSpec("harness.bootstrap", 2, "编译启动诊断"),
+        SectionSpec("harness.commands", 2, "自动识别构建命令候选"),
+        SectionSpec("harness.high-risk", 2, "高风险目录"),
+        SectionSpec("harness.restricted", 2, "禁改区域"),
+        SectionSpec("harness.candidates", 2, "自动识别候选"),
+        SectionSpec("harness.manual-review", 2, "需人工确认"),
+    ),
+}
+
+
+ATX_HEADING_RE = re.compile(r"^(?P<hashes>#{1,6})[ \t]+(?P<title>.*?)[ \t]*#*[ \t]*$")
+FENCE_RE = re.compile(r"^[ \t]{0,3}(?P<fence>`{3,}|~{3,})")
 
 
 def _decode_with_bom(raw: bytes) -> tuple[str, str, bytes]:
@@ -104,9 +163,25 @@ def parse_managed_blocks(text: str) -> dict[str, ManagedBlock]:
     blocks: dict[str, ManagedBlock] = {}
     open_block: tuple[str, int, int, int] | None = None
     offset = 0
+    fence_char: str | None = None
+    fence_length = 0
 
     for line in text.splitlines(keepends=True):
         marker_text = line[:-1] if line.endswith("\n") else line
+        fence_match = FENCE_RE.match(marker_text)
+        if fence_match is not None:
+            fence = fence_match.group("fence")
+            if fence_char is None:
+                fence_char = fence[0]
+                fence_length = len(fence)
+            elif fence[0] == fence_char and len(fence) >= fence_length:
+                fence_char = None
+                fence_length = 0
+            offset += len(line)
+            continue
+        if fence_char is not None:
+            offset += len(line)
+            continue
         start_match = START_RE.fullmatch(marker_text)
         end_match = END_RE.fullmatch(marker_text)
 
@@ -148,81 +223,108 @@ def parse_managed_blocks(text: str) -> dict[str, ManagedBlock]:
     return blocks
 
 
-def _block_text(text: str, block: ManagedBlock) -> str:
-    return text[block.start : block.end]
+def strip_legacy_managed_markers(text: str) -> tuple[str, tuple[str, ...]]:
+    """Remove valid legacy marker lines while preserving every byte of their bodies."""
+    blocks = parse_managed_blocks(text)
+    if not blocks:
+        return text, ()
+    cleaned = text
+    for block in sorted(blocks.values(), key=lambda item: item.start, reverse=True):
+        cleaned = cleaned[: block.body_end] + cleaned[block.end :]
+        cleaned = cleaned[: block.start] + cleaned[block.body_start :]
+    return cleaned, tuple(blocks)
 
 
-def merge_managed_blocks(existing: str, generated: str) -> tuple[str, list[str]]:
-    existing_blocks = parse_managed_blocks(existing)
-    generated_blocks = parse_managed_blocks(generated)
-    if not existing_blocks:
-        raise ManagedDocumentError("legacy document has no managed blocks")
-    if not generated_blocks:
-        raise ManagedDocumentError("generated document has no managed blocks")
+def _headings(text: str) -> list[tuple[int, str, int, int]]:
+    headings: list[tuple[int, str, int, int]] = []
+    offset = 0
+    fence_char: str | None = None
+    fence_length = 0
+    for line in text.splitlines(keepends=True):
+        marker_text = line[:-1] if line.endswith("\n") else line
+        fence_match = FENCE_RE.match(marker_text)
+        if fence_match is not None:
+            fence = fence_match.group("fence")
+            if fence_char is None:
+                fence_char = fence[0]
+                fence_length = len(fence)
+            elif fence[0] == fence_char and len(fence) >= fence_length:
+                fence_char = None
+                fence_length = 0
+            offset += len(line)
+            continue
+        if fence_char is None:
+            heading_match = ATX_HEADING_RE.fullmatch(marker_text)
+            if heading_match is not None:
+                headings.append(
+                    (
+                        len(heading_match.group("hashes")),
+                        heading_match.group("title").rstrip(),
+                        offset,
+                        offset + len(line),
+                    )
+                )
+        offset += len(line)
+    return headings
+
+
+def parse_markdown_sections(text: str, specs: tuple[SectionSpec, ...]) -> dict[str, MarkdownSection]:
+    headings = _headings(text)
+    sections: dict[str, MarkdownSection] = {}
+    for spec in specs:
+        matching = [item for item in headings if item[1] == spec.title]
+        if not matching:
+            raise ManagedDocumentError(f"missing fixed heading: {'#' * spec.level} {spec.title}")
+        if len(matching) > 1:
+            raise ManagedDocumentError(f"duplicate fixed heading: {spec.title}")
+        level, title, start, body_start = matching[0]
+        if level != spec.level:
+            raise ManagedDocumentError(
+                f"fixed heading level changed: {spec.title} (expected {spec.level}, found {level})"
+            )
+        heading_index = headings.index(matching[0])
+        end = len(text)
+        for next_level, _, next_start, _ in headings[heading_index + 1 :]:
+            if next_level <= level:
+                end = next_start
+                break
+        sections[spec.section_id] = MarkdownSection(
+            section_id=spec.section_id,
+            level=level,
+            title=title,
+            start=start,
+            body_start=body_start,
+            end=end,
+            body=text[body_start:end],
+        )
+    return sections
+
+
+def merge_markdown_sections(
+    existing: str,
+    generated: str,
+    specs: tuple[SectionSpec, ...],
+) -> tuple[str, list[str], tuple[str, ...]]:
+    existing, legacy_ids = strip_legacy_managed_markers(existing)
+    generated, _ = strip_legacy_managed_markers(generated)
+    existing_sections = parse_markdown_sections(existing, specs)
+    generated_sections = parse_markdown_sections(generated, specs)
+    replacements: list[tuple[int, int, str, str]] = []
+    for spec in specs:
+        current = existing_sections[spec.section_id]
+        generated_section = generated_sections[spec.section_id]
+        replacement = generated[generated_section.start : generated_section.end]
+        original = existing[current.start : current.end]
+        if original != replacement:
+            replacements.append((current.start, current.end, replacement, spec.section_id))
 
     merged = existing
     changed_ids: list[str] = []
-    replacements: list[tuple[int, int, str, str]] = []
-    for block_id, existing_block in existing_blocks.items():
-        generated_block = generated_blocks.get(block_id)
-        if generated_block is None:
-            continue
-        replacement = _block_text(generated, generated_block)
-        current = _block_text(existing, existing_block)
-        if current != replacement:
-            replacements.append((existing_block.start, existing_block.end, replacement, block_id))
-
-    for start, end, replacement, block_id in sorted(replacements, reverse=True):
+    for start, end, replacement, section_id in sorted(replacements, reverse=True):
         merged = merged[:start] + replacement + merged[end:]
-        changed_ids.append(block_id)
+        changed_ids.append(section_id)
     changed_ids.reverse()
-
-    generated_order = list(generated_blocks)
-    for block_id in generated_order:
-        merged_blocks = parse_managed_blocks(merged)
-        if block_id in merged_blocks:
-            continue
-        generated_block = generated_blocks[block_id]
-        insertion = _block_text(generated, generated_block)
-        following_ids = generated_order[generated_order.index(block_id) + 1 :]
-        next_block = next((merged_blocks[item] for item in following_ids if item in merged_blocks), None)
-        if next_block is not None:
-            insert_at = next_block.start
-            merged = merged[:insert_at] + insertion + merged[insert_at:]
-        else:
-            if merged and not merged.endswith("\n"):
-                merged += "\n"
-            merged += insertion
-        changed_ids.append(block_id)
-
-    return merged, changed_ids
-
-
-def migrate_legacy_document(existing: str, generated: str) -> LegacyMigration:
-    if parse_managed_blocks(existing):
-        raise ManagedDocumentError("document already contains managed blocks")
-    generated_blocks = parse_managed_blocks(generated)
-    if not generated_blocks:
-        raise ManagedDocumentError("generated document has no managed blocks")
-
-    merged = existing
-    safe_ids: list[str] = []
-    conflicts: list[str] = []
-    for block_id, block in generated_blocks.items():
-        body = block.body
-        if body and merged.count(body) == 1:
-            managed_text = _block_text(generated, block)
-            merged = merged.replace(body, managed_text, 1)
-            safe_ids.append(block_id)
-            continue
-        headings = re.findall(r"^#{1,2}\s+.+$", body, flags=re.MULTILINE)
-        conflicts.extend(headings or [block_id])
-
-    return LegacyMigration(
-        merged_text=merged,
-        safe_section_ids=tuple(safe_ids),
-        conflict_headings=tuple(conflicts),
-    )
+    return merged, changed_ids, legacy_ids
 
 
 def atomic_write_document(path: Path, text: str, document_format: DocumentFormat) -> None:

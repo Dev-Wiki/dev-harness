@@ -4,7 +4,13 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from context.managed import ManagedDocumentError, decode_document, parse_managed_blocks
+from context.managed import (
+    ManagedDocumentError,
+    SECTION_SPECS,
+    decode_document,
+    parse_markdown_sections,
+    strip_legacy_managed_markers,
+)
 
 
 @dataclass(frozen=True)
@@ -75,15 +81,17 @@ def _existing_index_references(repo_root: Path) -> tuple[dict[str, str], set[str
         return {}, set()
     try:
         text, _ = decode_document(agents_path.read_bytes())
-        block = parse_managed_blocks(text).get("agents.contract-index")
+        text, _ = strip_legacy_managed_markers(text)
+        spec = next(
+            item for item in SECTION_SPECS["AGENTS.md"] if item.section_id == "agents.contract-index"
+        )
+        section = parse_markdown_sections(text, (spec,))[spec.section_id]
     except (OSError, ManagedDocumentError):
-        return {}, set()
-    if block is None:
         return {}, set()
 
     references: dict[str, str] = {}
     conflicts: set[str] = set()
-    for line in block.body.splitlines():
+    for line in section.body.splitlines():
         match = INDEX_ENTRY_RE.fullmatch(line)
         if match is None:
             continue

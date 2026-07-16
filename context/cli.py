@@ -9,14 +9,16 @@ from itertools import islice
 from pathlib import Path
 
 from context.contracts import ContractIndex, discover_contract_index
+from context.evidence import collect_repository_evidence
 from context.managed import (
     DocumentFormat,
     ManagedDocumentError,
+    SECTION_SPECS,
     atomic_write_document,
     decode_document,
-    merge_managed_blocks,
-    migrate_legacy_document,
-    parse_managed_blocks,
+    merge_markdown_sections,
+    parse_markdown_sections,
+    strip_legacy_managed_markers,
 )
 from context.platform_profiles import (
     detect_high_risk_directories as profile_detect_high_risk_directories,
@@ -25,6 +27,7 @@ from context.platform_profiles import (
     get_harmony_build_command,
     get_win32_build_command,
     get_wpf_build_command,
+    find_fastapi_entry,
     has_harmony_packaging_scripts,
 )
 from context.repo_walk import (
@@ -36,6 +39,7 @@ from context.repo_walk import (
     repo_has_suffix,
     SKIP_DIR_NAMES,
 )
+from context.semantic import SemanticAnalysis, SemanticAnalysisError, load_semantic_analysis
 
 TARGET_FILES = ("README.md", "AGENTS.md", "ARCHITECTURE.md", "HARNESS.md")
 TEMPLATE_FILES = (
@@ -227,6 +231,16 @@ def detect_usage_steps(repo_root: Path, project_type: str) -> tuple[str, str, st
         elif repo_has_dotnet_solution(repo_root):
             build_step = "dotnet build"
 
+    if project_type == "FastAPI":
+        entry = find_fastapi_entry(repo_root)
+        if entry:
+            compile_targets = [relative_display(entry, repo_root)]
+            if (repo_root / "app").is_dir():
+                compile_targets.append("app")
+            build_step = f"python -m compileall -q {' '.join(compile_targets)}"
+            module = relative_display(entry, repo_root).removesuffix(".py").replace("/", ".")
+            run_step = f"python -m uvicorn {module}:app --reload"
+
     return install_step, build_step, run_step
 
 
@@ -285,6 +299,14 @@ def detect_build_bootstrap(repo_root: Path, project_type: str, build_step: str) 
         lines.append("- **RecommendedTerminal**: 已加载 Qt/CMake 工具链环境的终端")
         lines.append("- **CanRunBuildHere**: unknown")
         lines.append("- **Preflight**: `cmake --version`; `ctest --version`; 确认 Qt Kit、生成器和 build preset")
+    elif project_type == "FastAPI":
+        lines.append("- **RecommendedTerminal**: 项目 Python 虚拟环境中的 shell")
+        lines.append("- **CanRunBuildHere**: unknown")
+        lines.append("- **Preflight**: `python --version`; 确认已安装运行依赖与测试依赖")
+        if (repo_root / "requirements.txt").exists():
+            lines.append("- **Evidence**: `requirements.txt` 定义运行依赖")
+        if (repo_root / "requirements-dev.txt").exists():
+            lines.append("- **Evidence**: `requirements-dev.txt` 定义测试或开发依赖")
     else:
         lines.append("- **RecommendedTerminal**: Unknown")
         lines.append("- **CanRunBuildHere**: unknown")
@@ -380,6 +402,8 @@ def detect_language_framework_summary(repo_root: Path, project_type: str, langua
             summary_parts.append("Shared C++ Core")
     elif project_type == "Harmony":
         summary_parts.append("Harmony")
+    elif project_type == "FastAPI":
+        summary_parts.append("Python + FastAPI")
     elif languages:
         summary_parts.append(" + ".join(languages[:2]))
     else:
@@ -395,14 +419,18 @@ def detect_language_framework_summary(repo_root: Path, project_type: str, langua
     return "，".join(summary_parts)
 
 
-def detect_architecture_pattern(repo_root: Path) -> str:
+def detect_architecture_pattern(repo_root: Path, project_type: str) -> str:
+    if project_type == "FastAPI":
+        if (repo_root / "app" / "routers").is_dir():
+            return "FastAPI modular service"
+        return "FastAPI service"
     if first_matching_file(repo_root, "*ViewModel.cs") or (repo_root / "ViewModel").exists():
         return "MVVM"
     return "Unknown"
 
 
 def detect_core_entry(repo_root: Path) -> str:
-    entry = first_matching_file(repo_root, "App.xaml.cs", "Program.cs", "main.cpp", "main.cc")
+    entry = find_fastapi_entry(repo_root) or first_matching_file(repo_root, "App.xaml.cs", "Program.cs", "main.cpp", "main.cc")
     return relative_display(entry, repo_root) if entry else "Unknown"
 
 
@@ -411,6 +439,13 @@ def detect_sdk_call_chain(repo_root: Path) -> str:
     has_shared_cpp_core, _ = detect_shared_cpp_core_info(repo_root)
     if project_type == "Qt" and has_shared_cpp_core:
         return "Qt UI -> Qt Controller/Service -> C++ wrapper -> Shared C++ Core"
+    if project_type == "FastAPI":
+        entry = find_fastapi_entry(repo_root)
+        parts = [relative_display(entry, repo_root) if entry else "ASGI entry"]
+        for candidate in ("app/routers", "app/services", "app/core"):
+            if (repo_root / candidate).is_dir():
+                parts.append(candidate)
+        return " -> ".join(parts)
 
     service_dir = None
     service_file = first_matching_file(repo_root, "*Service.cs")
@@ -605,6 +640,18 @@ def detect_style_anchors(repo_root: Path) -> str:
 
 
 def detect_style_rules(repo_root: Path) -> str:
+    if detect_project_type(repo_root) == "FastAPI":
+        rules = [
+            "- **模块/函数/变量**: 对齐现有 Python 文件中的 snake_case 命名",
+            "- **路由组织**: 路由保持在现有 `routers` 模块，通过 `include_router` 注册",
+            "- **异步边界**: I/O 路径保持现有 `async` / `await` 风格",
+            "- **严禁**: 未经明确授权，不重命名公开路由、请求字段或响应字段",
+        ]
+        return "\n".join(rules)
+
+    if not repo_has_suffix(repo_root, ".cs"):
+        return "Unknown"
+
     service_files = find_all_matching_files(repo_root, "*Service.cs")
     viewmodel_files = find_all_matching_files(repo_root, "*ViewModel.cs")
     xaml_files = find_all_matching_files(repo_root, "*.xaml")
@@ -647,6 +694,13 @@ def detect_architecture_rules(repo_root: Path) -> str:
 def detect_forbidden_operations(repo_root: Path) -> str:
     items: list[str] = []
     project_type = detect_project_type(repo_root)
+    if project_type == "FastAPI":
+        entry = find_fastapi_entry(repo_root)
+        if entry:
+            items.append(f"- 未确认启动、middleware 和 router 注册顺序前，禁止重写 `{relative_display(entry, repo_root)}`")
+        items.append("- 未验证兼容性前，禁止修改既有 HTTP 路径、请求/响应 schema 或认证依赖")
+        items.append("- 未生成和审查迁移前，禁止直接修改生产数据库结构")
+        return "\n".join(items)
     native_cpp = first_matching_file(repo_root, "*.cpp")
     if native_cpp:
         if project_type == "Qt":
@@ -663,12 +717,26 @@ def detect_forbidden_operations(repo_root: Path) -> str:
         for path in iter_matching_files(repo_root, "*.cs", "*.cpp")
     ):
         items.append("- 在 UI 线程使用 `Thread.Sleep`: 会阻塞界面或消息循环")
-    items.append("- 未确认线程模型、资源释放和 ABI 约束前，禁止直接改底层 native bridge")
-    return "\n".join(items)
+    if native_cpp or first_matching_file(repo_root, "*.vcxproj"):
+        items.append("- 未确认线程模型、资源释放和 ABI 约束前，禁止直接改底层 native bridge")
+    return "\n".join(items) if items else "Unknown"
 
 
 def detect_high_risk_files(repo_root: Path) -> str:
     candidates: list[tuple[str, str]] = []
+    if detect_project_type(repo_root) == "FastAPI":
+        entry = find_fastapi_entry(repo_root)
+        if entry:
+            candidates.append((relative_display(entry, repo_root), "ASGI 应用入口、生命周期、中间件和路由注册点"))
+        for path in islice(iter_matching_files(repo_root, "*.py"), 30):
+            rel = relative_display(path, repo_root)
+            if "/routers/" in f"/{rel}":
+                candidates.append((rel, "HTTP 路由与外部 API 契约"))
+            elif rel.endswith(("security.py", "database.py", "config.py", "settings.py")):
+                candidates.append((rel, "安全、数据库或运行配置边界"))
+            if len(candidates) >= 5:
+                break
+        return "\n".join(f"- `{path}`: {reason}" for path, reason in candidates) if candidates else "Unknown"
     risk_patterns = {
         "AppUICallback.cs": "SDK 回调分发与 UI 线程切换枢纽",
         "AppUIState.cs": "全局 UI 状态或状态机聚合点",
@@ -698,6 +766,14 @@ def detect_high_risk_files(repo_root: Path) -> str:
 
 def detect_feature_paths(repo_root: Path) -> str:
     suggestions: list[str] = []
+    if detect_project_type(repo_root) == "FastAPI":
+        if (repo_root / "app" / "routers").is_dir():
+            suggestions.append("1. 在 `app/routers/` 的既有边界内新增或扩展 HTTP 路由")
+        if (repo_root / "app" / "services").is_dir():
+            suggestions.append("2. 将业务逻辑放入 `app/services/`，避免堆积在路由处理函数")
+        if (repo_root / "tests").is_dir():
+            suggestions.append("3. 在 `tests/` 增加对应路由、服务或回归测试")
+        return "\n".join(suggestions) if suggestions else "Unknown"
     if first_matching_file(repo_root, "*Service.cs"):
         suggestions.append("1. 在现有 Service 目录下扩展或新增 `XxxService.cs`")
 
@@ -712,6 +788,17 @@ def detect_feature_paths(repo_root: Path) -> str:
 
 
 def detect_code_safety_rules(repo_root: Path) -> str:
+    if detect_project_type(repo_root) == "FastAPI":
+        return "\n".join(
+            [
+                "- 输入边界: 外部参数通过 FastAPI/Pydantic schema 校验，不信任原始请求数据",
+                "- 异步资源: 数据库连接、HTTP client 和文件句柄必须按生命周期显式释放",
+                "- 认证与密钥: 不记录 token、cookie、密码、身份证号或完整请求体",
+                "- 异常处理: 对外响应保持稳定，内部日志保留可定位上下文但不得泄露敏感数据",
+            ]
+        )
+    if not repo_has_suffix(repo_root, ".cs") and not first_matching_file(repo_root, "*.vcxproj"):
+        return "Unknown"
     rules = [
         "- Null 检查: Service/Factory 返回值默认按可空处理",
         "- IDisposable / 资源释放: 文件句柄、流、native 句柄必须显式释放",
@@ -735,6 +822,16 @@ def detect_multi_version_notes(repo_root: Path) -> str:
 
 
 def detect_logging_rules(repo_root: Path) -> str:
+    if detect_project_type(repo_root) == "FastAPI" and any(
+        file_contains_any(path, ["logging.getLogger", "import logging"])
+        for path in iter_matching_files(repo_root, "*.py")
+    ):
+        return "\n".join(
+            [
+                "- 复用项目现有 Python logging 配置，不在业务模块重复初始化全局日志",
+                "- 请求、启动和外部调用日志不得包含密钥、token、cookie 或完整个人信息",
+            ]
+        )
     if any(
         file_contains_any(path, ["ILog", "LogManager", "log.Debug", "log.Info"])
         for path in iter_matching_files(repo_root, "*.cs", "*.cpp")
@@ -750,6 +847,15 @@ def detect_logging_rules(repo_root: Path) -> str:
 
 def detect_exploration_suggestions(repo_root: Path) -> str:
     suggestions: list[str] = []
+    if detect_project_type(repo_root) == "FastAPI":
+        entry = find_fastapi_entry(repo_root)
+        if entry:
+            suggestions.append(f"1. 先读 `{relative_display(entry, repo_root)}`，确认 lifespan、middleware 和 router 注册顺序")
+        if (repo_root / "app" / "routers").is_dir():
+            suggestions.append("2. 从 `app/routers/` 的 HTTP 入口追到 service/core 层，再定位数据或外部集成边界")
+        if (repo_root / "tests").is_dir():
+            suggestions.append("3. 修改前在 `tests/` 查找同路由或同服务的现有回归覆盖")
+        return "\n".join(suggestions)
     callback_file = first_matching_file(repo_root, "AppUICallback.cs", "*Callback*.cs")
     if callback_file:
         suggestions.append(f"1. 定位问题前，先读 `{relative_display(callback_file, repo_root)}`，理解事件来源和回调分发")
@@ -777,6 +883,13 @@ def detect_nativebridge_signals(repo_root: Path) -> list[str]:
         signals.append("Qt Client -> Shared C++ Core: 检测到 Qt UI 与共享 C++ 底层链路")
         for marker in shared_cpp_markers[:3]:
             signals.append(f"`{marker}`: Shared C++ Core 候选")
+    elif project_type == "FastAPI":
+        entry = find_fastapi_entry(repo_root)
+        if entry:
+            signals.append(f"`{relative_display(entry, repo_root)}`: FastAPI ASGI 应用入口")
+        for candidate, label in (("app/routers", "路由层"), ("app/services", "服务层"), ("app/core", "核心基础设施层")):
+            if (repo_root / candidate).is_dir():
+                signals.append(f"`{candidate}`: FastAPI {label}候选")
 
     for path in islice(iter_matching_files(repo_root, "*.vcxproj"), 3):
         signals.append(f"`{relative_display(path, repo_root)}`: 检测到原生工程或桥接工程")
@@ -891,6 +1004,8 @@ def format_bullets(items: list[str]) -> str:
 def render_readme(
     repo_root: Path,
     project_name: str,
+    project_type: str,
+    project_summary: str,
     languages: list[str],
     build_systems: list[str],
     core_modules: list[str],
@@ -901,7 +1016,7 @@ def render_readme(
     template = read_template("README.template.md", repo_root)
     return (
         template.replace("{项目名称或 Unknown}", project_name or "Unknown", 1)
-        .replace("{项目简介或 Unknown}", "Unknown", 1)
+        .replace("{项目简介或 Unknown}", project_summary, 1)
         .replace("{语言列表或 Unknown}", ", ".join(languages) if languages else "Unknown", 1)
         .replace("{构建系统或 Unknown}", ", ".join(build_systems) if build_systems else "Unknown", 1)
         .replace("- {模块1: 描述}\n- {模块2: 描述}\n- ...", format_bullets(core_modules), 1)
@@ -966,14 +1081,16 @@ def render_architecture(
     repo_root: Path,
     dependency_graph: str,
     architecture_overview: str,
+    core_flow: str,
+    architecture_pattern: str,
     module_interfaces: list[str],
     key_module_markers: list[str],
 ) -> str:
     template = read_template("ARCHITECTURE.template.md", repo_root)
     return (
         template.replace("{文本表示的依赖关系，例如 ModuleA -> ModuleB -> ModuleC 或 Unknown}", dependency_graph, 1)
-        .replace("{主要功能调用链或 Unknown}", "Unknown", 1)
-        .replace("{如 MVC、MVVM、微服务等，无法确定标记 Unknown}", "Unknown", 1)
+        .replace("{主要功能调用链或 Unknown}", core_flow, 1)
+        .replace("{如 MVC、MVVM、微服务等，无法确定标记 Unknown}", architecture_pattern, 1)
         .replace("- {模块1 -> 模块2: 接口类型或 Unknown}\n- {模块2 -> 模块3: 接口类型或 Unknown}", format_bullets(module_interfaces), 1)
         .replace("- {模块1: 上游/下游/核心功能说明或 Unknown}\n- {模块2: 上游/下游/核心功能说明或 Unknown}", format_bullets(key_module_markers), 1)
     )
@@ -1007,7 +1124,7 @@ def render_harness(
     )
 
 
-def generate_context_files(repo_root: Path) -> dict[str, str]:
+def generate_context_files(repo_root: Path, analysis: SemanticAnalysis | None = None) -> dict[str, str]:
     project_name = detect_project_name(repo_root)
     contract_index = discover_contract_index(repo_root)
     languages = detect_languages(repo_root)
@@ -1016,7 +1133,7 @@ def generate_context_files(repo_root: Path) -> dict[str, str]:
     project_type = detect_project_type(repo_root)
     install_step, build_step, run_step = detect_usage_steps(repo_root, project_type)
     quick_step, bugfix_step, full_step = detect_validation_commands(repo_root, project_type, build_step)
-    build_bootstrap = detect_build_bootstrap(repo_root, project_type, build_step)
+    project_summary = f"Automatically detected {project_type} project." if project_type != "Unknown" else "Unknown"
     architecture_overview = detect_architecture_overview(core_modules)
     dependency_graph = detect_module_dependency_graph(core_modules)
     module_interfaces = detect_module_interfaces(core_modules)
@@ -1024,9 +1141,16 @@ def generate_context_files(repo_root: Path) -> dict[str, str]:
     high_risk_directories = detect_high_risk_directories(repo_root, project_type)
     restricted_areas = detect_restricted_areas(repo_root)
     language_framework_summary = detect_language_framework_summary(repo_root, project_type, languages)
-    architecture_pattern = detect_architecture_pattern(repo_root)
+    architecture_pattern = detect_architecture_pattern(repo_root, project_type)
     core_entry = detect_core_entry(repo_root)
     sdk_call_chain = detect_sdk_call_chain(repo_root)
+    if project_type == "FastAPI":
+        dependency_graph = sdk_call_chain
+        architecture_overview = "FastAPI ASGI entry delegates HTTP handling to router modules and downstream service/core modules."
+        module_interfaces = [
+            "ASGI entry -> routers: FastAPI include_router registration",
+            "routers -> services/core: Python module calls and dependency injection",
+        ]
     version_marker = detect_version_marker(repo_root)
     style_rules = detect_style_rules(repo_root)
     style_anchors = detect_style_anchors(repo_root)
@@ -1039,6 +1163,38 @@ def generate_context_files(repo_root: Path) -> dict[str, str]:
     logging_rules = detect_logging_rules(repo_root)
     exploration_suggestions = detect_exploration_suggestions(repo_root)
     auto_detected_candidates_list = detect_nativebridge_signals(repo_root)
+
+    if analysis is not None:
+        project_type = analysis.claim("project_type", "Unknown")
+        project_summary = analysis.claim("project_summary", "Unknown")
+        language_framework_summary = analysis.claim("language_framework", "Unknown")
+        architecture_pattern = analysis.claim("architecture_pattern", "Unknown")
+        core_entry = analysis.claim("core_entry", "Unknown")
+        sdk_call_chain = analysis.claim("core_flow", "Unknown")
+        dependency_graph = analysis.claim("dependency_graph", "Unknown")
+        version_marker = analysis.claim("version_marker", "Unknown")
+        install_step = analysis.claim("install_command", "Unknown")
+        build_step = analysis.claim("build_command", "Unknown")
+        run_step = analysis.claim("run_command", "Unknown")
+        quick_step = analysis.claim("quick_command", "Unknown")
+        bugfix_step = analysis.claim("bugfix_command", "Unknown")
+        full_step = analysis.claim("full_command", "Unknown")
+        style_rules = analysis.claim("style_rules", style_rules)
+        architecture_rules = analysis.claim("architecture_rules", architecture_rules)
+        forbidden_operations = analysis.claim("forbidden_operations", forbidden_operations)
+        high_risk_files = analysis.claim("high_risk_files", high_risk_files)
+        feature_paths = analysis.claim("feature_paths", feature_paths)
+        code_safety_rules = analysis.claim("code_safety_rules", code_safety_rules)
+        multi_version_notes = analysis.claim("multi_version_notes", multi_version_notes)
+        logging_rules = analysis.claim("logging_rules", logging_rules)
+        exploration_suggestions = analysis.claim("exploration_suggestions", exploration_suggestions)
+        module_interfaces = analysis.items("module_interfaces", module_interfaces)
+        key_module_markers = analysis.items("key_module_markers", key_module_markers)
+        high_risk_directories = analysis.items("high_risk_directories", high_risk_directories)
+        auto_detected_candidates_list = analysis.items("auto_detected_candidates", auto_detected_candidates_list)
+        auto_detected_candidates_list.extend(analysis.evidence_items)
+
+    build_bootstrap = detect_build_bootstrap(repo_root, project_type, build_step)
     manual_review_items_list = detect_manual_review_items(
         repo_root,
         build_step,
@@ -1046,13 +1202,17 @@ def generate_context_files(repo_root: Path) -> dict[str, str]:
         bugfix_step,
         full_step,
     )
+    if analysis is not None:
+        manual_review_items_list.extend(analysis.manual_review_items)
     auto_detected_candidates = format_bullets(auto_detected_candidates_list)
     agents_manual_review_items = format_bullets(manual_review_items_list + list(contract_index.manual_review))
 
-    return {
+    generated_files = {
         "README.md": render_readme(
             repo_root,
             project_name,
+            project_type,
+            project_summary,
             languages,
             build_systems,
             core_modules,
@@ -1086,6 +1246,8 @@ def generate_context_files(repo_root: Path) -> dict[str, str]:
             repo_root,
             dependency_graph,
             architecture_overview,
+            sdk_call_chain,
+            architecture_pattern,
             module_interfaces,
             key_module_markers,
         ),
@@ -1103,6 +1265,12 @@ def generate_context_files(repo_root: Path) -> dict[str, str]:
             manual_review_items_list,
         ),
     }
+    normalized_files: dict[str, str] = {}
+    for file_name, content in generated_files.items():
+        normalized, _ = strip_legacy_managed_markers(content)
+        parse_markdown_sections(normalized, SECTION_SPECS[file_name])
+        normalized_files[file_name] = normalized.rstrip("\n")
+    return normalized_files
 
 
 def summarize_diff(file_name: str, existing: str, generated: str) -> tuple[str, str]:
@@ -1122,19 +1290,37 @@ def summarize_diff(file_name: str, existing: str, generated: str) -> tuple[str, 
     return summary, "\n".join(diff)
 
 
-def summarize_managed_diffs(file_name: str, existing: str, merged: str, changed_ids: list[str]) -> str:
-    existing_blocks = parse_managed_blocks(existing)
-    merged_blocks = parse_managed_blocks(merged)
+def summarize_section_diffs(
+    file_name: str,
+    existing: str,
+    merged: str,
+    changed_ids: list[str],
+) -> str:
+    specs = SECTION_SPECS[file_name]
+    cleaned_existing, legacy_ids = strip_legacy_managed_markers(existing)
+    cleaned_merged, _ = strip_legacy_managed_markers(merged)
+    existing_sections = parse_markdown_sections(cleaned_existing, specs)
+    merged_sections = parse_markdown_sections(cleaned_merged, specs)
     rendered: list[str] = []
-    for block_id in changed_ids:
-        existing_body = existing_blocks[block_id].body if block_id in existing_blocks else ""
-        merged_body = merged_blocks[block_id].body
+    if legacy_ids:
+        rendered.extend(
+            difflib.unified_diff(
+                existing.splitlines(),
+                cleaned_existing.splitlines(),
+                fromfile=f"{file_name}:legacy-markers (existing)",
+                tofile=f"{file_name}:legacy-markers (removed)",
+                lineterm="",
+            )
+        )
+    for section_id in changed_ids:
+        existing_body = existing_sections[section_id].body
+        merged_body = merged_sections[section_id].body
         rendered.extend(
             difflib.unified_diff(
                 existing_body.splitlines(),
                 merged_body.splitlines(),
-                fromfile=f"{file_name}:{block_id} (existing)",
-                tofile=f"{file_name}:{block_id} (generated)",
+                fromfile=f"{file_name}:{section_id} (existing)",
+                tofile=f"{file_name}:{section_id} (generated)",
                 lineterm="",
             )
         )
@@ -1195,7 +1381,7 @@ def write_initial_context_files(repo_root: Path, generated_files: dict[str, str]
         print(f"- {file_name}")
     if force:
         print("--force cannot overwrite existing context files during scan.")
-    print("Run `dev-harness-context refresh <repo-path>` to preview managed-block updates.")
+    print("Run `dev-harness-context refresh <repo-path>` to preview fixed-section updates.")
     return 2
 
 
@@ -1203,7 +1389,6 @@ def refresh_context_files(repo_root: Path, generated_files: dict[str, str], forc
     pending: list[tuple[str, Path, str, DocumentFormat, list[str], str]] = []
     missing: list[tuple[str, Path, bytes]] = []
     errors: list[tuple[str, str]] = []
-    legacy_blocked: list[str] = []
     interactive = sys.stdin.isatty()
 
     for file_name, content in generated_files.items():
@@ -1219,59 +1404,24 @@ def refresh_context_files(repo_root: Path, generated_files: dict[str, str], forc
             continue
 
         try:
-            existing_blocks = parse_managed_blocks(existing)
-        except ManagedDocumentError as exc:
-            errors.append((file_name, str(exc)))
-            continue
-
-        if not existing_blocks:
-            if force or not interactive:
-                legacy_blocked.append(file_name)
-                continue
-            try:
-                migration = migrate_legacy_document(existing, generated)
-            except ManagedDocumentError as exc:
-                errors.append((file_name, str(exc)))
-                continue
-            if not migration.safe_section_ids:
-                legacy_blocked.append(file_name)
-                continue
-            merged = migration.merged_text
-            changed_ids = list(migration.safe_section_ids)
-            diff_text = "\n".join(
-                difflib.unified_diff(
-                    existing.splitlines(),
-                    merged.splitlines(),
-                    fromfile=f"{file_name}:legacy (existing)",
-                    tofile=f"{file_name}:legacy (managed)",
-                    lineterm="",
-                )
+            merged, changed_ids, legacy_ids = merge_markdown_sections(
+                existing,
+                generated,
+                SECTION_SPECS[file_name],
             )
-            pending.append((file_name, target_path, merged, document_format, changed_ids, diff_text))
-            continue
-
-        try:
-            merged, changed_ids = merge_managed_blocks(existing, generated)
         except ManagedDocumentError as exc:
             errors.append((file_name, str(exc)))
             continue
-        if not changed_ids:
+        if not changed_ids and not legacy_ids:
             continue
-        diff_text = summarize_managed_diffs(file_name, existing, merged, changed_ids)
-        pending.append((file_name, target_path, merged, document_format, changed_ids, diff_text))
+        displayed_ids = (["legacy-markers"] if legacy_ids else []) + changed_ids
+        diff_text = summarize_section_diffs(file_name, existing, merged, changed_ids)
+        pending.append((file_name, target_path, merged, document_format, displayed_ids, diff_text))
 
     if errors:
         for file_name, message in errors:
             print(f"Error: cannot refresh {file_name}: {message}")
         return 1
-
-    if legacy_blocked:
-        print("Legacy context files require interactive migration and were left unchanged:")
-        for file_name in legacy_blocked:
-            print(f"- {file_name}")
-        if force:
-            print("--force cannot bypass legacy migration confirmation.")
-        return 2
 
     for file_name, target_path, content in missing:
         target_path.write_bytes(content)
@@ -1280,25 +1430,25 @@ def refresh_context_files(repo_root: Path, generated_files: dict[str, str], forc
     if not pending:
         return 0
 
-    print("Managed-block updates detected:")
+    print("Fixed-section updates detected:")
     for file_name, _, _, _, changed_ids, _ in pending:
         print(f"- {file_name}: {', '.join(changed_ids)}")
 
     if not force and not interactive:
         for file_name, _, _, _, _, diff_text in pending:
-            print(f"--- BEGIN MANAGED DIFF: {file_name} ---")
+            print(f"--- BEGIN SECTION DIFF: {file_name} ---")
             print(diff_text)
-            print(f"--- END MANAGED DIFF: {file_name} ---")
-        print("Preview only; re-run with --force or use an interactive terminal to apply managed-block updates.")
+            print(f"--- END SECTION DIFF: {file_name} ---")
+        print("Preview only; re-run with --force or use an interactive terminal to apply fixed-section updates.")
         return 2
 
     updated: list[str] = []
     skipped: list[str] = []
     interactive_mode = "ask"
     for file_name, target_path, merged, document_format, _, diff_text in pending:
-        print(f"--- BEGIN MANAGED DIFF: {file_name} ---")
+        print(f"--- BEGIN SECTION DIFF: {file_name} ---")
         print(diff_text)
-        print(f"--- END MANAGED DIFF: {file_name} ---")
+        print(f"--- END SECTION DIFF: {file_name} ---")
         if force or interactive_mode == "all":
             action = "yes"
         elif interactive_mode == "none":
@@ -1317,7 +1467,7 @@ def refresh_context_files(repo_root: Path, generated_files: dict[str, str], forc
         if action == "yes":
             atomic_write_document(target_path, merged, document_format)
             updated.append(file_name)
-            print(f"Updated managed blocks: {file_name}")
+            print(f"Updated fixed sections: {file_name}")
         else:
             skipped.append(file_name)
             print(f"Skipped: {file_name}")
@@ -1329,13 +1479,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Generate README.md, AGENTS.md, and ARCHITECTURE.md from a real repository scan.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    evidence_parser = subparsers.add_parser("evidence", help="collect framework-agnostic repository evidence as JSON")
+    evidence_parser.add_argument("repo_path", type=Path, help="target repository root path")
+
     scan_parser = subparsers.add_parser("scan", help="scan repository and generate context files")
     scan_parser.add_argument("repo_path", type=Path, help="target repository root path")
     scan_parser.add_argument("--force", action="store_true", help="accepted for compatibility; existing files are never overwritten")
+    scan_parser.add_argument("--analysis", type=Path, help="validated AI semantic analysis JSON")
 
-    refresh_parser = subparsers.add_parser("refresh", help="refresh only dev-harness managed blocks")
+    refresh_parser = subparsers.add_parser("refresh", help="refresh only fixed Markdown sections")
     refresh_parser.add_argument("repo_path", type=Path, help="target repository root path")
-    refresh_parser.add_argument("--force", action="store_true", help="apply managed-block updates without prompting")
+    refresh_parser.add_argument("--force", action="store_true", help="apply fixed-section updates without prompting")
+    refresh_parser.add_argument("--analysis", type=Path, help="validated AI semantic analysis JSON")
 
     return parser
 
@@ -1349,7 +1504,27 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Error: repository path does not exist or is not a directory: {repo_root}")
         return 1
 
-    generated_files = generate_context_files(repo_root)
+    if args.command == "evidence":
+        evidence = collect_repository_evidence(repo_root)
+        print(json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True))
+        if evidence["truncated"]:
+            print("Error: repository evidence was truncated; narrow the repository or raise the scanner limit.", file=sys.stderr)
+            return 2
+        return 0
+
+    analysis = None
+    if args.analysis is not None:
+        try:
+            analysis = load_semantic_analysis(args.analysis.resolve(), repo_root)
+        except SemanticAnalysisError as exc:
+            print(f"Error: invalid semantic analysis: {exc}")
+            return 1
+
+    try:
+        generated_files = generate_context_files(repo_root, analysis=analysis)
+    except (ManagedDocumentError, FileNotFoundError, UnicodeError) as exc:
+        print(f"Error: invalid context template: {exc}")
+        return 1
     if args.command == "scan":
         return write_initial_context_files(repo_root, generated_files, force=args.force)
     if args.command == "refresh":

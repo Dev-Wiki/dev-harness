@@ -4,7 +4,6 @@
 ## 项目简介
 {项目简介或 Unknown}
 
-<!-- dev-harness:managed:start id=readme.detected-context version=1 -->
 ## 编程语言
 {语言列表或 Unknown}
 
@@ -20,4 +19,3 @@
 - 安装: {步骤或 Unknown}
 - 构建: {步骤或 Unknown}
 - 运行: {步骤或 Unknown}
-<!-- dev-harness:managed:end id=readme.detected-context -->

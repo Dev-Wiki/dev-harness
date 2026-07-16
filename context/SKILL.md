@@ -5,11 +5,19 @@ description: Use when you need to initialize or safely refresh AI project contex
 
 # dev-harness-context
 
-负责扫描真实仓库结构，初始化面向开发者、AI Agent 和架构分析的项目上下文文件，并在后续开发中安全刷新自动识别区块。
+负责扫描真实仓库结构，由 AI 基于证据识别语言、框架、架构和验证入口，初始化面向开发者、AI Agent 和架构分析的项目上下文文件，并在后续开发中安全刷新自动识别区块。
 
 增强版重点不是生成“简介型 AGENTS”，而是生成一份**约束型 AGENTS.md**，尽量把调用链、架构边界、高风险文件、禁止操作和探索建议沉淀出来。
 
-当前优先支持的项目形态为：
+## 工作模型
+
+Context 采用三层职责，不以硬编码 profile 作为项目识别白名单：
+
+1. **确定性 Evidence Collector**：只收集目录、文件类型、配置、入口候选和仓库快照指纹，不下架构结论。
+2. **AI Semantic Analyzer**：阅读真实代码，输出带证据路径和置信度的结构化分析。
+3. **Deterministic Validator / Writer**：验证证据没有越界、命令有来源、仓库快照未漂移，再按固定 Markdown 标题安全更新章节。
+
+内置 profile 是无 AI 调用时的兼容回退，以及高风险领域的增强规则，不决定项目“能否被识别”。当前增强 profile 包括：
 
 - `Qt Client (Windows/Linux) -> Shared C++ Core`
 - `WPF`
@@ -20,6 +28,7 @@ description: Use when you need to initialize or safely refresh AI project contex
 - **`Flutter` 跨端客户端**
 - **`Node.js / TypeScript` 前端工具链与 SDK**
 - **`Node.js` 插件类项目 (含 `plugin.json`)**
+- **`Python / FastAPI` 后端服务**
 
 对 Qt / WPF / Win32 这类依赖共享 C++ 底层的高风险项目，还应额外输出：
 
@@ -42,6 +51,14 @@ description: Use when you need to initialize or safely refresh AI project contex
 
 - 工作空间（Workspace）包间依赖及入口点
 - `plugin.json` 约定的生命周期及扩展点隔离要求
+
+对 FastAPI 后端服务，还应额外输出：
+
+- ASGI 应用入口、router 注册和 service/core 调用链候选
+- Python 编译检查、pytest 验证与 uvicorn 运行命令候选
+- 路由契约、认证配置、数据库迁移和敏感日志边界
+
+遇到未列出的语言或框架时，**不得因为 profile 缺失而停止**。只要仓库证据充分，AI 应按同一语义分析协议识别；不能确认的单项才标记 `Unknown`。
 
 
 
@@ -92,12 +109,17 @@ fi
 
 - 目标仓库根目录
 - 操作模式：首次初始化使用 `scan`，后续同步使用 `refresh`
+- AI 语义分析文件：按 `evidence` 输出中的 `analysis_contract` 生成
 
 ## 输出契约
 
 输出必须满足以下约束：
 
 - 所有分析都基于真实代码、真实目录结构和真实配置文件
+- 所有非 `Unknown` 的 AI 结论必须携带至少一个仓库内证据路径，可附行号（如 `src/main.py:42`）
+- 每个 AI 结论必须标记 `high`、`medium` 或 `low` 置信度；低置信度结论只能进入“需人工确认”，不得渲染成事实
+- build / run / quick / bugfix / full 等命令没有仓库内证据时必须拒绝，不得用生态惯例猜测
+- AI 分析必须绑定 `evidence_fingerprint`；仓库在分析后发生漂移时必须重新扫描，不得写入旧结论
 - 无法确认的信息必须写成 `Unknown`
 - 只按固定 Markdown 模板输出
 - 产物仅限：
@@ -107,24 +129,25 @@ fi
   - `HARNESS.md`
 - **严禁修改任何文件的编码格式**（UTF-8 / UTF-8 BOM / UTF-16 / GBK / GB2312 / Latin-1 等）。若编码变更看似必要，必须先获得人工确认，不得绕过
 - `scan` 只创建缺失文件，现有文件即使使用 `--force` 也不得覆盖
-- `refresh` 只更新 `dev-harness:managed` 标记内的自动识别内容，标记外文本归用户所有
+- `refresh` 只更新模板契约列出的固定 Markdown 章节，其他章节和标题之外文本归用户所有
+- 生成文件不得注入 `dev-harness:managed` 或其他 HTML 注释标记
 - `AGENTS.md` 的“项目规范索引”只记录专业文档路径，不复制 Git、代码、发布或 changelog 规则正文
 - 识别已有 Git 工作流、代码规范、发布规范和 changelog 文档；Context 不负责创建这些专业文档
-- 无标记旧文件只能在交互终端中保守迁移；`--force` 不得绕过迁移确认
-- 混合换行、未知编码或损坏标记必须停止写入并报告错误
+- 旧版合法 `dev-harness:managed` 标记在首次刷新时自动移除，标记正文保持不变
+- 固定标题缺失、重复、层级变化、混合换行、未知编码或损坏旧标记必须停止写入并报告错误
 
 ## 顺序化步骤
 
-1. 扫描仓库目录结构，并识别 AGENTS 已引用或约定路径中的项目规范文档
-2. 识别编程语言、构建系统、入口文件和核心模块
-3. 搜索关键类、接口、模块边界和依赖关系
-4. 无法确认的项标记为 `Unknown`
-5. 在 `AGENTS.md` 中优先输出约束信息：调用链、架构边界、高风险文件、禁改规则（含文件编码约束）、探索建议
-5b. 从仓库抽样生成「代码风格锚点」：真实文件路径 + 首条结构性声明截断行，约束 AI 对齐既有写法
-6. 对 Qt -> Shared C++ Core / NativeBridge 项目，补充“自动识别候选”和“需人工确认”区块
-6b. 对 Go、Flutter、Node.js 插件等项目，补充其特有的框架约束、组件识别候选和需人工确认的边界项
-7. 额外生成 `HARNESS.md`，记录项目类型、build/quick/bugfix/full 命令、高风险目录、禁改区域、自动识别候选和需人工确认项
-8. 首次初始化只创建缺失文件；后续刷新先展示托管块差异，再按确认结果原子写入
+1. 运行 `dev-harness-context evidence <repo-path>`，读取 JSON 证据清单和 `evidence_fingerprint`
+2. 若 `truncated` 为 `true`，立即停止；不得在不完整仓库视图上生成上下文
+3. AI 根据 `important_files`、`source_candidates` 和真实目录继续读取入口、依赖、测试、CI、构建脚本及关键模块
+4. AI 生成符合 `analysis_contract` 的 JSON；非 `Unknown` Claim 必须包含 `value`、`confidence`、`evidence`
+5. 将分析 JSON 写入工作区外的临时路径，不得把扫描中间产物提交到目标仓库
+6. 首次初始化运行 `scan <repo-path> --analysis <analysis.json>`；后续同步运行 `refresh <repo-path> --analysis <analysis.json>`
+7. Validator 负责证据路径、快照指纹、字段白名单和命令来源校验；校验失败时停止，不得绕过
+8. 在 `AGENTS.md` 中优先输出约束信息：调用链、架构边界、高风险文件、禁改规则、探索建议和证据不足项
+9. 内置 profile 只补充框架特有风险；新的语言或框架不要求先修改扫描器代码
+10. 首次初始化只创建缺失文件；后续刷新先展示固定章节差异，再按确认结果原子写入
 
 ## 固定模板要求
 
@@ -141,28 +164,34 @@ fi
    - `templates/ARCHITECTURE.template.md`
    - `templates/HARNESS.template.md`
 
-不得擅自扩展字段，不得输出模板之外的解释性文字。
+不得擅自扩展字段，不得输出模板之外的解释性文字。仓库覆盖模板必须保留对应文件的固定章节标题及层级；标题是刷新定位契约。
 
 ## CLI
 
 安装后的最小运行入口为：
 
 ```bash
+dev-harness-context evidence <repo-path>
 dev-harness-context scan <repo-path>
+dev-harness-context scan <repo-path> --analysis <analysis.json>
 dev-harness-context refresh <repo-path>
+dev-harness-context refresh <repo-path> --analysis <analysis.json>
 ```
 
 默认行为：
 
+- `evidence` 输出通用仓库证据、分析字段契约和快照指纹，不输出框架结论
+- `scan` / `refresh` 传入 `--analysis` 时，优先使用经验证的 AI 语义分析；未传入时保留内置规则回退以兼容脚本和离线调用
+- AI Agent 调用本 skill 时默认必须走 `evidence` + `--analysis` 主路径，不得仅凭规则回退的 `Unknown` 宣告无法识别项目
 - `scan` 仅在上下文文件缺失时创建；已有同名文件保持原样，返回码 `2` 提示改用 `refresh`
 - `scan --force` 为兼容旧调用保留，但仍不得覆盖现有文件
-- `refresh` 只比较和更新托管块，保持块外用户内容、原编码/BOM、CRLF/LF、末尾换行状态和文件权限
+- `refresh` 按固定 Markdown 标题比较和更新章节，保持其他章节、原编码/BOM、CRLF/LF、末尾换行状态和文件权限
 - 新增或调整项目自己的 Git、代码、发布、changelog 文档后，运行 `refresh` 更新 AGENTS 索引
 - 代码规范只识别现有文档，不根据 formatter/linter 配置自动生成规则文档
 - `CHANGELOG.md` 不由 Context 创建；它由用户确认后或首次发布流程通过 `dev-harness-git-workflow` 初始化
-- 非交互 `refresh` 发现差异时只输出预览并返回 `2`；`refresh --force` 可直接应用有效托管块更新
+- 非交互 `refresh` 发现差异时只输出预览并返回 `2`；`refresh --force` 可直接应用成功定位的固定章节更新
 - 交互刷新支持 `y` / `n` / `all` / `none` / `quit`；`quit` 返回 `130`
-- 无标记旧文件必须交互确认迁移，`refresh --force` 会保留文件并返回 `2`
+- 旧版合法 managed 标记会在刷新时无损移除；损坏标记直接报错，不猜测修复
 - 不得暴露“兼容模式”之类的自定义术语；仓库模板缺失时应直接回退到 skill 自带模板继续生成，不再额外询问模板模式选择
 
 ## 停止条件
@@ -170,8 +199,8 @@ dev-harness-context refresh <repo-path>
 - 无法访问目标仓库
 - 仓库结构扫描结果被截断
 - 关键配置文件无法读取
-- 旧文件没有托管标记且当前会话不可交互
-- 文件包含混合换行、无法解码的编码、重复/嵌套/不闭合标记或未知标记版本
+- 文件缺少固定章节标题、同名标题重复或标题层级变化
+- 文件包含混合换行、无法解码的编码、重复/嵌套/不闭合旧标记或未知旧标记版本
 - 仓库模板缺失且 skill 自带模板也不可用
 - AI 提议或尝试修改文件编码且用户未明确确认
 

@@ -14,10 +14,9 @@ class ContractDiscoveryTests(unittest.TestCase):
             (repo_root / "company" / "GIT_RULES.md").write_text("# Team Git\n", encoding="utf-8")
             (repo_root / "docs" / "GIT_WORKFLOW.md").write_text("# Default Git\n", encoding="utf-8")
             (repo_root / "AGENTS.md").write_text(
-                "<!-- dev-harness:managed:start id=agents.contract-index version=1 -->\n"
                 "## 项目规范索引\n\n"
-                "- Git 工作流：`company/GIT_RULES.md`\n"
-                "<!-- dev-harness:managed:end id=agents.contract-index -->\n",
+                "- Git 工作流：`company/GIT_RULES.md`\n\n"
+                "## 其他章节\n",
                 encoding="utf-8",
             )
 
@@ -66,10 +65,11 @@ class ContractDiscoveryTests(unittest.TestCase):
             for relative in ("team-a/GIT.md", "team-b/GIT.md", "docs/GIT_WORKFLOW.md"):
                 (repo_root / relative).write_text(f"# {relative}\n", encoding="utf-8")
             (repo_root / "AGENTS.md").write_text(
-                "<!-- dev-harness:managed:start id=agents.contract-index version=1 -->\n"
+                "# AGENTS\n\n"
+                "## 项目规范索引\n"
                 "- Git 工作流：`team-a/GIT.md`\n"
                 "- Git 工作流：`team-b/GIT.md`\n"
-                "<!-- dev-harness:managed:end id=agents.contract-index -->\n",
+                "\n## 其他章节\n",
                 encoding="utf-8",
             )
 
