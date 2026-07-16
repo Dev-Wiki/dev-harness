@@ -12,6 +12,32 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).parent
 VERSION_FILE = SCRIPT_DIR / "VERSION"
 DIST_DIR = SCRIPT_DIR / "dist"
+INSTALLABLE_SOURCE_PATHS = (
+    "install.py",
+    "install.sh",
+    "install.bat",
+    "VERSION",
+    "README.md",
+    "commands",
+    "context",
+    "planning",
+    "git-workflow",
+    "auto-fix",
+    "retro",
+    "internal/bugfix-flow",
+)
+
+
+def _iter_package_files(path: Path):
+    if path.is_file():
+        yield path
+        return
+    for file in sorted(path.rglob("*")):
+        if not file.is_file():
+            continue
+        if "__pycache__" in file.parts or file.suffix == ".pyc" or file.name.endswith(":Zone.Identifier"):
+            continue
+        yield file
 
 
 def main() -> None:
@@ -44,6 +70,10 @@ def main() -> None:
         for file in sorted(bundle_dir.rglob("*")):
             if file.is_file():
                 zf.write(file, file.relative_to(bundle_dir))
+        for relative_path in INSTALLABLE_SOURCE_PATHS:
+            source = SCRIPT_DIR / relative_path
+            for file in _iter_package_files(source):
+                zf.write(file, file.relative_to(SCRIPT_DIR))
         changelog = SCRIPT_DIR / "CHANGELOG.md"
         if changelog.exists():
             zf.write(changelog, "CHANGELOG.md")

@@ -36,9 +36,11 @@ CONTEXT_RUNTIME_FILES = [
     "__init__.py",
     "cli.py",
     "contracts.py",
+    "evidence.py",
     "managed.py",
     "platform_profiles.py",
     "repo_walk.py",
+    "semantic.py",
 ]
 CONTEXT_TEMPLATE_DIR = CONTEXT_SOURCE_DIR / "templates"
 CONTEXT_TEMPLATE_FILES = [
