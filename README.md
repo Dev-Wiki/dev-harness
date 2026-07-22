@@ -140,7 +140,9 @@ dev-harness-context scan /path/to/repo --analysis /tmp/context-analysis.json
 dev-harness-context refresh /path/to/repo --analysis /tmp/context-analysis.json
 ```
 
-每个 AI 结论都必须引用仓库内证据并绑定扫描快照指纹；无证据命令、越界路径或仓库漂移会在写入前被拒绝。
+每个 AI 结论都必须引用仓库内证据并绑定扫描快照指纹；无证据命令、越界路径、无效行号或仓库漂移会在写入前被拒绝。证据明细保留在分析 JSON 中，不复制到 AGENTS/HARNESS；README 的核心模块优先采用 AI 基于源码给出的真实职责。
+
+安装、构建、运行和验证命令按真实语义区分。依赖安装不会冒充 build；Python 服务没有独立编译或打包步骤时，build 明确标记为 `N/A`。
 
 ### 项目规范如何组织
 

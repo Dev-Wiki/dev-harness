@@ -543,13 +543,67 @@ class ContextCliTests(unittest.TestCase):
             harness_content = (repo_root / "HARNESS.md").read_text(encoding="utf-8")
 
             self.assertIn("FastAPI", harness_content)
-            self.assertIn("python -m compileall -q main.py app", harness_content)
+            self.assertIn("BuildCommand**: N/A", harness_content)
+            self.assertIn("项目无独立编译或打包步骤", harness_content)
             self.assertIn("python -m pytest -q", harness_content)
             self.assertIn("python -m uvicorn main:app --reload", readme_content)
             self.assertIn("Python + FastAPI", agents_content)
             self.assertIn("main.py", agents_content)
             self.assertIn("main.py -> app/routers -> app/services", agents_content)
             self.assertIn("FastAPI modular service", architecture_content)
+
+    def test_scan_python_service_avoids_template_noise_and_finds_runtime_risks(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp) / "python-service"
+            (repo_root / "app" / "api").mkdir(parents=True)
+            (repo_root / "data").mkdir()
+            (repo_root / "logs").mkdir()
+            (repo_root / "deploy" / "windows").mkdir(parents=True)
+            (repo_root / "requirements.txt").write_text("fastapi\npytest\n", encoding="utf-8")
+            (repo_root / "app" / "main.py").write_text(
+                "from fastapi import FastAPI\n"
+                "def create_app():\n"
+                "    app = FastAPI()\n"
+                "    Base.metadata.create_all(engine)\n"
+                "    app.include_router(router)\n"
+                "    return app\n",
+                encoding="utf-8",
+            )
+            (repo_root / "app" / "api" / "requirements.py").write_text(
+                "import asyncio\n"
+                "async def sync_requirement(request):\n"
+                "    lock = asyncio.Lock()\n"
+                "    for attempt in range(3):\n"
+                "        await request.app.state.qa_client.find_latest_test_case('id')\n",
+                encoding="utf-8",
+            )
+            (repo_root / "deploy" / "windows" / "install_service.ps1").write_text(
+                "nssm install Demo\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(main(["scan", str(repo_root)]), 0)
+
+            readme = (repo_root / "README.md").read_text(encoding="utf-8")
+            agents = (repo_root / "AGENTS.md").read_text(encoding="utf-8")
+            harness = (repo_root / "HARNESS.md").read_text(encoding="utf-8")
+            self.assertTrue(readme.startswith("# python-service\n"))
+            self.assertIn("构建: N/A（项目无独立编译或打包步骤）", readme)
+            self.assertNotIn("data:", readme)
+            self.assertNotIn("logs:", readme)
+            self.assertNotIn("contains project files", readme)
+            self.assertNotIn("contains submodules or grouped resources", readme)
+            self.assertIn("**核心调用链**", agents)
+            self.assertNotIn("*.h", agents)
+            self.assertNotIn("*.cpp", agents)
+            self.assertIn("app/main.py", agents)
+            self.assertIn("app/api/requirements.py", agents)
+            self.assertIn("**WorkingDirectory**: repository root", harness)
+            self.assertNotIn(str(repo_root), harness)
+            self.assertNotIn("- Unknown", harness)
+            self.assertNotIn("### 快速验证命令\n`N/A", harness)
+            high_risk = agents.split("## 5. 高风险文件标注", 1)[1].split("## 6.", 1)[0]
+            self.assertNotIn("tests/", high_risk)
 
     def test_ai_analysis_supports_unfamiliar_framework_without_profile_code(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -619,6 +673,13 @@ class ContextCliTests(unittest.TestCase):
                             },
                         },
                         "lists": {
+                            "core_modules": [
+                                {
+                                    "value": "src: Nebula 应用入口与路由实现",
+                                    "confidence": "high",
+                                    "evidence": ["src/bootstrap.nbl:1"],
+                                }
+                            ],
                             "module_interfaces": [
                                 {
                                     "value": "bootstrap -> routes: module dispatch",
@@ -647,7 +708,9 @@ class ContextCliTests(unittest.TestCase):
             self.assertIn("nebula build", (repo_root / "HARNESS.md").read_text(encoding="utf-8"))
             agents_content = (repo_root / "AGENTS.md").read_text(encoding="utf-8")
             self.assertIn("Nebula language + NebulaStack", agents_content)
-            self.assertIn("AI `project_type` [high] 证据：`toolchain.conf:1`", agents_content)
+            self.assertNotIn("AI `project_type` [high]", agents_content)
+            readme_content = (repo_root / "README.md").read_text(encoding="utf-8")
+            self.assertIn("src: Nebula 应用入口与路由实现", readme_content)
             self.assertIn("src/bootstrap.nbl -> src/routes.nbl", (repo_root / "ARCHITECTURE.md").read_text(encoding="utf-8"))
 
     def test_ai_analysis_rejects_command_without_repository_evidence(self) -> None:

@@ -55,7 +55,7 @@ Context 采用三层职责，不以硬编码 profile 作为项目识别白名单
 对 FastAPI 后端服务，还应额外输出：
 
 - ASGI 应用入口、router 注册和 service/core 调用链候选
-- Python 编译检查、pytest 验证与 uvicorn 运行命令候选
+- 依赖安装、pytest 验证与 uvicorn 运行命令候选；无独立编译或打包步骤时 build 明确为 `N/A`
 - 路由契约、认证配置、数据库迁移和敏感日志边界
 
 遇到未列出的语言或框架时，**不得因为 profile 缺失而停止**。只要仓库证据充分，AI 应按同一语义分析协议识别；不能确认的单项才标记 `Unknown`。
@@ -117,8 +117,11 @@ fi
 
 - 所有分析都基于真实代码、真实目录结构和真实配置文件
 - 所有非 `Unknown` 的 AI 结论必须携带至少一个仓库内证据路径，可附行号（如 `src/main.py:42`）
+- 包含“所有、必须、禁止、只能、不得”的强约束必须引用精确行号，并执行反证搜索
 - 每个 AI 结论必须标记 `high`、`medium` 或 `low` 置信度；低置信度结论只能进入“需人工确认”，不得渲染成事实
 - build / run / quick / bugfix / full 等命令没有仓库内证据时必须拒绝，不得用生态惯例猜测
+- install、build、run、quick、bugfix、full 必须按真实语义区分；依赖安装不得冒充构建
+- 证据明细保留在分析 JSON 中，不得把 `AI field[index] [confidence]` 等内部审计字段写入 AGENTS/HARNESS
 - AI 分析必须绑定 `evidence_fingerprint`；仓库在分析后发生漂移时必须重新扫描，不得写入旧结论
 - 无法确认的信息必须写成 `Unknown`
 - 只按固定 Markdown 模板输出
@@ -141,13 +144,17 @@ fi
 1. 运行 `dev-harness-context evidence <repo-path>`，读取 JSON 证据清单和 `evidence_fingerprint`
 2. 若 `truncated` 为 `true`，立即停止；不得在不完整仓库视图上生成上下文
 3. AI 根据 `important_files`、`source_candidates` 和真实目录继续读取入口、依赖、测试、CI、构建脚本及关键模块
-4. AI 生成符合 `analysis_contract` 的 JSON；非 `Unknown` Claim 必须包含 `value`、`confidence`、`evidence`
-5. 将分析 JSON 写入工作区外的临时路径，不得把扫描中间产物提交到目标仓库
-6. 首次初始化运行 `scan <repo-path> --analysis <analysis.json>`；后续同步运行 `refresh <repo-path> --analysis <analysis.json>`
-7. Validator 负责证据路径、快照指纹、字段白名单和命令来源校验；校验失败时停止，不得绕过
-8. 在 `AGENTS.md` 中优先输出约束信息：调用链、架构边界、高风险文件、禁改规则、探索建议和证据不足项
-9. 内置 profile 只补充框架特有风险；新的语言或框架不要求先修改扫描器代码
-10. 首次初始化只创建缺失文件；后续刷新先展示固定章节差异，再按确认结果原子写入
+4. AI 生成符合 `analysis_contract` 的 JSON；非 `Unknown` Claim 必须包含 `value`、`confidence`、`evidence`，README 核心模块通过 `core_modules` 提供真实职责
+5. 对每个强约束执行反证搜索；主动检查相同能力的其他实现、启动副作用、事务、旁路调用和异常路径，发现反例后收窄结论
+6. 对高风险候选逐项分类，至少覆盖应用启动、数据库/schema、认证授权、外部调用、锁与重试、文件写入、子进程、服务安装和不可信输入输出
+7. 生成四份文档的内存预览并检查命令分类、模块职责、绝对路径、动态测试数量、模板术语、重复内容和内部字段名
+8. 将分析 JSON 写入工作区外的临时路径，不得把扫描中间产物提交到目标仓库
+9. 首次初始化运行 `scan <repo-path> --analysis <analysis.json>`；后续同步运行 `refresh <repo-path> --analysis <analysis.json>`
+10. Validator 负责证据路径与行号、快照指纹、字段白名单和命令来源校验；校验失败时停止，不得绕过
+11. 无法确认的项保持 `Unknown`，不适用项写 `N/A`，空列表不得渲染成 `- Unknown`
+12. 在 `AGENTS.md` 中优先输出约束信息：调用链、架构边界、高风险文件、禁改规则、探索建议和证据不足项
+13. 内置 profile 只补充框架特有风险；新的语言或框架不要求先修改扫描器代码
+14. 首次初始化只创建缺失文件；后续刷新先展示固定章节差异，再按确认结果原子写入
 
 ## 固定模板要求
 

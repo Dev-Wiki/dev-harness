@@ -36,6 +36,7 @@ ALLOWED_CLAIMS = {
     "exploration_suggestions",
 }
 ALLOWED_LISTS = {
+    "core_modules",
     "module_interfaces",
     "key_module_markers",
     "high_risk_directories",
@@ -51,6 +52,17 @@ COMMAND_CLAIMS = {
     "full_command",
 }
 LINE_REFERENCE = re.compile(r"^(?P<path>.+?)(?::(?P<line>[1-9][0-9]*))?$")
+INSTALL_ONLY_COMMAND = re.compile(
+    r"^(?:(?:py(?:\s+-\d+(?:\.\d+)?)?|python(?:\d+(?:\.\d+)?)?)\s+-m\s+)?pip\s+install\b"
+    r"|^(?:npm|pnpm|yarn|ohpm)\s+install\b",
+    re.IGNORECASE,
+)
+NORMATIVE_CLAIMS = {
+    "architecture_rules",
+    "forbidden_operations",
+    "code_safety_rules",
+}
+NORMATIVE_TERMS = ("所有", "必须", "禁止", "只能", "不得")
 
 
 class SemanticAnalysisError(ValueError):
@@ -89,6 +101,20 @@ def _validate_evidence_reference(repo_root: Path, reference: object, field: str)
         raise SemanticAnalysisError(f"{field}: evidence path does not exist: {reference}")
     if match.group("line") and not target.is_file():
         raise SemanticAnalysisError(f"{field}: line evidence must reference a file: {reference}")
+    if match.group("line"):
+        line_number = int(match.group("line"))
+        try:
+            with target.open("rb") as stream:
+                content = stream.read()
+        except OSError as exc:
+            raise SemanticAnalysisError(f"{field}: cannot read evidence file: {reference}") from exc
+        line_count = content.count(b"\n")
+        if content and not content.endswith(b"\n"):
+            line_count += 1
+        if line_number > line_count:
+            raise SemanticAnalysisError(
+                f"{field}: evidence line is out of range ({line_number} > {line_count}): {reference}"
+            )
     return reference.strip()
 
 
@@ -117,6 +143,24 @@ def _validate_claim(repo_root: Path, field: str, raw: object) -> tuple[str, str,
         _validate_evidence_reference(repo_root, reference, field)
         for reference in evidence
     ]
+    base_field = field.split("[", 1)[0]
+    if (
+        base_field == "build_command"
+        and value not in {"Unknown", "N/A"}
+        and INSTALL_ONLY_COMMAND.search(value)
+    ):
+        raise SemanticAnalysisError(
+            "build_command: installation command cannot be used as build_command; use N/A when no build exists"
+        )
+    if (
+        base_field in NORMATIVE_CLAIMS
+        and any(term in value for term in NORMATIVE_TERMS)
+        and value != "Unknown"
+        and any(LINE_REFERENCE.fullmatch(item).group("line") is None for item in validated_evidence)
+    ):
+        raise SemanticAnalysisError(
+            f"{field}: normative claims require exact line evidence and a counterexample search"
+        )
     return value, confidence, validated_evidence
 
 

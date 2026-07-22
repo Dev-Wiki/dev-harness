@@ -207,7 +207,11 @@ def detect_validation_commands(repo_root: Path, project_type: str, build_step: s
         bugfix_step = quick_step
         full_step = quick_step
 
-    if build_step != "Unknown" and quick_step == "Unknown":
+    if (
+        build_step != "Unknown"
+        and not build_step.startswith("N/A")
+        and quick_step == "Unknown"
+    ):
         quick_step = build_step
 
     return quick_step, bugfix_step, full_step

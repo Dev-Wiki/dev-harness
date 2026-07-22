@@ -4,6 +4,7 @@ import argparse
 import difflib
 import json
 import os
+import re
 import sys
 from itertools import islice
 from pathlib import Path
@@ -47,6 +48,14 @@ TEMPLATE_FILES = (
     "AGENTS.template.md",
     "ARCHITECTURE.template.md",
     "HARNESS.template.md",
+)
+RUNTIME_DIRECTORY_NAMES = {"data", "logs", "log", "tmp", "temp", "cache"}
+GENERATED_DOCUMENT_ANTI_PATTERNS = (
+    ("internal semantic evidence field", re.compile(r"AI `[a-z_]+(?:\[\d+\])?` \[(?:high|medium|low)\]")),
+    ("stale test result count", re.compile(r"\b\d+\s+passed\b", re.IGNORECASE)),
+    ("generic directory placeholder", re.compile(r"contains (?:project files|submodules or grouped resources)")),
+    ("project-inappropriate SDK template term", re.compile(r"SDK 调用链")),
+    ("meaningless Unknown list item", re.compile(r"(?m)^- Unknown\s*$")),
 )
 LANGUAGE_BY_SUFFIX = {
     ".py": "Python",
@@ -109,7 +118,7 @@ def detect_build_systems(repo_root: Path) -> list[str]:
         ("pnpm-lock.yaml", "pnpm"),
         ("yarn.lock", "Yarn"),
         ("pyproject.toml", "pyproject.toml"),
-        ("requirements.txt", "requirements.txt"),
+        ("requirements.txt", "Python 依赖清单（requirements.txt，非构建系统）"),
         ("Cargo.toml", "Cargo"),
         ("go.mod", "Go Modules"),
         ("pom.xml", "Maven"),
@@ -128,20 +137,31 @@ def detect_build_systems(repo_root: Path) -> list[str]:
 
 
 def describe_directory(directory: Path) -> str | None:
+    known_roles = {
+        "app": "应用源码与运行入口",
+        "src": "项目源码",
+        "tests": "自动化测试",
+        "docs": "项目文档",
+        "deploy": "部署与服务安装脚本",
+        "scripts": "开发、运行和维护脚本",
+        "skills": "Skill 定义与配套自动化脚本",
+    }
+    if directory.name in known_roles:
+        return known_roles[directory.name]
     if (directory / "SKILL.md").exists():
-        return "contains skill source files"
+        return "Skill 定义与配套资源"
 
     languages = detect_languages(directory)
     if languages:
-        return f"contains {', '.join(languages)} source files"
+        return f"{', '.join(languages)} 源码"
 
     child_files = [path for path in directory.iterdir() if path.is_file()]
     if child_files:
-        return "contains project files"
+        return None
 
     child_dirs = [path for path in directory.iterdir() if path.is_dir()]
     if child_dirs:
-        return "contains submodules or grouped resources"
+        return None
 
     return None
 
@@ -151,7 +171,11 @@ def detect_core_modules(repo_root: Path) -> list[str]:
     for child in sorted(repo_root.iterdir()):
         if not child.is_dir():
             continue
-        if child.name in SKIP_DIR_NAMES or child.name.startswith("."):
+        if (
+            child.name in SKIP_DIR_NAMES
+            or child.name in RUNTIME_DIRECTORY_NAMES
+            or child.name.startswith(".")
+        ):
             continue
         description = describe_directory(child)
         if description:
@@ -230,14 +254,17 @@ def detect_usage_steps(repo_root: Path, project_type: str) -> tuple[str, str, st
             build_step = get_harmony_build_command(repo_root)
         elif repo_has_dotnet_solution(repo_root):
             build_step = "dotnet build"
+        elif (
+            (repo_root / "requirements.txt").exists()
+            and not (repo_root / "pyproject.toml").exists()
+            and not (repo_root / "setup.py").exists()
+            and not (repo_root / "setup.cfg").exists()
+        ):
+            build_step = "N/A（项目无独立编译或打包步骤）"
 
     if project_type == "FastAPI":
         entry = find_fastapi_entry(repo_root)
         if entry:
-            compile_targets = [relative_display(entry, repo_root)]
-            if (repo_root / "app").is_dir():
-                compile_targets.append("app")
-            build_step = f"python -m compileall -q {' '.join(compile_targets)}"
             module = relative_display(entry, repo_root).removesuffix(".py").replace("/", ".")
             run_step = f"python -m uvicorn {module}:app --reload"
 
@@ -267,7 +294,7 @@ def is_wsl_host() -> bool:
 
 def detect_build_bootstrap(repo_root: Path, project_type: str, build_step: str) -> str:
     lines = [
-        f"- **WorkingDirectory**: `{repo_root}`",
+        "- **WorkingDirectory**: repository root",
     ]
 
     if project_type in {"WPF", "Win32"}:
@@ -308,14 +335,17 @@ def detect_build_bootstrap(repo_root: Path, project_type: str, build_step: str) 
         if (repo_root / "requirements-dev.txt").exists():
             lines.append("- **Evidence**: `requirements-dev.txt` 定义测试或开发依赖")
     else:
-        lines.append("- **RecommendedTerminal**: Unknown")
+        lines.append("- **RecommendedTerminal**: PowerShell（Windows）或项目兼容 shell")
         lines.append("- **CanRunBuildHere**: unknown")
 
     if build_step == "Unknown":
         lines.append("- **MissingCommands**: build 命令缺失，不能启动编译")
+    elif build_step.startswith("N/A"):
+        lines.append("- **BuildCommand**: N/A")
+        lines.append("- **Reason**: 项目无独立编译或打包步骤")
     else:
         lines.append(f"- **BuildCommand**: `{build_step}`")
-    lines.append("- **FailureEvidence**: 记录完整命令、工作目录、终端类型、退出码、前 50 行和最后 100 行构建日志")
+        lines.append("- **FailureEvidence**: 记录完整命令、工作目录、终端类型、退出码、前 50 行和最后 100 行构建日志")
     return "\n".join(lines)
 
 
@@ -736,7 +766,6 @@ def detect_high_risk_files(repo_root: Path) -> str:
                 candidates.append((rel, "安全、数据库或运行配置边界"))
             if len(candidates) >= 5:
                 break
-        return "\n".join(f"- `{path}`: {reason}" for path, reason in candidates) if candidates else "Unknown"
     risk_patterns = {
         "AppUICallback.cs": "SDK 回调分发与 UI 线程切换枢纽",
         "AppUIState.cs": "全局 UI 状态或状态机聚合点",
@@ -758,10 +787,83 @@ def detect_high_risk_files(repo_root: Path) -> str:
     for path in islice(iter_matching_files(repo_root, "*ServiceImpl.cs"), 2):
         candidates.append((relative_display(path, repo_root), "核心 Service 实现，通常承载主业务链路"))
 
-    if not candidates:
+    for path in islice(iter_matching_files(repo_root, "*.py"), 300):
+        content = path.read_text(encoding="utf-8", errors="ignore")
+        relative_path = relative_display(path, repo_root)
+        if "tests" in Path(relative_path).parts:
+            continue
+        if (
+            ("FastAPI(" in content or "create_app(" in content)
+            and any(
+                token in content
+                for token in (
+                    "create_all(",
+                    "include_router(",
+                    "upgrade_",
+                    "ensure_search_index(",
+                    "lifespan=",
+                    "@app.on_event",
+                )
+            )
+        ):
+            candidates.append(
+                (
+                    relative_path,
+                    "应用启动与装配入口，包含初始化副作用或路由注册",
+                )
+            )
+        if (
+            ("asyncio.Lock(" in content or "threading.Lock(" in content)
+            and any(token in content for token in ("attempt", "retry", "sleep(", "qa_client", "httpx", "requests."))
+        ):
+            candidates.append(
+                (
+                    relative_path,
+                    "包含并发锁、重试或外部调用，失败状态与持久化语义风险较高",
+                )
+            )
+        if any(token in content for token in ("engine.begin(", "metadata.create_all(", "ALTER TABLE", "PRAGMA ")):
+            candidates.append(
+                (
+                    relative_path,
+                    "包含数据库初始化、schema 或 Engine 事务操作",
+                )
+            )
+
+    install_service = first_matching_file(repo_root, "install_service.ps1", "install*.sh", "install*.bat")
+    if install_service:
+        candidates.append(
+            (
+                relative_display(install_service, repo_root),
+                "服务安装或部署入口，可能涉及管理员权限与持久化目录",
+            )
+        )
+
+    deduped: list[tuple[str, str]] = []
+    seen_paths: set[str] = set()
+    for path, reason in candidates:
+        if path not in seen_paths:
+            deduped.append((path, reason))
+            seen_paths.add(path)
+
+    if not deduped:
         return "Unknown"
 
-    return "\n".join(f"- `{path}`: {reason}" for path, reason in candidates)
+    return "\n".join(f"- `{path}`: {reason}" for path, reason in deduped[:12])
+
+
+def merge_high_risk_files(semantic_value: str, detected_value: str) -> str:
+    if semantic_value == "Unknown":
+        return detected_value
+    if detected_value == "Unknown":
+        return semantic_value
+    merged = semantic_value.rstrip()
+    for line in detected_value.splitlines():
+        path_match = line.split("`", 2)
+        if len(path_match) >= 3 and f"`{path_match[1]}`" in merged:
+            continue
+        merged += f"\n{line}"
+    return merged
 
 
 def detect_feature_paths(repo_root: Path) -> str:
@@ -996,9 +1098,17 @@ def detect_key_module_markers(core_modules: list[str]) -> list[str]:
 
 
 def format_bullets(items: list[str]) -> str:
-    if not items:
-        return "- Unknown"
-    return "\n".join(f"- {item}" for item in items)
+    meaningful = [item for item in items if item and item != "Unknown"]
+    if not meaningful:
+        return "- 暂无"
+    return "\n".join(f"- {item}" for item in meaningful)
+
+
+def validate_generated_documents(generated_files: dict[str, str]) -> None:
+    for file_name, content in generated_files.items():
+        for label, pattern in GENERATED_DOCUMENT_ANTI_PATTERNS:
+            if pattern.search(content):
+                raise ManagedDocumentError(f"{file_name}: generated document contains {label}")
 
 
 def render_readme(
@@ -1060,7 +1170,8 @@ def render_agents(
         .replace("{语言框架摘要或 Unknown}", language_framework_summary, 1)
         .replace("{架构模式或 Unknown}", architecture_pattern, 1)
         .replace("{核心入口或 Unknown}", core_entry, 1)
-        .replace("{SDK 调用链或 Unknown}", sdk_call_chain, 1)
+        .replace("{核心调用链或 Unknown}", sdk_call_chain, 1)
+        .replace("- **SDK 调用链**: {SDK 调用链或 Unknown}", f"- **核心调用链**: {sdk_call_chain}", 1)
         .replace("{版本识别点或 Unknown}", version_marker, 1)
         .replace("{命名与风格约束或 Unknown}", style_rules, 1)
         .replace("{架构边界规则或 Unknown}", architecture_rules, 1)
@@ -1156,7 +1267,8 @@ def generate_context_files(repo_root: Path, analysis: SemanticAnalysis | None = 
     style_anchors = detect_style_anchors(repo_root)
     architecture_rules = detect_architecture_rules(repo_root)
     forbidden_operations = detect_forbidden_operations(repo_root)
-    high_risk_files = detect_high_risk_files(repo_root)
+    detected_high_risk_files = detect_high_risk_files(repo_root)
+    high_risk_files = detected_high_risk_files
     feature_paths = detect_feature_paths(repo_root)
     code_safety_rules = detect_code_safety_rules(repo_root)
     multi_version_notes = detect_multi_version_notes(repo_root)
@@ -1182,17 +1294,20 @@ def generate_context_files(repo_root: Path, analysis: SemanticAnalysis | None = 
         style_rules = analysis.claim("style_rules", style_rules)
         architecture_rules = analysis.claim("architecture_rules", architecture_rules)
         forbidden_operations = analysis.claim("forbidden_operations", forbidden_operations)
-        high_risk_files = analysis.claim("high_risk_files", high_risk_files)
+        high_risk_files = merge_high_risk_files(
+            analysis.claim("high_risk_files", "Unknown"),
+            detected_high_risk_files,
+        )
         feature_paths = analysis.claim("feature_paths", feature_paths)
         code_safety_rules = analysis.claim("code_safety_rules", code_safety_rules)
         multi_version_notes = analysis.claim("multi_version_notes", multi_version_notes)
         logging_rules = analysis.claim("logging_rules", logging_rules)
         exploration_suggestions = analysis.claim("exploration_suggestions", exploration_suggestions)
+        core_modules = analysis.items("core_modules", core_modules)
         module_interfaces = analysis.items("module_interfaces", module_interfaces)
         key_module_markers = analysis.items("key_module_markers", key_module_markers)
         high_risk_directories = analysis.items("high_risk_directories", high_risk_directories)
         auto_detected_candidates_list = analysis.items("auto_detected_candidates", auto_detected_candidates_list)
-        auto_detected_candidates_list.extend(analysis.evidence_items)
 
     build_bootstrap = detect_build_bootstrap(repo_root, project_type, build_step)
     manual_review_items_list = detect_manual_review_items(
@@ -1270,6 +1385,7 @@ def generate_context_files(repo_root: Path, analysis: SemanticAnalysis | None = 
         normalized, _ = strip_legacy_managed_markers(content)
         parse_markdown_sections(normalized, SECTION_SPECS[file_name])
         normalized_files[file_name] = normalized.rstrip("\n")
+    validate_generated_documents(normalized_files)
     return normalized_files
 
 

@@ -109,6 +109,7 @@ def analysis_contract() -> dict[str, object]:
             "exploration_suggestions",
         ],
         "lists": [
+            "core_modules",
             "module_interfaces",
             "key_module_markers",
             "high_risk_directories",
@@ -117,8 +118,11 @@ def analysis_contract() -> dict[str, object]:
         ],
         "rules": [
             "Every non-Unknown value requires at least one repository-local evidence reference.",
+            "Evidence line references must exist and stay within the referenced file.",
             "Low-confidence claims are not rendered as facts and become manual-review items.",
             "Command claims without evidence are rejected.",
+            "Installation-only commands are invalid build commands; use N/A when the project has no build step.",
+            "Normative claims using all/must/forbidden/only language require exact line evidence and counterexample search.",
             "evidence_fingerprint must match the current repository snapshot.",
         ],
     }

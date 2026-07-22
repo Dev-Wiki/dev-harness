@@ -3,12 +3,27 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from context.evidence import collect_repository_evidence
+from context.evidence import analysis_contract, collect_repository_evidence
 from context.semantic import SemanticAnalysisError, load_semantic_analysis
 
 
 class SemanticAnalysisTests(unittest.TestCase):
-    def _write_analysis(self, root: Path, repo_root: Path, claims: dict) -> Path:
+    def test_analysis_contract_exposes_document_noise_guards(self) -> None:
+        contract = analysis_contract()
+
+        self.assertIn("core_modules", contract["lists"])
+        rules = "\n".join(contract["rules"])
+        self.assertIn("line references", rules)
+        self.assertIn("Installation-only commands", rules)
+        self.assertIn("counterexample search", rules)
+
+    def _write_analysis(
+        self,
+        root: Path,
+        repo_root: Path,
+        claims: dict,
+        lists: dict | None = None,
+    ) -> Path:
         evidence = collect_repository_evidence(repo_root)
         path = root / "analysis.json"
         path.write_text(
@@ -17,7 +32,7 @@ class SemanticAnalysisTests(unittest.TestCase):
                     "schema_version": 1,
                     "evidence_fingerprint": evidence["evidence_fingerprint"],
                     "claims": claims,
-                    "lists": {},
+                    "lists": lists or {},
                 }
             ),
             encoding="utf-8",
@@ -89,6 +104,75 @@ class SemanticAnalysisTests(unittest.TestCase):
             )
 
             with self.assertRaisesRegex(SemanticAnalysisError, "stay inside"):
+                load_semantic_analysis(analysis_path, repo_root)
+
+    def test_out_of_range_evidence_line_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo_root = root / "repo"
+            repo_root.mkdir()
+            (repo_root / "app.py").write_text("print('one line')\n", encoding="utf-8")
+            analysis_path = self._write_analysis(
+                root,
+                repo_root,
+                {
+                    "core_entry": {
+                        "value": "app.py",
+                        "confidence": "high",
+                        "evidence": ["app.py:99"],
+                    }
+                },
+            )
+
+            with self.assertRaisesRegex(SemanticAnalysisError, "line is out of range"):
+                load_semantic_analysis(analysis_path, repo_root)
+
+    def test_install_command_cannot_be_used_as_build_command(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo_root = root / "repo"
+            repo_root.mkdir()
+            (repo_root / "requirements.txt").write_text("fastapi\n", encoding="utf-8")
+            install = "python -m pip install -r requirements.txt"
+            analysis_path = self._write_analysis(
+                root,
+                repo_root,
+                {
+                    "install_command": {
+                        "value": install,
+                        "confidence": "high",
+                        "evidence": ["requirements.txt:1"],
+                    },
+                    "build_command": {
+                        "value": install,
+                        "confidence": "high",
+                        "evidence": ["requirements.txt:1"],
+                    },
+                },
+            )
+
+            with self.assertRaisesRegex(SemanticAnalysisError, "installation command cannot be used"):
+                load_semantic_analysis(analysis_path, repo_root)
+
+    def test_normative_claim_requires_exact_line_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo_root = root / "repo"
+            repo_root.mkdir()
+            (repo_root / "db.py").write_text("def save():\n    pass\n", encoding="utf-8")
+            analysis_path = self._write_analysis(
+                root,
+                repo_root,
+                {
+                    "architecture_rules": {
+                        "value": "所有数据库写入必须使用 Session",
+                        "confidence": "high",
+                        "evidence": ["db.py"],
+                    }
+                },
+            )
+
+            with self.assertRaisesRegex(SemanticAnalysisError, "normative claims require exact line evidence"):
                 load_semantic_analysis(analysis_path, repo_root)
 
 
