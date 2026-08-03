@@ -20,6 +20,8 @@ CONTEXT_SOURCE_DIR = SCRIPT_DIR / "context"
 CONTEXT_SKILL_SOURCE = SCRIPT_DIR / "context" / "SKILL.md"
 PLANNING_SOURCE_DIR = SCRIPT_DIR / "planning"
 PLANNING_SKILL_SOURCE = SCRIPT_DIR / "planning" / "SKILL.md"
+DOCS_SOURCE_DIR = SCRIPT_DIR / "dev-harness-docs"
+DOCS_SKILL_SOURCE = DOCS_SOURCE_DIR / "SKILL.md"
 INTERNAL_BUGFIX_FLOW_DIR = SCRIPT_DIR / "internal" / "bugfix-flow"
 INTERNAL_BUGFIX_FLOW_FILES = ("repro.md", "triage.md", "regression.md", "verify.md")
 GIT_WORKFLOW_SKILL_SOURCE = SCRIPT_DIR / "git-workflow" / "SKILL.md"
@@ -54,10 +56,21 @@ PLANNING_TEMPLATE_FILES = [
     "Dashboard.template.md",
     "TaskDetails.template.md",
 ]
+DOCS_REFERENCE_DIR = DOCS_SOURCE_DIR / "references"
+DOCS_REFERENCE_FILES = ["information-architecture.md"]
+DOCS_ASSET_DIR = DOCS_SOURCE_DIR / "assets"
+DOCS_ASSET_FILES = [
+    "docs-index.template.md",
+    "documentation-rules.template.md",
+    "nav.template.md",
+]
+DOCS_AGENT_DIR = DOCS_SOURCE_DIR / "agents"
+DOCS_AGENT_FILES = ["openai.yaml"]
 
 SKILL_SOURCES = {
     "dev-harness-commands": COMMANDS_SKILL_SOURCE,
     "dev-harness-context": CONTEXT_SKILL_SOURCE,
+    "dev-harness-docs": DOCS_SKILL_SOURCE,
     "dev-harness-planning": PLANNING_SKILL_SOURCE,
     "dev-harness-git-workflow": GIT_WORKFLOW_SKILL_SOURCE,
     "dev-harness-auto-fix": AUTO_FIX_SKILL_SOURCE,
@@ -67,6 +80,7 @@ SKILL_SOURCES = {
 SKILL_DEPENDENCIES = {
     "dev-harness-commands": (),
     "dev-harness-context": (),
+    "dev-harness-docs": (),
     "dev-harness-planning": (),
     "dev-harness-git-workflow": (),
     "dev-harness-auto-fix": (
@@ -146,6 +160,18 @@ def validate_sources() -> None:
         source = PLANNING_TEMPLATE_DIR / file_name
         if not source.exists():
             raise FileNotFoundError(f"Missing dev-harness-planning template source: {source}")
+    for file_name in DOCS_REFERENCE_FILES:
+        source = DOCS_REFERENCE_DIR / file_name
+        if not source.exists():
+            raise FileNotFoundError(f"Missing dev-harness-docs reference source: {source}")
+    for file_name in DOCS_ASSET_FILES:
+        source = DOCS_ASSET_DIR / file_name
+        if not source.exists():
+            raise FileNotFoundError(f"Missing dev-harness-docs asset source: {source}")
+    for file_name in DOCS_AGENT_FILES:
+        source = DOCS_AGENT_DIR / file_name
+        if not source.exists():
+            raise FileNotFoundError(f"Missing dev-harness-docs agent metadata source: {source}")
     for file_name in GIT_WORKFLOW_TEMPLATE_FILES:
         source = GIT_WORKFLOW_TEMPLATE_DIR / file_name
         if not source.exists():
@@ -349,6 +375,19 @@ def build_dev_harness_planning(_skill_name: str, destination: Path) -> None:
         shutil.copy2(PLANNING_TEMPLATE_DIR / file_name, templates_dir / file_name)
 
 
+def build_dev_harness_docs(_skill_name: str, destination: Path) -> None:
+    build_skill("dev-harness-docs", destination)
+    for directory_name, source_dir, file_names in (
+        ("references", DOCS_REFERENCE_DIR, DOCS_REFERENCE_FILES),
+        ("assets", DOCS_ASSET_DIR, DOCS_ASSET_FILES),
+        ("agents", DOCS_AGENT_DIR, DOCS_AGENT_FILES),
+    ):
+        output_dir = destination / directory_name
+        output_dir.mkdir(parents=True, exist_ok=True)
+        for file_name in file_names:
+            shutil.copy2(source_dir / file_name, output_dir / file_name)
+
+
 def build_dev_harness_git_workflow(_skill_name: str, destination: Path) -> None:
     build_skill("dev-harness-git-workflow", destination)
     templates_dir = destination / "templates"
@@ -360,6 +399,7 @@ def build_dev_harness_git_workflow(_skill_name: str, destination: Path) -> None:
 BUILDERS = {skill_name: build_skill for skill_name in SKILL_SOURCES}
 BUILDERS["dev-harness-auto-fix"] = build_dev_harness_auto_fix
 BUILDERS["dev-harness-context"] = build_dev_harness_context
+BUILDERS["dev-harness-docs"] = build_dev_harness_docs
 BUILDERS["dev-harness-planning"] = build_dev_harness_planning
 BUILDERS["dev-harness-git-workflow"] = build_dev_harness_git_workflow
 

@@ -1,6 +1,6 @@
 ---
 name: dev-harness-planning
-description: Use when a project needs reusable planning documents, backlog boards, task breakdowns, or Dashboard.md and TaskDetails.md generated from requirements, prototypes, existing docs, or reference formats
+description: Use when a project needs reusable planning documents, backlog boards, task breakdowns, or Dashboard.md and TaskDetails.md generated under its existing doc/ or docs/ root from requirements, prototypes, existing docs, or reference formats
 ---
 
 # dev-harness-planning
@@ -11,8 +11,8 @@ Generate reusable project planning docs from real requirements and prototypes.
 
 Use this skill when asked to:
 
-- create or refresh `docs/plan/Dashboard.md`
-- create or refresh `docs/plan/TaskDetails.md`
+- create or refresh `<docs-root>/plan/Dashboard.md`
+- create or refresh `<docs-root>/plan/TaskDetails.md`
 - turn requirements, PRDs, prototypes, screenshots, or rough notes into a backlog board and execution plan
 - reuse another project's planning format without copying its business content
 
@@ -22,7 +22,8 @@ Do not use this for bug fixing, code review, or command mapping.
 
 Read the available project evidence before writing:
 
-- Requirements: `docs/spec.md`, `docs/prd/*`, `docs/product/*`, or user-provided files.
+- Documentation root: resolve the existing project-owned `doc/` or `docs/` root before selecting output paths.
+- Requirements: `<docs-root>/spec.md`, `<docs-root>/prd/*`, `<docs-root>/product/*`, or user-provided files.
 - Prototypes: HTML, images, mockups, flows, or screenshots.
 - Existing planning docs: if present, preserve local terminology and status conventions.
 - Reference format: if the user names another project's board/plan docs, read those files and copy the structure only.
@@ -31,10 +32,20 @@ If a source is missing, state the gap in the generated plan instead of inventing
 
 ## Output Contract
 
-Default output paths:
+Resolve `<docs-root>` before writing:
 
-- `docs/plan/Dashboard.md`
-- `docs/plan/TaskDetails.md`
+1. Honor a documentation root explicitly named by the user.
+2. Prefer the root containing an existing documentation index, governance file, or active plan.
+3. If only `doc/` exists, use `doc/`; if only `docs/` exists, use `docs/`.
+4. If both exist and ownership is ambiguous, stop and report the conflict instead of creating another plan tree.
+5. If neither exists, default to `docs/`.
+
+Use the same root selected by `dev-harness-docs` when that skill has already established one. Never rename `doc/` to `docs/` or create both roots merely to match this skill's default.
+
+Output paths:
+
+- `<docs-root>/plan/Dashboard.md`
+- `<docs-root>/plan/TaskDetails.md`
 
 Use the bundled templates:
 
@@ -47,15 +58,16 @@ TaskDetails is the execution layer. It contains task background, goals, files, s
 
 ## Workflow
 
-1. Read requirements and prototypes.
-2. Read existing or referenced planning docs.
-3. Extract product goal, actors, workflows, hardware/software constraints, integration points, and acceptance criteria.
-4. Split work into one prerequisite task, P0 core tasks, P1 supporting tasks, and P2 future tasks.
-5. Generate Dashboard from `templates/Dashboard.template.md`.
-6. Generate TaskDetails from `templates/TaskDetails.template.md`.
-7. Check every Dashboard task links to a TaskDetails heading.
-8. Search generated files for placeholder words: `TBD`, `TODO`, `FIXME`, `待补`, `占位`.
-9. Report source files read, files created or updated, and verification evidence.
+1. Resolve `<docs-root>` without creating a competing `doc/` or `docs/` tree.
+2. Read requirements and prototypes.
+3. Read existing or referenced planning docs.
+4. Extract product goal, actors, workflows, hardware/software constraints, integration points, and acceptance criteria.
+5. Split work into one prerequisite task, P0 core tasks, P1 supporting tasks, and P2 future tasks.
+6. Generate Dashboard from `templates/Dashboard.template.md`.
+7. Generate TaskDetails from `templates/TaskDetails.template.md`.
+8. Check every Dashboard task links to a TaskDetails heading.
+9. Search generated files for placeholder words: `TBD`, `TODO`, `FIXME`, `待补`, `占位`.
+10. Report the resolved documentation root, source files read, files created or updated, and verification evidence.
 
 ## Planning Rules
 
@@ -72,9 +84,10 @@ TaskDetails is the execution layer. It contains task background, goals, files, s
 Before claiming completion, run:
 
 ```bash
-test -f docs/plan/Dashboard.md
-test -f docs/plan/TaskDetails.md
-rg -n "TBD|TODO|FIXME|待补|占位" docs/plan
+DOCS_ROOT="<resolved-docs-root>"
+test -f "$DOCS_ROOT/plan/Dashboard.md"
+test -f "$DOCS_ROOT/plan/TaskDetails.md"
+rg -n "TBD|TODO|FIXME|待补|占位" "$DOCS_ROOT/plan"
 ```
 
 `rg` should exit 1 with no matches for the placeholder scan.

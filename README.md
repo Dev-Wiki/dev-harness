@@ -33,6 +33,9 @@ dev-harness 给 AI 加了一套**固定的排查流程**：
 # 开发一段时间后刷新自动识别区块和规范索引
 刷新这个仓库的项目上下文
 
+# 整理项目文档（保留已有 doc/ 或 docs/ 根目录）
+审计并整理这个仓库的文档结构、导航和 SSOT
+
 # 只分析，不改代码
 分析这个 bug：登录后点击设置崩溃，使用 analyze 模式
 
@@ -87,12 +90,13 @@ AI 会在每一步输出进度和证据，而不是闷头改完告诉你"修好�
 
 ---
 
-## Skills 一览（6 个可发现 skill）
+## Skills 一览（7 个可发现 skill）
 
 | Skill | 干什么用 |
 |-------|---------|
 | `dev-harness-context` | 初始化上下文文件，并安全刷新自动识别区块与项目规范索引 |
-| `dev-harness-planning` | 根据需求文档、原型或参考格式生成 `docs/plan/Dashboard.md` 和 `TaskDetails.md` |
+| `dev-harness-docs` | 识别现有 `doc/` 或 `docs/` 根目录，整理索引、渐进式导航、SSOT、归档和链接 |
+| `dev-harness-planning` | 根据需求文档、原型或参考格式，在现有文档根目录生成 `plan/Dashboard.md` 和 `TaskDetails.md` |
 | `dev-harness-commands` | 把 project 里散落的构建/测试脚本统一成 `build / quick / bugfix / full` 四个语义入口 |
 | `dev-harness-git-workflow` | 优先遵循项目 Git 规范；缺失时确认并初始化提交、tag、changelog 和发布约定 |
 | `dev-harness-auto-fix` | 可选择 analyze / fix / commit / unattended；用运行时约束复现、可证伪根因、RED/GREEN、diff 绑定审查与精确提交 |
@@ -149,6 +153,8 @@ dev-harness-context refresh /path/to/repo --analysis /tmp/context-analysis.json
 `AGENTS.md` 保持为轻量索引：构建与验证指向 `HARNESS.md`，Git、代码风格、发布和 changelog 指向各自的专业文档。详细规则不全部塞入 AGENTS。
 
 - `dev-harness-context` 只识别这些文档并在 `refresh` 时更新索引，不自动创建 Git、代码或发布规范，也不自动创建 `CHANGELOG.md`。
+- `dev-harness-docs` 维护项目已有 `doc/` 或 `docs/` 的信息架构、入口、SSOT 和归档规则，不改名或创建第二套文档根目录。
+- `dev-harness-planning` 复用同一个文档根目录，将 Dashboard 作为索引层、TaskDetails 作为执行与专题层。
 - `dev-harness-git-workflow` 先读取项目或团队已有规范；没有规范时才分析历史、展示候选，并在用户确认后初始化默认规范。
 - 代码规范文档只做识别，不根据 lint/formatter 配置自动生成。
 - `CHANGELOG.md` 在用户确认初始化或开始首次发布时创建；默认发布分类为 Breaking Changes、Added、Changed、Deprecated、Fixed、Removed、Security，空分类不进入 tag message 或 release notes。
@@ -161,12 +167,14 @@ dev-harness-context refresh /path/to/repo --analysis /tmp/context-analysis.json
 - 给 AI 一套可执行的排查 SOP，每一步有证据、有停止条件
 - 用 Git 私有状态、工作区快照和 diff hash 把关键边界变成可测试契约
 - 让 bugfix 过程可追溯、可验证、可复盘
+- 让项目上下文、深度文档和计划共享清晰入口与 SSOT，避免重复文档根目录
 - 跨平台、跨 IDE，纯 skills bundle，不需要改你的项目工具链
 
 **dev-harness 不做什么：**
 - 不提供 UI 自动化测试
 - 不做截图驱动验证
 - 不搭建日志/指标/Trace 平台
+- 不替代完整的 Diataxis 内容生成或发布前文档覆盖率审计工具
 - 不是一键修 bug 的黑盒工具
 
 详见 [V1/V2 边界文档](docs/V1_V2_BOUNDARIES.md)。

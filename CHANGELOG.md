@@ -4,6 +4,19 @@
 
 ---
 
+## v1.6.0 — 2026-08-03
+
+### Added
+
+- 新增 `dev-harness-docs`，复用项目已有 `doc/` 或 `docs/` 根目录，提供文档索引、渐进式导航、SSOT、归档与链接验证工作流。
+- 内置文档中心、维护规则和导航模板，并附带信息架构与安全迁移参考；安装与发布包保持 skill 自包含。
+
+### Changed
+
+- `dev-harness-planning` 改为先解析项目文档根目录，再生成 `plan/Dashboard.md` 与 `plan/TaskDetails.md`，避免创建第二套文档树。
+
+---
+
 ## v1.5.1 — 2026-07-22
 
 ### Context 文档去噪与语义校验

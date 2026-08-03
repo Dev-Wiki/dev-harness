@@ -36,6 +36,21 @@ class InstallBundleTests(unittest.TestCase):
             self.assertTrue((skill_root / "templates" / "Dashboard.template.md").exists())
             self.assertTrue((skill_root / "templates" / "TaskDetails.template.md").exists())
 
+    def test_installed_docs_skill_is_self_contained(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            bundle_root = root / "bundle"
+
+            install_bundle_to_root(bundle_root, ["dev-harness-docs"])
+            skill_root = bundle_root / "skills" / "dev-harness-docs"
+
+            self.assertTrue((skill_root / "SKILL.md").exists())
+            self.assertTrue((skill_root / "references" / "information-architecture.md").exists())
+            self.assertTrue((skill_root / "assets" / "docs-index.template.md").exists())
+            self.assertTrue((skill_root / "assets" / "documentation-rules.template.md").exists())
+            self.assertTrue((skill_root / "assets" / "nav.template.md").exists())
+            self.assertTrue((skill_root / "agents" / "openai.yaml").exists())
+
     def test_installed_git_workflow_includes_default_templates(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -178,6 +193,7 @@ class InstallBundleTests(unittest.TestCase):
                 self.assertIn("install.py", names)
                 self.assertIn("VERSION", names)
                 self.assertIn("context/platform_profiles.py", names)
+                self.assertIn("dev-harness-docs/SKILL.md", names)
                 zf.extractall(extracted)
 
             result = subprocess.run(

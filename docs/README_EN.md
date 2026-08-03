@@ -1,6 +1,6 @@
 # dev-harness
 
-A platform-agnostic AI engineering skills bundle for structured bug fixing, code context initialization, and git workflow enforcement.
+A platform-agnostic AI engineering skills bundle for structured bug fixing, project context, documentation organization, planning, and git workflow enforcement.
 
 Not a test framework. Not a CLI that auto-fixes bugs. A set of process constraints that reduce the cost of reproduction, root cause analysis, regression, and verification — when working with AI-assisted development.
 
@@ -14,13 +14,10 @@ Supports Cursor, Codex CLI, OpenCode, and Antigravity.
 
 | Skill | Description |
 |-------|-------------|
-| `dev-harness-pilot` | Entry point — routes to the right skill based on your goal |
 | `dev-harness-context` | Scans a repo and generates `README.md`, `ARCHITECTURE.md`, `HARNESS.md`, `AGENTS.md` |
+| `dev-harness-docs` | Organizes an existing `doc/` or `docs/` root, indexes, progressive navigation, SSOT, archives, and links |
+| `dev-harness-planning` | Generates Dashboard and TaskDetails under the repository's existing documentation root |
 | `dev-harness-commands` | Standardizes `build / quick / bugfix / full` command entry points |
-| `dev-harness-repro` | Converges reproduction steps and evidence |
-| `dev-harness-triage` | Traces call chain, identifies root cause candidates |
-| `dev-harness-regression` | Defines regression coverage and test anchors |
-| `dev-harness-verify` | Defines layered verification commands and completion evidence |
 | `dev-harness-git-workflow` | Validates branch naming, generates commit messages, blocks debug artifacts |
 | `dev-harness-auto-fix` | Full pipeline: bug description / issue URL → root cause → fix → review → commit |
 | `dev-harness-retro` | Post-task retrospective — extracts AI mistakes into `LESSONS.md` |
@@ -77,6 +74,9 @@ After installing, use skills directly in your AI assistant:
 ```
 # Initialize a repo
 scan this repo and generate context files
+
+# Organize project documentation without creating a second doc root
+audit and organize this repository's documentation structure and SSOT
 
 # Fix a bug
 auto fix this bug: <description>
@@ -142,7 +142,6 @@ After onboarding with `dev-harness-commands`, four stable entry points are defin
 
 ```
 dev-harness/
-├── SKILL.md                    # pilot skill
 ├── auto-fix/SKILL.md
 ├── commands/SKILL.md
 ├── context/
@@ -151,15 +150,15 @@ dev-harness/
 │   ├── platform_profiles.py    # project type detection
 │   ├── repo_walk.py            # file walking utilities
 │   └── templates/              # AGENTS / HARNESS / README / ARCHITECTURE templates
+├── dev-harness-docs/
+│   ├── SKILL.md
+│   ├── references/             # information architecture and migration rules
+│   └── assets/                 # documentation index, rules, and route templates
 ├── planning/
 │   ├── SKILL.md
 │   └── templates/              # Dashboard / TaskDetails planning templates
 ├── git-workflow/SKILL.md
-├── regression/SKILL.md
-├── repro/SKILL.md
 ├── retro/SKILL.md
-├── triage/SKILL.md
-├── verify/SKILL.md
 ├── docs/                       # guides and reference docs
 ├── tests/                      # unittest suite
 ├── install.py                  # cross-platform install / export script

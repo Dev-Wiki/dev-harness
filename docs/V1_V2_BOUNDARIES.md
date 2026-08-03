@@ -32,6 +32,13 @@ V1 解决的问题：
 - 生成 `ARCHITECTURE.md`
 - 生成 `HARNESS.md`
 
+### 1.1 文档与规划组织
+
+- 复用项目已有 `doc/` 或 `docs/` 根目录，不创建第二套文档树
+- 建立文档中心入口、渐进式导航、SSOT、落点和归档规则
+- 在同一文档根目录生成 `plan/Dashboard.md` 与 `plan/TaskDetails.md`
+- 不内建从代码生成全量 Diataxis 文档或基于分支 diff 的全仓文档陈旧检测
+
 ### 2. 客户端项目准入能力
 
 - 优先识别 `WPF / Harmony / Win32 / Unknown`
@@ -89,6 +96,7 @@ V1 解决的问题：
 - 多 worktree 并行调度器（单个 worktree 的 Git 私有状态路径已支持）
 - 自动 PR / 多 Agent review 调度器
 - Native 层自动修复
+- 全量文档内容生成与发布前文档覆盖率审计
 - ABI / marshaling 正确性自动证明
 - Win32 句柄 / 线程 / 消息循环的深语义验证
 
@@ -139,3 +147,4 @@ V1 解决的问题：
 5. 不会在缺少命令或证据时伪造完成
 6. 已有 dirty worktree 不会被本轮修复误改、误暂存或误提交
 7. 完成证据与最终 diff 一致，代码变化会使旧证据失效
+8. 已有 `doc/` 或 `docs/` 能被复用，文档整理和 planning 不会创建竞争根目录
