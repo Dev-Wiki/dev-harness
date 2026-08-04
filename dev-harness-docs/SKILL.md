@@ -1,6 +1,6 @@
 ---
 name: dev-harness-docs
-description: Use when a project needs its documentation structure initialized, organized, audited, refreshed, indexed, or archived, including doc/docs root detection, progressive navigation, SSOT boundaries, document placement rules, and link validation
+description: Use when a project needs its documentation structure initialized, organized, audited, refreshed, indexed, archived, or its verified facts updated, including doc/docs root detection, progressive navigation, SSOT boundaries, document placement rules, link validation, and fact-sync discipline
 ---
 
 # dev-harness-docs
@@ -16,6 +16,7 @@ Keep these responsibilities separate:
 - Let `dev-harness-git-workflow` own release, CHANGELOG, tag, and commit conventions.
 - Let `dev-harness-retro` own `LESSONS.md` maintenance.
 - Own the documentation root, index, navigation, placement, SSOT, discoverability, and archive rules here.
+- Own the verified-fact update discipline: only facts proven by code, configuration, or successful validation may be written; task logs, commit summaries, one-off paths, failed attempts, and personal preferences never enter project documentation.
 - Do not generate a full tutorial, API reference, or feature explanation unless the user explicitly requests content authoring. Organize and route those documents instead.
 
 ## Select the Operation
@@ -26,9 +27,10 @@ Infer the operation from the request:
 - **Initialize**: create the minimum index and documentation rules for a repository without an established documentation system.
 - **Organize**: propose and, when authorized, apply a safer information architecture to existing documents.
 - **Refresh**: update indexes, navigation, placement rules, and archive links after documents change.
+- **Update**: after code or validation changes, sink only verified, reusable project facts into existing documents; produce a minimal add/correct/delete plan with evidence, preserve human-owned prose and structure, and leave unverified items as `待确认` instead of facts.
 - **Archive**: move completed or superseded documents only after confirming the exact move map and link impact.
 
-Treat review, explanation, and audit requests as read-only. Treat initialize, organize, refresh, and archive requests as authorization to edit only the documentation files in scope. Ask before broad file moves, deletions, or replacing an established documentation convention.
+Treat review, explanation, and audit requests as read-only. Treat initialize, organize, refresh, update, and archive requests as authorization to edit only the documentation files in scope. Update requires validation evidence for every fact written. Ask before broad file moves, deletions, or replacing an established documentation convention.
 
 ## Resolve the Documentation Root
 
@@ -51,7 +53,7 @@ Read repository instructions before proposing changes:
 2. Inventory Markdown and documentation-framework files with `rg --files`; exclude generated, dependency, cache, build, and vendor directories.
 3. Read the current documentation index and navigation files first.
 4. Read representative or directly affected documents next. Do not recursively load a large documentation tree into context.
-5. Read [references/information-architecture.md](references/information-architecture.md) when creating navigation, defining SSOT ownership, or planning moves.
+5. Read [references/information-architecture.md](references/information-architecture.md) when creating navigation, defining SSOT ownership, planning moves, or updating verified facts.
 
 Base every classification on a document's actual audience and purpose. Do not classify by filename alone.
 
@@ -88,6 +90,29 @@ Assign each changing fact exactly one writable owner:
 - Preserve historical decisions in an archive when they remain useful for audit or rationale.
 
 Do not claim that duplicated prose is synchronized merely because it currently matches.
+
+## Update Verified Facts
+
+After code or validation changes, update existing documents with verified facts only.
+
+Admission gate — a fact qualifies only when it satisfies all of:
+
+- proven by current code, configuration, or a successful validation;
+- something future developers will repeatedly need;
+- a clear owning document and stable scope.
+
+Excluded by default: task logs, commit summaries, one-off paths, failed attempts, and personal preferences.
+
+Workflow:
+
+1. Read the current diff, design or review artifacts, and validation evidence.
+2. Locate the existing SSOT owner (root README, AGENTS, ARCHITECTURE, HARNESS, module docs, or docs index); do not create a second authority to host a fact.
+3. Produce a minimal update plan: for every add, correction, or deletion, name the fact and its evidence; no opportunistic full rewrites.
+4. Preserve human-authored sections, encoding/BOM, heading levels, line endings, style, and framework metadata; keep the edit surgical.
+5. Check links, commands, versions, examples, and duplicates; put unverified items into `待确认` instead of rendering them as facts.
+6. Report modified files, how each fact was verified, and the remaining documentation gaps.
+
+Do not re-implement owned boundaries: managed `README.md` / `AGENTS.md` / `ARCHITECTURE.md` / `HARNESS.md` sections are refreshed by `dev-harness-context`, and release / CHANGELOG facts belong to `dev-harness-git-workflow`.
 
 ## Apply Changes Safely
 
@@ -134,6 +159,9 @@ Also verify:
 - only one project-owned documentation root is active;
 - index documents do not repeat detailed status or implementation notes;
 - archived documents link to the current authority and are not presented as active;
+- every fact written by an Update is backed by diff or validation evidence, never by speculation;
+- commands and links written by an Update resolve to real targets;
+- unverified claims appear only under a `待确认` heading, never as facts;
 - no unrelated file was modified.
 
 Treat intentional TODO registers as an explicit exception to the placeholder scan. Report the exception instead of silently deleting valid backlog content.
@@ -147,4 +175,4 @@ Report:
 - files created, updated, moved, or left unchanged;
 - SSOT and navigation decisions;
 - validation commands and results;
-- unresolved ambiguity, intentionally deferred moves, or optional content-authoring gaps.
+- unresolved ambiguity, intentionally deferred moves, unverified items moved to `待确认`, or optional content-authoring gaps.

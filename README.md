@@ -36,6 +36,9 @@ dev-harness 给 AI 加了一套**固定的排查流程**：
 # 整理项目文档（保留已有 doc/ 或 docs/ 根目录）
 审计并整理这个仓库的文档结构、导航和 SSOT
 
+# 更新文档（只写入代码/验证已证明的事实）
+按本次改动同步仓库文档中的命令、路径和事实
+
 # 只分析，不改代码
 分析这个 bug：登录后点击设置崩溃，使用 analyze 模式
 
@@ -95,7 +98,7 @@ AI 会在每一步输出进度和证据，而不是闷头改完告诉你"修好�
 | Skill | 干什么用 |
 |-------|---------|
 | `dev-harness-context` | 初始化上下文文件，并安全刷新自动识别区块与项目规范索引 |
-| `dev-harness-docs` | 识别现有 `doc/` 或 `docs/` 根目录，整理索引、渐进式导航、SSOT、归档和链接 |
+| `dev-harness-docs` | 识别现有 `doc/` 或 `docs/` 根目录，整理索引、渐进式导航、SSOT、归档和链接，并把已验证事实同步进现有文档 |
 | `dev-harness-planning` | 根据需求文档、原型或参考格式，在现有文档根目录生成 `plan/Dashboard.md` 和 `TaskDetails.md` |
 | `dev-harness-commands` | 把 project 里散落的构建/测试脚本统一成 `build / quick / bugfix / full` 四个语义入口 |
 | `dev-harness-git-workflow` | 优先遵循项目 Git 规范；缺失时确认并初始化提交、tag、changelog 和发布约定 |

@@ -15,7 +15,7 @@ Supports Cursor, Codex CLI, OpenCode, and Antigravity.
 | Skill | Description |
 |-------|-------------|
 | `dev-harness-context` | Scans a repo and generates `README.md`, `ARCHITECTURE.md`, `HARNESS.md`, `AGENTS.md` |
-| `dev-harness-docs` | Organizes an existing `doc/` or `docs/` root, indexes, progressive navigation, SSOT, archives, and links |
+| `dev-harness-docs` | Organizes an existing `doc/` or `docs/` root, indexes, progressive navigation, SSOT, archives, and links, and syncs verified facts into existing docs |
 | `dev-harness-planning` | Generates Dashboard and TaskDetails under the repository's existing documentation root |
 | `dev-harness-commands` | Standardizes `build / quick / bugfix / full` command entry points |
 | `dev-harness-git-workflow` | Validates branch naming, generates commit messages, blocks debug artifacts |

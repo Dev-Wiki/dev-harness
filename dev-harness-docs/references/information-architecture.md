@@ -10,7 +10,8 @@ Use this reference when defining navigation, assigning SSOT ownership, or reorga
 4. SSOT layers
 5. Archive lifecycle
 6. Migration protocol
-7. Optional content-authoring integration
+7. Verified-fact update discipline
+8. Optional content-authoring integration
 
 ## 1. Repository entry layers
 
@@ -113,7 +114,30 @@ Use these rules:
 - Treat case-only renames and non-ASCII path changes as portability-sensitive.
 - Request confirmation for bulk moves, deletions, or redirects that cannot be preserved.
 
-## 7. Optional content-authoring integration
+## 7. Verified-fact update discipline
+
+After code or validation changes, only verified, reusable project facts may be written into existing documents.
+
+Admission gate — every fact must satisfy all of:
+
+- proven by current code, configuration, or a successful validation;
+- something future developers will repeatedly need;
+- a clear owning document and stable scope.
+
+Excluded by default: task logs, commit summaries, one-off paths, failed attempts, and personal preferences.
+
+Update flow:
+
+1. Read the diff, design or review artifacts, and validation evidence.
+2. Locate the existing SSOT owner; do not create a second authority to host a fact.
+3. Produce a minimal add/correct/delete plan with per-fact evidence; no opportunistic rewrites.
+4. Preserve human-authored sections, encoding, heading levels, line endings, style, and framework metadata.
+5. Check links, commands, versions, examples, and duplicates; put unverified items into a `待确认` section instead of writing them as facts.
+6. Report modified files, how each was verified, and the remaining documentation gaps.
+
+Managed context sections (`README.md` / `AGENTS.md` / `ARCHITECTURE.md` / `HARNESS.md`) are refreshed by `dev-harness-context`; release and CHANGELOG facts belong to the project Git workflow. This discipline does not bypass those owners.
+
+## 8. Optional content-authoring integration
 
 After structure and ownership are settled, a content-writing workflow may fill identified gaps:
 
@@ -122,4 +146,9 @@ After structure and ownership are settled, a content-writing workflow may fill i
 - Write task-focused how-to guides with verification.
 - Write tutorials only when newcomers need a guided learning path.
 
-Keep this integration optional. Do not require gstack or another external documentation package for the core `dev-harness-docs` workflow. If such a skill is available, pass it the resolved `<docs-root>`, target document type, existing index, and SSOT owner.
+Keep this integration optional. The core `dev-harness-docs` workflow (structure, SSOT, and the verified-fact update discipline) must not require gstack or another external documentation package. If such a skill is available, use it only for heavier authoring or audit work:
+
+- from-scratch Diataxis generation (tutorials, API references, explanations) → a content-authoring skill, passing the resolved `<docs-root>`, target document type, existing index, and SSOT owner;
+- post-ship full-repository audit and coverage reporting → a release-oriented documentation skill.
+
+Everyday verified-fact sync stays inside this skill's Update operation, so projects without external packages still get a safe default.
