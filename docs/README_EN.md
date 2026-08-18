@@ -8,6 +8,8 @@ Supports Cursor, Codex CLI, OpenCode, and Antigravity.
 
 [中文 README →](../README.md)
 
+[Documentation index →](README.md)
+
 ---
 
 ## Skills
@@ -188,11 +190,11 @@ dev-harness/
 
 ## V1 / V2 Boundary
 
-V1 is the AI engineering onboarding layer for existing projects. Goals: context initialization, command semantics, bugfix baseline, NativeBridge risk surface.
+V1 / VNext is the current project-contract layer for existing projects. It covers canonical context, documentation and planning governance, five verification command semantics, Git policy discovery, evidence-driven bug fixing, and resumable codebase audit. In the VNext design record, “VNext” names the v1.8.0 evolution within the V1 boundary; it is not another name for the V2 backlog.
 
 V1 explicitly excludes: UI automation, screenshot-driven verification, log/metric/trace platforms, multi-worktree runtime, auto PR/review loop, native-layer auto-repair.
 
-See `docs/V1_V2_BOUNDARIES.md` and `docs/V2_BACKLOG.md` for details.
+See the [current V1 / VNext and V2 boundary](V1_V2_BOUNDARIES.md), the [implemented VNext design record](dev-harness%20VNext%20%E4%BC%98%E5%8C%96%E4%B8%8E%20Codebase%20Audit%20%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md), and the [V2 backlog](V2_BACKLOG.md). The boundary document owns current scope; the backlog owns future candidates.
 
 ---
 

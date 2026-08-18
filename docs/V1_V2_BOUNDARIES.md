@@ -1,8 +1,15 @@
-# V1_V2_BOUNDARIES
+# V1 / VNext 与 V2 边界
+
+> 文档角色：本文件是当前能力范围、非目标和封板标准的唯一事实源。
+> [`dev-harness VNext 优化与 Codebase Audit 设计方案`](dev-harness%20VNext%20%E4%BC%98%E5%8C%96%E4%B8%8E%20Codebase%20Audit%20%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md) 记录 v1.8.0 的设计依据；[`V2_BACKLOG.md`](V2_BACKLOG.md) 只记录未来候选，不覆盖本文件。
+
+## 版本命名
+
+设计方案中的 **VNext** 指从既有 V1 向 v1.8.0 Project Contract 与 Codebase Audit 能力的兼容演进，仍属于本文件定义的 V1 范围；它不是 V2 的别名。当前实现与后续排期分别以本文件和 `V2_BACKLOG.md` 为准，设计记录中的实施阶段不作为活动任务清单。
 
 ## V1 定位
 
-`dev-harness` V1/VNext 的目标是：让已有项目具备一致的 Project Contract、可执行验证接口，以及 Bugfix 和大型代码库审计的证据闭环。
+`dev-harness` V1 / VNext 的目标是：让已有项目具备一致的 Project Contract、可执行验证接口，以及 Bugfix 和大型代码库审计的证据闭环。
 
 适用项目：
 

@@ -1,5 +1,8 @@
 # V2_BACKLOG
 
+> 文档角色：本文件是超出当前 V1 / VNext 边界的未来候选池，不是已承诺 Roadmap。
+> 当前能力与封板标准以 [`V1_V2_BOUNDARIES.md`](V1_V2_BOUNDARIES.md) 为准；v1.8.0 的设计依据见 [`dev-harness VNext 优化与 Codebase Audit 设计方案`](dev-harness%20VNext%20%E4%BC%98%E5%8C%96%E4%B8%8E%20Codebase%20Audit%20%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md)。
+
 ## 说明
 
 本文件记录 `dev-harness` 在 V1 封板之后，下一阶段明确进入排期池的能力项。
@@ -9,6 +12,12 @@
 - 只记录 **超出 V1 边界** 的事项
 - 只记录 **值得做但不应继续塞进 V1** 的事项
 - 默认按 **P0 / P1 / P2** 粗分优先级
+
+## 与 VNext 设计方案的关系
+
+VNext 方案中已经落地的 Project Contract、五命令语义、显式 Retro、渐进式 references 和 Codebase Audit V1 不再列入本 Backlog。本文件保留的是它们之上的深化能力，例如更强的 NativeBridge 分析、执行环境隔离、UI/Observability Harness 和自动化 Agent Loop。
+
+其中“命令映射增强”是在当前 Platform / Variant 记录契约上增强自动选择与 preflight；“Runtime Harness”是面向任务执行环境的隔离编排，均不等同于已经交付的 Codebase Audit 状态运行时。
 
 ## P0
 

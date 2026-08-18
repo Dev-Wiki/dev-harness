@@ -207,6 +207,17 @@ dev-harness-context refresh /path/to/repo --analysis /tmp/context-analysis.json
 
 ---
 
+## 文档导航
+
+- [文档中心](docs/README.md)：按使用、维护、范围与设计记录组织全部项目文档。
+- [V1 / VNext 与 V2 边界](docs/V1_V2_BOUNDARIES.md)：当前能力范围和封板标准的唯一事实源。
+- [VNext 优化与 Codebase Audit 设计方案](docs/dev-harness%20VNext%20%E4%BC%98%E5%8C%96%E4%B8%8E%20Codebase%20Audit%20%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md)：v1.8.0 的设计依据与取舍记录，不作为后续排期表。
+- [V2 Backlog](docs/V2_BACKLOG.md)：超出当前边界的候选能力与启动条件。
+
+设计记录解释“为什么这样设计”，边界文档说明“当前承诺什么”，Backlog 记录“未来可能做什么”；三者不重复维护状态。
+
+---
+
 ## 设计边界
 
 **dev-harness 做了什么：**
@@ -225,7 +236,7 @@ dev-harness-context refresh /path/to/repo --analysis /tmp/context-analysis.json
 - 不替代完整的 Diataxis 内容生成或发布前文档覆盖率审计工具
 - 不是一键修 bug、静态分析或自动 PR 的黑盒工具
 
-详见 [V1/V2 边界文档](docs/V1_V2_BOUNDARIES.md)。
+详见 [V1 / VNext 与 V2 边界文档](docs/V1_V2_BOUNDARIES.md)。
 
 ---
 
