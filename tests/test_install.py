@@ -7,11 +7,32 @@ import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
-from install import install_bundle_to_root
+from install import SKILL_SOURCES, install_bundle_to_root
 import release
 
 
 class InstallBundleTests(unittest.TestCase):
+    def test_full_install_contains_every_registered_skill(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle_root = Path(tmp) / "bundle"
+
+            install_bundle_to_root(bundle_root)
+
+            installed = {path.name for path in (bundle_root / "skills").iterdir() if path.is_dir()}
+            self.assertEqual(installed, set(SKILL_SOURCES))
+
+    def test_installer_does_not_create_or_inject_lessons_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle_root = Path(tmp) / "bundle"
+            bundle_root.mkdir()
+            agents = bundle_root / "AGENTS.md"
+            agents.write_text("# Existing agent rules\n", encoding="utf-8")
+
+            install_bundle_to_root(bundle_root, ["dev-harness-retro"])
+
+            self.assertEqual(agents.read_text(encoding="utf-8"), "# Existing agent rules\n")
+            self.assertFalse((bundle_root / "LESSONS.md").exists())
+
     def test_installed_context_templates_are_skill_local(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -23,6 +44,17 @@ class InstallBundleTests(unittest.TestCase):
             self.assertTrue((skill_root / "templates" / "README.template.md").exists())
             self.assertTrue((skill_root / "templates" / "AGENTS.template.md").exists())
             self.assertFalse((skill_root / "templates" / "context").exists())
+            self.assertTrue((skill_root / "references" / "platform-enhancements.md").exists())
+
+    def test_installed_commands_includes_progressive_references(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle_root = Path(tmp) / "bundle"
+
+            install_bundle_to_root(bundle_root, ["dev-harness-commands"])
+            skill_root = bundle_root / "skills" / "dev-harness-commands"
+
+            self.assertTrue((skill_root / "references" / "platform-command-mapping.md").exists())
+            self.assertTrue((skill_root / "references" / "windows-shell.md").exists())
 
     def test_installed_planning_skill_includes_templates(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -61,6 +93,33 @@ class InstallBundleTests(unittest.TestCase):
 
             self.assertTrue((skill_root / "templates" / "GIT_WORKFLOW.template.md").exists())
             self.assertTrue((skill_root / "templates" / "CHANGELOG.template.md").exists())
+            self.assertTrue((skill_root / "references" / "default-contract.md").exists())
+
+    def test_installed_codebase_audit_is_self_contained_and_brings_context_dependency(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle_root = Path(tmp) / "bundle"
+
+            install_bundle_to_root(bundle_root, ["dev-harness-codebase-audit"])
+            skill_root = bundle_root / "skills" / "dev-harness-codebase-audit"
+
+            self.assertTrue((bundle_root / "skills" / "dev-harness-context" / "SKILL.md").exists())
+            self.assertTrue((skill_root / "SKILL.md").exists())
+            self.assertTrue((skill_root / "runtime.py").exists())
+            for file_name in (
+                "workflow.md",
+                "partitioning.md",
+                "finding-contract.md",
+                "cross-module-review.md",
+            ):
+                self.assertTrue((skill_root / "references" / file_name).exists(), file_name)
+            for file_name in (
+                "Dashboard.template.md",
+                "Findings.template.md",
+                "AuditTask.template.md",
+                "AuditResult.template.md",
+                "Report.template.md",
+            ):
+                self.assertTrue((skill_root / "templates" / file_name).exists(), file_name)
 
     def test_installed_auto_fix_includes_runtime_and_all_references(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -193,6 +252,9 @@ class InstallBundleTests(unittest.TestCase):
                 self.assertIn("install.py", names)
                 self.assertIn("VERSION", names)
                 self.assertIn("context/platform_profiles.py", names)
+                self.assertIn("codebase-audit/runtime.py", names)
+                self.assertIn("codebase-audit/references/finding-contract.md", names)
+                self.assertIn("skills/dev-harness-codebase-audit/runtime.py", names)
                 self.assertIn("dev-harness-docs/SKILL.md", names)
                 zf.extractall(extracted)
 

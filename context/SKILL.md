@@ -17,83 +17,9 @@ Context 采用三层职责，不以硬编码 profile 作为项目识别白名单
 2. **AI Semantic Analyzer**：阅读真实代码，输出带证据路径和置信度的结构化分析。
 3. **Deterministic Validator / Writer**：验证证据没有越界、命令有来源、仓库快照未漂移，再按固定 Markdown 标题安全更新章节。
 
-内置 profile 是无 AI 调用时的兼容回退，以及高风险领域的增强规则，不决定项目“能否被识别”。当前增强 profile 包括：
-
-- `Qt Client (Windows/Linux) -> Shared C++ Core`
-- `WPF`
-- `Harmony`
-- `Win32` 应用
-- `WPF + NativeBridge` 这类维护态混合项目
-- **`Go` 后端服务**
-- **`Flutter` 跨端客户端**
-- **`Node.js / TypeScript` 前端工具链与 SDK**
-- **`Node.js` 插件类项目 (含 `plugin.json`)**
-- **`Python / FastAPI` 后端服务**
-
-对 Qt / WPF / Win32 这类依赖共享 C++ 底层的高风险项目，还应额外输出：
-
-- Qt UI / Controller / wrapper 到 Shared C++ Core 的调用链候选
-- Shared C++ Core、导出头文件、CMake 构建入口等自动识别候选
-- `DllImport` / `MarshalAs` / callback / observer / Win32 API 等自动识别候选
-- “需人工确认”的边界项，例如 ABI、线程模型、句柄生命周期、Qt signal/slot 跨线程调用、可信验证命令
-
-对 Go 后端服务，还应额外输出：
-
-- 核心分层设计（如 `cmd`, `internal`, `pkg`）
-- 关键模块依赖流向及防循环依赖约束
-
-对 Flutter 客户端，还应额外输出：
-
-- 状态管理方案和平台通道（Platform Channels）调用链
-- 原生目录（`android`, `ios` 等）中包含的特定平台实现与边界
-
-对 Node.js 插件与工具链，还应额外输出：
-
-- 工作空间（Workspace）包间依赖及入口点
-- `plugin.json` 约定的生命周期及扩展点隔离要求
-
-对 FastAPI 后端服务，还应额外输出：
-
-- ASGI 应用入口、router 注册和 service/core 调用链候选
-- 依赖安装、pytest 验证与 uvicorn 运行命令候选；无独立编译或打包步骤时 build 明确为 `N/A`
-- 路由契约、认证配置、数据库迁移和敏感日志边界
-
-遇到未列出的语言或框架时，**不得因为 profile 缺失而停止**。只要仓库证据充分，AI 应按同一语义分析协议识别；不能确认的单项才标记 `Unknown`。
+内置 profile 是无 AI 调用时的兼容回退和高风险增强，不决定项目“能否被识别”。Qt/WPF/Win32、Harmony、Go、Flutter、Node.js/TypeScript、插件和 FastAPI 的按需提示见 [references/platform-enhancements.md](references/platform-enhancements.md)。遇到未列出的语言或框架时不得因为 profile 缺失而停止；证据充分时按同一协议识别，只有无法确认的单项标记 `Unknown`。
 
 
-
-## Preamble — 读取项目约束
-
-```bash
-_LESSONS="$(git rev-parse --show-toplevel 2>/dev/null)/LESSONS.md"
-if [ -f "$_LESSONS" ]; then
-  echo "=== LESSONS — 项目 AI 犯错约束（Top 10 高频，完整规则见 LESSONS.md）==="
-  _py=$(command -v python3 2>/dev/null || command -v python 2>/dev/null)
-  if [ -n "$_py" ]; then
-    "$_py" - "$_LESSONS" <<'PYEOF'
-import sys, re
-path = sys.argv[1]
-text = open(path, encoding='utf-8').read()
-m = re.search(r'## \u6d3b\u8dc3\u89c4\u5219[^\n]*\n((?:.*\n)*?)(?=## |\Z)', text)
-rows = [l for l in (m.group(1).splitlines() if m else []) if l.startswith('| L')]
-def cnt(r):
-    try: return int(r.split('|')[5].strip())
-    except: return 0
-top = sorted(rows, key=cnt, reverse=True)[:10]
-if top:
-    print('| ID | \u89c4\u5219 | \u7c7b\u578b | \u89e6\u53d1\u6b21\u6570 | \u6700\u8fd1\u89e6\u53d1 |')
-    print('|----|------|------|---------|---------|')
-    for r in top: print(r)
-    if len(rows) > 10: print(f'...\uff08\u5171 {len(rows)} \u6761\u6d3b\u8dc3\u89c4\u5219\uff09')
-else:
-    print('(\u6682\u65e0\u6d3b\u8dc3\u89c4\u5219)')
-PYEOF
-  else
-    cat "$_LESSONS"
-  fi
-  echo "==="
-fi
-```
 
 ## 适用场景
 
@@ -119,8 +45,8 @@ fi
 - 所有非 `Unknown` 的 AI 结论必须携带至少一个仓库内证据路径，可附行号（如 `src/main.py:42`）
 - 包含“所有、必须、禁止、只能、不得”的强约束必须引用精确行号，并执行反证搜索
 - 每个 AI 结论必须标记 `high`、`medium` 或 `low` 置信度；低置信度结论只能进入“需人工确认”，不得渲染成事实
-- build / run / quick / bugfix / full 等命令没有仓库内证据时必须拒绝，不得用生态惯例猜测
-- install、build、run、quick、bugfix、full 必须按真实语义区分；依赖安装不得冒充构建
+- build / run / test / quick / bugfix / full 等命令没有仓库内证据时必须拒绝，不得用生态惯例猜测
+- install、build、run、test、quick、bugfix、full 必须按真实语义区分；依赖安装不得冒充构建
 - 证据明细保留在分析 JSON 中，不得把 `AI field[index] [confidence]` 等内部审计字段写入 AGENTS/HARNESS
 - AI 分析必须绑定 `evidence_fingerprint`；仓库在分析后发生漂移时必须重新扫描，不得写入旧结论
 - 无法确认的信息必须写成 `Unknown`
@@ -216,6 +142,7 @@ dev-harness-context refresh <repo-path> --analysis <analysis.json>
 ## 交接边界
 
 - 可作为 `dev-harness-auto-fix` 的前置上下文补充能力
+- 为 `dev-harness-codebase-audit` 提供唯一的 Canonical Context；Context 只描述项目结构和边界，不承担全库问题扫描
 - Git、提交、tag、发布与 changelog 规范的识别/初始化决策交给 `dev-harness-git-workflow`
 - 不负责修 bug、补测试或定义验证命令
 - 不得臆测架构模式、模块职责或接口关系

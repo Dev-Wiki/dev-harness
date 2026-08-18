@@ -12,6 +12,7 @@
 ## 自动识别构建命令候选
 
 - **build**: `{命令或 Unknown}`
+- **test**: `{命令或 Unknown}`
 - **quick**: `{命令或 Unknown}`
 - **bugfix**: `{命令或 Unknown}`
 - **full**: `{命令或 Unknown}`
@@ -19,9 +20,12 @@
 ## 已确认命令（人工维护）
 
 - **build**: `Unknown`
+- **test**: `Unknown`
 - **quick**: `Unknown`
 - **bugfix**: `Unknown`
 - **full**: `Unknown`
+
+复杂项目可为同一 Purpose 维护多条已确认记录。每条记录使用 `Purpose / Command / WorkingDirectory / Platform / Variant / Preconditions / DeviceRequirement / Shell / Environment / Evidence / Status`；简单项目继续使用上面的单值字段。
 
 ## 高风险目录
 - {目录1: 风险说明}

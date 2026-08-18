@@ -20,6 +20,7 @@ INSTALLABLE_SOURCE_PATHS = (
     "README.md",
     "commands",
     "context",
+    "codebase-audit",
     "dev-harness-docs",
     "planning",
     "git-workflow",

@@ -546,6 +546,7 @@ class ContextCliTests(unittest.TestCase):
             self.assertIn("BuildCommand**: N/A", harness_content)
             self.assertIn("项目无独立编译或打包步骤", harness_content)
             self.assertIn("python -m pytest -q", harness_content)
+            self.assertIn("- **test**: `python -m pytest -q`", harness_content)
             self.assertIn("python -m uvicorn main:app --reload", readme_content)
             self.assertIn("Python + FastAPI", agents_content)
             self.assertIn("main.py", agents_content)
@@ -827,6 +828,7 @@ class ContextCliTests(unittest.TestCase):
             self.assertIn("Harmony", harness_content)
             self.assertIn("hvigorw assembleHap", harness_content)
             self.assertIn("hvigorw assembleApp", harness_content)
+            self.assertIn("- **test**: `device-required`", harness_content)
             # Verify no company-specific package script name leaks into output
             self.assertNotIn("xylink_package.py", harness_content)
             self.assertNotIn("./app_build.sh", harness_content)

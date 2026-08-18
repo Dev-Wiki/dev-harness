@@ -279,6 +279,17 @@ def detect_validation_commands(repo_root: Path, project_type: str, build_step: s
     return profile_detect_validation_commands(repo_root, project_type, build_step)
 
 
+def detect_test_command(repo_root: Path, project_type: str, quick_step: str) -> str:
+    """Return an evidence-backed generic test candidate without inventing toolchain entries."""
+    if project_type == "FastAPI" and (repo_root / "tests").is_dir():
+        return "python -m pytest -q"
+    if project_type == "Qt" and (repo_root / "CMakeLists.txt").exists():
+        return quick_step if quick_step.startswith("ctest ") else "Unknown"
+    if project_type == "Harmony":
+        return "device-required"
+    return "Unknown"
+
+
 def is_wsl_host() -> bool:
     if "WSL_DISTRO_NAME" in os.environ or "WSL_INTEROP" in os.environ:
         return True
@@ -1024,6 +1035,7 @@ def detect_nativebridge_signals(repo_root: Path) -> list[str]:
 def detect_manual_review_items(
     repo_root: Path,
     build_step: str,
+    test_step: str,
     quick_step: str,
     bugfix_step: str,
     full_step: str,
@@ -1062,8 +1074,8 @@ def detect_manual_review_items(
     if bugfix_step == "Unknown":
         items.append("`bugfix` 验证命令仍缺失，需人工补齐可信入口")
 
-    if build_step == "Unknown" or quick_step == "Unknown" or full_step == "Unknown":
-        items.append("build / quick / full 命令映射不完整，需人工确认最终入口")
+    if build_step == "Unknown" or test_step == "Unknown" or quick_step == "Unknown" or full_step == "Unknown":
+        items.append("build / test / quick / full 命令映射不完整，需人工确认最终入口")
 
     high_risk_cpp = first_matching_file(repo_root, "*.cpp")
     if high_risk_cpp:
@@ -1212,6 +1224,7 @@ def render_harness(
     project_type: str,
     build_step: str,
     build_bootstrap: str,
+    test_step: str,
     quick_step: str,
     bugfix_step: str,
     full_step: str,
@@ -1225,6 +1238,7 @@ def render_harness(
         template.replace("{项目类型或 Unknown}", project_type, 1)
         .replace("{命令或 Unknown}", build_step, 1)
         .replace("{编译启动诊断或 Unknown}", build_bootstrap, 1)
+        .replace("{命令或 Unknown}", test_step, 1)
         .replace("{命令或 Unknown}", quick_step, 1)
         .replace("{命令或 Unknown}", bugfix_step, 1)
         .replace("{命令或 Unknown}", full_step, 1)
@@ -1244,6 +1258,7 @@ def generate_context_files(repo_root: Path, analysis: SemanticAnalysis | None = 
     project_type = detect_project_type(repo_root)
     install_step, build_step, run_step = detect_usage_steps(repo_root, project_type)
     quick_step, bugfix_step, full_step = detect_validation_commands(repo_root, project_type, build_step)
+    test_step = detect_test_command(repo_root, project_type, quick_step)
     project_summary = f"Automatically detected {project_type} project." if project_type != "Unknown" else "Unknown"
     architecture_overview = detect_architecture_overview(core_modules)
     dependency_graph = detect_module_dependency_graph(core_modules)
@@ -1288,6 +1303,7 @@ def generate_context_files(repo_root: Path, analysis: SemanticAnalysis | None = 
         install_step = analysis.claim("install_command", "Unknown")
         build_step = analysis.claim("build_command", "Unknown")
         run_step = analysis.claim("run_command", "Unknown")
+        test_step = analysis.claim("test_command", test_step)
         quick_step = analysis.claim("quick_command", "Unknown")
         bugfix_step = analysis.claim("bugfix_command", "Unknown")
         full_step = analysis.claim("full_command", "Unknown")
@@ -1313,6 +1329,7 @@ def generate_context_files(repo_root: Path, analysis: SemanticAnalysis | None = 
     manual_review_items_list = detect_manual_review_items(
         repo_root,
         build_step,
+        test_step,
         quick_step,
         bugfix_step,
         full_step,
@@ -1371,6 +1388,7 @@ def generate_context_files(repo_root: Path, analysis: SemanticAnalysis | None = 
             project_type,
             build_step,
             build_bootstrap,
+            test_step,
             quick_step,
             bugfix_step,
             full_step,

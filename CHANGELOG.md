@@ -4,6 +4,23 @@
 
 ---
 
+## v1.8.0 — 2026-08-18
+
+### Added
+
+- 新增 `dev-harness-codebase-audit`：基于 Canonical Context 动态分区大型代码库，使用 Git 私有状态持久化 AuditSnapshot、任务与 Finding，并将版本化产物限制在既有 `<docs-root>/audit/`。
+- Codebase Audit runtime 新增 workspace/context drift、输出路径、防 symlink escape、Finding 状态与 confirmed evidence 校验，以及 init/resume/status/task/finding/cross-module/complete CLI。
+- 安装、单 Skill 安装、export 与 release archive 纳入 Audit runtime、references 和 templates。
+
+### Changed
+
+- 顶层定位收敛为 Consistency / Evidence / Continuity 驱动的 Project Contract，不再只以 Bugfix 为叙事，也不扩展为通用 AI Skills 百科。
+- Retro 改为仅显式触发，使用 FACT / POLICY / LESSON 与 Promotion Candidates；installer 和其他 Skill 不再无条件注入或读取 `LESSONS.md` 硬规则。
+- HARNESS 验证接口补齐 `test`，并支持简单单值命令与多 Platform / Variant 命令记录。
+- Context、Commands 与 Git Workflow 的平台/默认值说明下沉为按需 references；Planning refresh 明确保留 Task ID 和有证据的完成状态。
+
+---
+
 ## v1.7.0 — 2026-08-04
 
 ### Added

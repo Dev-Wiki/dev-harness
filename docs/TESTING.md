@@ -2,6 +2,16 @@
 
 用于约定 bugfix harness 的分层验证方式。目标不是“多跑测试”，而是让 AI 和人工都知道每条命令分别证明什么。
 
+## dev-harness 仓库自身验证
+
+本仓库使用 Python 标准库 `unittest`，完整回归入口为：
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+发布前另外执行 `git diff --check`。Codebase Audit runtime、安装/export/release 完整性和 VNext 跨 Skill 契约均包含在完整回归中。
+
 ## 1. 分层命名约定
 
 推荐至少保留三层验证：

@@ -52,7 +52,7 @@ AGENTS 中只保留轻量的项目规范索引。Context 会识别已有 Git 工
 然后用 `dev-harness-commands` 补齐真实命令映射：
 
 ```
-使用 dev-harness-commands 帮我定义 build / quick / bugfix / full 命令
+使用 dev-harness-commands 帮我定义 build / test / quick / bugfix / full 命令
 ```
 
 ---
@@ -83,10 +83,11 @@ auto fix
 | `dev-harness-context` | 初始化上下文文件，并按固定 Markdown 标题安全刷新自动识别章节 |
 | `dev-harness-docs` | 整理文档根目录、索引、渐进式导航、SSOT、归档和链接，并同步已验证事实 |
 | `dev-harness-planning` | 在项目现有文档根目录生成 Dashboard 与 TaskDetails |
-| `dev-harness-commands` | 补齐 build / quick / bugfix / full 的真实命令映射 |
+| `dev-harness-commands` | 补齐 build / test / quick / bugfix / full 的真实命令映射 |
 | `dev-harness-auto-fix` | 执行内置的复现、定位、修复、审查与验证流程 |
+| `dev-harness-codebase-audit` | 基于 Canonical Context 渐进扫描大型代码库，持久化证据与 Finding，不修改业务源码 |
 | `dev-harness-git-workflow` | 遵循项目已有 Git 规范；缺失时确认并初始化提交、tag、changelog 和发布约定 |
-| `dev-harness-retro` | 复盘并更新 `LESSONS.md` |
+| `dev-harness-retro` | 仅在用户显式要求时复盘，分类 FACT / POLICY / LESSON 并更新 `LESSONS.md` |
 
 复现（repro）、定位（triage）、回归（regression）和验证（verify）已内置为 `dev-harness-auto-fix` 的流程阶段，不再作为 `dev-harness-repro`、`dev-harness-triage`、`dev-harness-regression`、`dev-harness-verify` 独立安装或调用。
 
@@ -118,12 +119,14 @@ AI Agent 在执行构建、测试或验证命令前必须先读取该文件，�
 ```markdown
 ## 自动识别构建命令候选
 - **build**: `<自动识别候选或 Unknown>`
+- **test**: `<自动识别候选、device-required 或 Unknown>`
 - **quick**: `<自动识别候选或 Unknown>`
 - **bugfix**: `<自动识别候选或 Unknown>`
 - **full**: `<自动识别候选或 Unknown>`
 
 ## 已确认命令（人工维护）
 - **build**: `<真实构建命令或 Unknown>`
+- **test**: `<真实测试命令、device-required 或 Unknown>`
 - **quick**: `<真实快速验证命令或 Unknown>`
 - **bugfix**: `<真实问题专项验证命令或 Unknown>`
 - **full**: `<真实完整验证命令或 Unknown>`

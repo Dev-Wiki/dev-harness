@@ -16,8 +16,12 @@ SCRIPT_DIR = Path(__file__).parent
 VERSION = (SCRIPT_DIR / "VERSION").read_text(encoding="utf-8").strip()
 
 COMMANDS_SKILL_SOURCE = SCRIPT_DIR / "commands" / "SKILL.md"
+COMMANDS_REFERENCE_DIR = SCRIPT_DIR / "commands" / "references"
+COMMANDS_REFERENCE_FILES = ("platform-command-mapping.md", "windows-shell.md")
 CONTEXT_SOURCE_DIR = SCRIPT_DIR / "context"
 CONTEXT_SKILL_SOURCE = SCRIPT_DIR / "context" / "SKILL.md"
+CONTEXT_REFERENCE_DIR = CONTEXT_SOURCE_DIR / "references"
+CONTEXT_REFERENCE_FILES = ("platform-enhancements.md",)
 PLANNING_SOURCE_DIR = SCRIPT_DIR / "planning"
 PLANNING_SKILL_SOURCE = SCRIPT_DIR / "planning" / "SKILL.md"
 DOCS_SOURCE_DIR = SCRIPT_DIR / "dev-harness-docs"
@@ -30,9 +34,29 @@ GIT_WORKFLOW_TEMPLATE_FILES = (
     "GIT_WORKFLOW.template.md",
     "CHANGELOG.template.md",
 )
+GIT_WORKFLOW_REFERENCE_DIR = SCRIPT_DIR / "git-workflow" / "references"
+GIT_WORKFLOW_REFERENCE_FILES = ("default-contract.md",)
 AUTO_FIX_SKILL_SOURCE = SCRIPT_DIR / "auto-fix" / "SKILL.md"
 AUTO_FIX_RUNTIME_SOURCE = SCRIPT_DIR / "auto-fix" / "runtime.py"
 RETRO_SKILL_SOURCE = SCRIPT_DIR / "retro" / "SKILL.md"
+CODEBASE_AUDIT_SOURCE_DIR = SCRIPT_DIR / "codebase-audit"
+CODEBASE_AUDIT_SKILL_SOURCE = CODEBASE_AUDIT_SOURCE_DIR / "SKILL.md"
+CODEBASE_AUDIT_RUNTIME_SOURCE = CODEBASE_AUDIT_SOURCE_DIR / "runtime.py"
+CODEBASE_AUDIT_REFERENCE_DIR = CODEBASE_AUDIT_SOURCE_DIR / "references"
+CODEBASE_AUDIT_REFERENCE_FILES = (
+    "workflow.md",
+    "partitioning.md",
+    "finding-contract.md",
+    "cross-module-review.md",
+)
+CODEBASE_AUDIT_TEMPLATE_DIR = CODEBASE_AUDIT_SOURCE_DIR / "templates"
+CODEBASE_AUDIT_TEMPLATE_FILES = (
+    "Dashboard.template.md",
+    "Findings.template.md",
+    "AuditTask.template.md",
+    "AuditResult.template.md",
+    "Report.template.md",
+)
 CONTEXT_RUNTIME_FILES = [
     "SKILL.md",
     "__init__.py",
@@ -75,6 +99,7 @@ SKILL_SOURCES = {
     "dev-harness-git-workflow": GIT_WORKFLOW_SKILL_SOURCE,
     "dev-harness-auto-fix": AUTO_FIX_SKILL_SOURCE,
     "dev-harness-retro": RETRO_SKILL_SOURCE,
+    "dev-harness-codebase-audit": CODEBASE_AUDIT_SKILL_SOURCE,
 }
 
 SKILL_DEPENDENCIES = {
@@ -87,55 +112,10 @@ SKILL_DEPENDENCIES = {
         "dev-harness-git-workflow",
     ),
     "dev-harness-retro": (),
+    "dev-harness-codebase-audit": (
+        "dev-harness-context",
+    ),
 }
-
-
-LESSONS_AGENTS_SNIPPET = """\
-
-## 0. 项目犯错记录（AI 必读）
-
-开始任何任务前，检查并读取项目根目录的 `LESSONS.md`（如果存在）。
-文件中每条规则均有历史原因，视为硬约束，不得忽略或覆盖。
-触发次数高的规则说明 AI 在此项目中容易重犯，优先关注。
-"""
-
-LESSONS_TEMPLATE = """\
-# LESSONS — 项目级 AI 行为约束
-
-> 由 dev-harness-retro 维护。开始任何任务前必须读此文件。
-> 每条规则有历史原因，视为硬约束，不得忽略。
-> 触发次数越高说明越容易重犯，优先关注。
-
-## 活跃规则
-
-| ID | 规则（一句话，AI 可直接执行） | 类型 | 触发次数 | 最近触发 |
-|----|-------------------------------|------|---------|---------|
-
-## 归档规则
-
-> 超过 60 天未触发，自动移至此处。规则仍然有效，优先级低于活跃规则。
-
-| ID | 规则 | 类型 | 触发次数 | 最近触发 | 归档日期 |
-|----|------|------|---------|---------|---------|
-"""
-
-
-def _inject_lessons_into_agents(agents_path: Path) -> None:
-    """若 AGENTS.md 存在且尚未包含 LESSONS.md 引用，在文件开头注入说明片段。"""
-    if not agents_path.exists():
-        return
-    content = agents_path.read_text(encoding="utf-8")
-    if "LESSONS.md" in content:
-        return
-    agents_path.write_text(LESSONS_AGENTS_SNIPPET + content, encoding="utf-8")
-
-
-def _ensure_lessons_md(project_root: Path) -> None:
-    """在项目根目录创建空 LESSONS.md（如果不存在）。"""
-    lessons_path = project_root / "LESSONS.md"
-    if not lessons_path.exists():
-        lessons_path.write_text(LESSONS_TEMPLATE, encoding="utf-8")
-
 
 
 def validate_sources() -> None:
@@ -176,6 +156,19 @@ def validate_sources() -> None:
         source = GIT_WORKFLOW_TEMPLATE_DIR / file_name
         if not source.exists():
             raise FileNotFoundError(f"Missing dev-harness-git-workflow template source: {source}")
+    for directory, file_names, label in (
+        (COMMANDS_REFERENCE_DIR, COMMANDS_REFERENCE_FILES, "dev-harness-commands reference"),
+        (CONTEXT_REFERENCE_DIR, CONTEXT_REFERENCE_FILES, "dev-harness-context reference"),
+        (GIT_WORKFLOW_REFERENCE_DIR, GIT_WORKFLOW_REFERENCE_FILES, "dev-harness-git-workflow reference"),
+        (CODEBASE_AUDIT_REFERENCE_DIR, CODEBASE_AUDIT_REFERENCE_FILES, "dev-harness-codebase-audit reference"),
+        (CODEBASE_AUDIT_TEMPLATE_DIR, CODEBASE_AUDIT_TEMPLATE_FILES, "dev-harness-codebase-audit template"),
+    ):
+        for file_name in file_names:
+            source = directory / file_name
+            if not source.exists():
+                raise FileNotFoundError(f"Missing {label} source: {source}")
+    if not CODEBASE_AUDIT_RUNTIME_SOURCE.exists():
+        raise FileNotFoundError(f"Missing dev-harness-codebase-audit runtime: {CODEBASE_AUDIT_RUNTIME_SOURCE}")
 
 
 def remove_existing(path: Path) -> None:
@@ -342,6 +335,8 @@ def build_dev_harness_context(_skill_name: str, destination: Path) -> None:
     lib_dir.mkdir(parents=True, exist_ok=True)
     templates_dir = destination / "templates"
     templates_dir.mkdir(parents=True, exist_ok=True)
+    references_dir = destination / "references"
+    references_dir.mkdir(parents=True, exist_ok=True)
 
     _inject_version_into_skill(CONTEXT_SOURCE_DIR / "SKILL.md", destination / "SKILL.md")
 
@@ -365,6 +360,16 @@ def build_dev_harness_context(_skill_name: str, destination: Path) -> None:
 
     for file_name in CONTEXT_TEMPLATE_FILES:
         shutil.copy2(CONTEXT_TEMPLATE_DIR / file_name, templates_dir / file_name)
+    for file_name in CONTEXT_REFERENCE_FILES:
+        shutil.copy2(CONTEXT_REFERENCE_DIR / file_name, references_dir / file_name)
+
+
+def build_dev_harness_commands(_skill_name: str, destination: Path) -> None:
+    build_skill("dev-harness-commands", destination)
+    references_dir = destination / "references"
+    references_dir.mkdir(parents=True, exist_ok=True)
+    for file_name in COMMANDS_REFERENCE_FILES:
+        shutil.copy2(COMMANDS_REFERENCE_DIR / file_name, references_dir / file_name)
 
 
 def build_dev_harness_planning(_skill_name: str, destination: Path) -> None:
@@ -394,14 +399,33 @@ def build_dev_harness_git_workflow(_skill_name: str, destination: Path) -> None:
     templates_dir.mkdir(parents=True, exist_ok=True)
     for file_name in GIT_WORKFLOW_TEMPLATE_FILES:
         shutil.copy2(GIT_WORKFLOW_TEMPLATE_DIR / file_name, templates_dir / file_name)
+    references_dir = destination / "references"
+    references_dir.mkdir(parents=True, exist_ok=True)
+    for file_name in GIT_WORKFLOW_REFERENCE_FILES:
+        shutil.copy2(GIT_WORKFLOW_REFERENCE_DIR / file_name, references_dir / file_name)
+
+
+def build_dev_harness_codebase_audit(_skill_name: str, destination: Path) -> None:
+    build_skill("dev-harness-codebase-audit", destination)
+    shutil.copy2(CODEBASE_AUDIT_RUNTIME_SOURCE, destination / "runtime.py")
+    for directory_name, source_dir, file_names in (
+        ("references", CODEBASE_AUDIT_REFERENCE_DIR, CODEBASE_AUDIT_REFERENCE_FILES),
+        ("templates", CODEBASE_AUDIT_TEMPLATE_DIR, CODEBASE_AUDIT_TEMPLATE_FILES),
+    ):
+        output_dir = destination / directory_name
+        output_dir.mkdir(parents=True, exist_ok=True)
+        for file_name in file_names:
+            shutil.copy2(source_dir / file_name, output_dir / file_name)
 
 
 BUILDERS = {skill_name: build_skill for skill_name in SKILL_SOURCES}
+BUILDERS["dev-harness-commands"] = build_dev_harness_commands
 BUILDERS["dev-harness-auto-fix"] = build_dev_harness_auto_fix
 BUILDERS["dev-harness-context"] = build_dev_harness_context
 BUILDERS["dev-harness-docs"] = build_dev_harness_docs
 BUILDERS["dev-harness-planning"] = build_dev_harness_planning
 BUILDERS["dev-harness-git-workflow"] = build_dev_harness_git_workflow
+BUILDERS["dev-harness-codebase-audit"] = build_dev_harness_codebase_audit
 
 
 def install_bundle_to_root(bundle_root: Path, skills: list[str] | None = None) -> Path:
@@ -415,12 +439,6 @@ def install_bundle_to_root(bundle_root: Path, skills: list[str] | None = None) -
         destination = skills_dir / skill_name
         remove_existing(destination)
         BUILDERS[skill_name](skill_name, destination)
-
-    # 在 skill 所在根目录（IDE bundle root 的上层项目根）尝试注入 LESSONS 支撑文件。
-    # bundle_root 通常是 ~/.cursor 或 ~/.codex，不是客户端项目根；
-    # 此处仅处理 export 模式下 bundle_root 是项目根（含 AGENTS.md）的情形。
-    _inject_lessons_into_agents(bundle_root / "AGENTS.md")
-    _ensure_lessons_md(bundle_root)
 
     return bundle_root
 

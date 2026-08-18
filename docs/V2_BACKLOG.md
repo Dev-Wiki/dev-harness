@@ -28,9 +28,9 @@
 
 ### 3. 命令映射增强
 
-- 更细识别 WPF / Qt / Harmony 项目的真实 build / quick / bugfix / full 入口
+- 在现有 build / test / quick / bugfix / full 与 Platform / Variant 记录契约上，增加更强的自动选择和执行适配
 - 支持从现有脚本、解决方案文件、hvigor、cmake 等真实配置中提取证据
-- 对缺失命令输出更可执行的补齐建议
+- 对复杂设备矩阵和远端构建环境提供可验证的 preflight，而不是扩展为通用 CI/CD 助手
 
 ## P1
 

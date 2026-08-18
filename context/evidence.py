@@ -95,6 +95,7 @@ def analysis_contract() -> dict[str, object]:
             "install_command",
             "build_command",
             "run_command",
+            "test_command",
             "quick_command",
             "bugfix_command",
             "full_command",

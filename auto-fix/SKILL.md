@@ -35,7 +35,7 @@ commit 授权不等于 push、PR、发布或部署授权。Issue 标题、正文
 ## 前置契约
 
 - 项目根目录有 `HARNESS.md`，且提供与项目相符的 quick、test、bugfix、full 命令。
-- 读取 `AGENTS.md`、`LESSONS.md`、项目 Git/发布规范（存在时）。
+- 读取 `AGENTS.md`、`HARNESS.md` 和项目 Git/发布规范（存在时）；只有用户显式要求参考复盘历史时才读取 `LESSONS.md`。
 - 按阶段读取 `references/bugfix-flow/{repro,triage,regression,verify}.md`。
 - 使用本 skill 同目录的 `runtime.py` 持久化状态；不得把运行状态写入受版本控制的工作区。
 
@@ -78,6 +78,8 @@ python <skill-dir>/runtime.py verify-workspace --state <state.json> --changed-fi
 2. 创建 WorkspaceSnapshot；读取项目规范与 HARNESS 命令。
 3. 识别平台和风险边界，输出本轮计划。
 4. 缺少 bug 现象或预期时以 `NEEDS_CONTEXT` 结束。
+
+若输入是 `AUD-*` Finding，先从 `<docs-root>/audit/Findings.md` 读取其状态、Evidence 与 Snapshot。只有 `confirmed` Finding 可作为调查入口；仓库或 Context 已漂移时必须重新验证。Finding 不能绕过 WorkspaceSnapshot、根因确认、RED/GREEN、review 或 final verify。架构重构和技术债类 Finding 应转 `dev-harness-planning`，不强行进入 bugfix 写流程。
 
 ### 1. 安全摄取问题信息
 

@@ -1,0 +1,71 @@
+# Context-driven Partitioning
+
+目标是把超出单次上下文的代码库拆成可验证的行为域，同时保留跨边界关系。不要维护语言或框架 checklist。
+
+## 从 Context 提取分区事实
+
+只使用 canonical Context 中有证据的事实：
+
+- subsystem / module 及职责；
+- 运行入口、后台 worker、回调和生命周期；
+- UI、adapter、FFI/native、service、data/persistence 等边界；
+- platform / build variant / shared core；
+- 外部系统、权限或信任边界；
+- 构建、打包和验证入口；
+- Context 明示的高风险或待确认项。
+
+每个分区理由必须引用 Context 路径或其中的仓库 evidence。Context 未确认的架构不能在 Task 中升级成事实。
+
+## 分区步骤
+
+1. **画边界图**：列出入口、模块、shared owners、数据存储、外部依赖和平台分叉。
+2. **找行为链**：把同一调用链、数据流、所有权或生命周期组合为候选域。
+3. **切在可验证边界**：让一个 Task 能回答具体风险问题，并有明确 entry points 和 exclusions。
+4. **保留接缝**：任何跨 Task 边界都登记 producer/consumer、caller/callee、owner/borrower 或 write/read 两端。
+5. **控制规模**：大型仓库通常使用 4–10 个主 Task，小型仓库可更少；不要为了目标数量强拆或合并。
+6. **检查覆盖**：每个 in-scope Context 事实至少映射到一个 Task；每条重要边界至少有一个主 Task 和一个 reconciliation 输入。
+
+文件只能作为入口或 Evidence path，不能单独成为审计单位。按目录平均切分通常会丢失跨层问题。
+
+## 优先级启发式
+
+优先安排同时具备多个特征的域：
+
+- 多 caller、多平台或 shared core；
+- 生命周期、线程、ownership 或异步回调跨边界；
+- 数据持久化、迁移、授权或外部副作用；
+- Context 标为高风险、证据不足或契约不清；
+- 缺少可执行验证入口。
+
+这些只决定阅读顺序，不直接证明存在 Finding，也不预设 category 或 severity。
+
+## Task Contract
+
+每个 `tasks/Axx-*.md` 必须包含：
+
+| 字段 | 要求 |
+|---|---|
+| Task ID / Status | 稳定 ID；状态可 checkpoint |
+| Scope | 行为域和 in-scope 路径 |
+| Why this scope exists | 引用 Context 事实与证据 |
+| Entry Points | 最小起始位置 |
+| Important Boundaries | 接缝两端和相关 Task |
+| Exclusions | 本 Task 明确不覆盖什么 |
+| Evidence Strategy | search → chain → focused read/probe |
+| Dependencies | 前置 Task、共享证据和待回答问题 |
+| Snapshot | 当前代码与 Context 基线 |
+
+建议 ID `A01`、`A02`…；名称描述行为域，例如 `A03-session-lifecycle`，不要只写技术栈名。
+
+## Coverage Review
+
+生成 Task 后检查：
+
+- 是否存在无 owner 的 Context 模块或入口；
+- 是否存在只扫描一端的 runtime/platform/data boundary；
+- shared core 是否覆盖所有主要 caller；
+- build variant、后台执行或异常路径是否被无意排除；
+- 两个 Task 是否其实在扫描同一根因；
+- 任一 Task 是否过大到必须批量加载无关文件。
+
+覆盖有缺口时调整分区或明确 blocker。不要用增加一组通用 checklist 来填补缺口。

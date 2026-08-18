@@ -7,41 +7,6 @@ description: Use when you need to standardize build, test, quick, bugfix, and fu
 
 负责把已有客户端项目里的构建、测试和验证入口收敛成统一的 harness 命令约定。
 
-
-
-## Preamble — 读取项目约束
-
-```bash
-_LESSONS="$(git rev-parse --show-toplevel 2>/dev/null)/LESSONS.md"
-if [ -f "$_LESSONS" ]; then
-  echo "=== LESSONS — 项目 AI 犯错约束（Top 10 高频，完整规则见 LESSONS.md）==="
-  _py=$(command -v python3 2>/dev/null || command -v python 2>/dev/null)
-  if [ -n "$_py" ]; then
-    "$_py" - "$_LESSONS" <<'PYEOF'
-import sys, re
-path = sys.argv[1]
-text = open(path, encoding='utf-8').read()
-m = re.search(r'## \u6d3b\u8dc3\u89c4\u5219[^\n]*\n((?:.*\n)*?)(?=## |\Z)', text)
-rows = [l for l in (m.group(1).splitlines() if m else []) if l.startswith('| L')]
-def cnt(r):
-    try: return int(r.split('|')[5].strip())
-    except: return 0
-top = sorted(rows, key=cnt, reverse=True)[:10]
-if top:
-    print('| ID | \u89c4\u5219 | \u7c7b\u578b | \u89e6\u53d1\u6b21\u6570 | \u6700\u8fd1\u89e6\u53d1 |')
-    print('|----|------|------|---------|---------|')
-    for r in top: print(r)
-    if len(rows) > 10: print(f'...\uff08\u5171 {len(rows)} \u6761\u6d3b\u8dc3\u89c4\u5219\uff09')
-else:
-    print('(\u6682\u65e0\u6d3b\u8dc3\u89c4\u5219)')
-PYEOF
-  else
-    cat "$_LESSONS"
-  fi
-  echo "==="
-fi
-```
-
 ## 适用场景
 
 - 项目已经能构建或测试，但入口分散
@@ -59,88 +24,34 @@ fi
 
 若项目没有任何可执行命令，必须明确报缺，不得伪造命令。
 
-## Windows 终端前置检查
+## 按需平台指导
 
-在映射、书写或指导用户执行 **harness 相关本地 shell 命令** 前，若判定宿主为 **Windows**（例如用户信息含 `win32`、`Windows 10/11`，或工作区路径为 `X:\...` 等）：
+- 多平台、设备和 Variant 的映射格式见 [references/platform-command-mapping.md](references/platform-command-mapping.md)。
+- Windows shell、原生工具链和控制台编码问题见 [references/windows-shell.md](references/windows-shell.md)。
 
-1. **识别集成终端类型**：是否为主流 **cmd（命令提示符）** 或 **PowerShell**（含 Windows PowerShell 与 PowerShell 7+）。可依据 `user_info` 中的 Shell、Cursor/VS Code 默认终端配置或用户自述。
-2. **若当前为 Git Bash、MSYS2、Cygwin、WSL、或与上述类似的类 Unix 环境（例如在 Windows 上 Shell 显示为 `bash` / `zsh`）**：必须先**明确提示用户**将 Cursor/VS Code 的**默认终端**改为 **命令提示符** 或 **PowerShell**，再执行或代跑构建/测试类命令；说明此类终端下易出现 Windows 路径与 POSIX 语义混用、引号/换行转义差异、子进程管道挂起或原生工具链不兼容，从而导致大量报错或**卡死**。
-3. **执行策略**：在用户完成切换或明确声明「已在 cmd/PowerShell 中执行」之前，对长时间、高风险的验证命令应避免盲跑；可仅给出 **cmd/PowerShell 写法** 的命令供用户手动粘贴。若无法判断终端类型但用户报告命令异常或挂起，应优先追问终端类型并给出上述切换指引。
-4. **中文环境控制台编码（简体 Windows）**：许多原生/旧式工具链的控制台输出按 **GBK**（代码页 **936**；与 **GB2312** 常见文本兼容）写入，而集成终端、PowerShell 或 `chcp 65001`（UTF-8）会话若与上述输出**编码不一致**，会出现**中文乱码**，并可能导致日志证据无法比对或误判失败。须提示用户：优先保证「工具输出编码 ↔ 当前控制台代码页 / 终端解码」一致；在 cmd 下可用 `chcp` 查看，需与 GBK 语义对齐时通常使用 **936**（`chcp 936`）；PowerShell 下注意 `[Console]::OutputEncoding`、管道与外部程序输出的编码是否与 **GBK** 一致；解读或粘贴 harness 日志证据时应声明当时的代码页/编码，避免在 UTF-8 假设下误判 GBK 输出。
-
-> ⚠️ **HARD STOP（执行侧）**：在已判定为 Windows 且非 cmd/PowerShell 时，不得在未提示用户切换终端的情况下，代用户启动可能长时间阻塞的 harness 验证命令。
+这些 reference 只提供识别与记录方法，不能代替仓库证据。未加载相关平台时不要读取。
 
 ## 输出契约
 
-输出必须至少包含：
+简单项目可以继续使用单值字段；多平台、多设备或多 Variant 项目使用命令记录列表。同一个语义入口允许有多条已确认记录，但必须能由 Platform / Variant 唯一选择。
 
-- **BuildCommand**：标准构建入口
-- **TestCommand**：自动化测试入口（平台可自动执行时映射；需设备/模拟器时标记 `device-required` 或 `manual-only`）
-- **QuickCommand**：最快反馈入口
-- **BugfixCommand**：本次问题专属验证入口
-- **FullCommand**：完整验证入口
-- **Evidence**：这些命令来自哪些真实文件或配置
-- **MissingCommands**：缺少哪些命令仍需人工补齐
+每条命令记录至少包含：
+
+- **Purpose**：`build / test / quick / bugfix / full`
+- **Command**：真实可执行入口，缺失时为 `Missing`，不适用时为 `N/A`
+- **WorkingDirectory**：仓库相对工作目录
+- **Platform / Variant**：适用平台和构建 Variant；简单项目可省略
+- **Preconditions**：工具链、依赖、凭据等前置条件
+- **DeviceRequirement**：`none / device-required / manual-only`
+- **Shell / Environment**：仅在确有要求时记录
+- **Evidence**：真实文件、配置或成功执行证据
+- **Status**：`candidate / confirmed / missing`
+
+兼容的单值字段仍为 **BuildCommand**、**TestCommand**、**QuickCommand**、**BugfixCommand** 和 **FullCommand**；同时报告 **MissingCommands**。
 
 ## 统一命名约定
 
-V1 统一按以下逻辑表达，不强制项目一定改成某种技术栈格式：
-
-- `harness:build`
-- `harness:test`
-- `harness:quick`
-- `harness:bugfix`
-- `harness:full`
-
-上面 5 个名字代表的是**稳定语义层**，不是要求所有仓库都必须使用相同脚本系统。它们可以映射到：
-
-- WPF:
-  - 本地 `build` / `quick` 优先映射到项目级 `dotnet build <project>.csproj`
-  - 本地 `test` 优先映射到 `dotnet test <test-project>.csproj --no-build`（无设备依赖，可自动执行）
-  - 本地 `full` 优先映射到 solution 级 `dotnet build <solution>.sln` 或等价全量依赖编译链
-- Win32:
-  - 本地 `build` / `quick` 优先映射到项目级 `msbuild <project>.vcxproj /p:Configuration=Debug`
-  - 本地 `test` 优先映射到 `vstest.console.exe <test-dll>` 或 `ctest --output-on-failure`（无设备依赖，可自动执行）
-  - 本地 `full` 优先映射到 solution 级 `msbuild <solution>.sln /m /p:Configuration=Debug`
-  - 本地 `full` 默认不等于打包，安装包、签名或发布物应单独标记为 `package/release-only`
-- Qt:
-  - 本地 `build` / `quick` 优先映射到 `cmake --build <build-dir>` 或项目级构建
-  - 本地 `test` 优先映射到 `ctest --output-on-failure`（桌面端无设备依赖，可自动执行）
-  - 本地 `full` 优先映射到 `cmake --build + ctest` 全量链路
-- Harmony:
-  - 本地快速构建优先映射到 `hvigorw assembleHap --mode module -p product=default -p buildMode=release --no-daemon`
-  - 本地 `test` → `device-required`（需连接鸿蒙设备/模拟器，不能自动执行）
-  - 本地 `full` 优先映射到 `hvigorw assembleApp --mode project -p product=default -p buildMode=release --no-daemon` 或等价全量编译链
-  - 若仓库存在 `buildScript/app_build.sh` + `buildScript/*_package.py`，应标记为 `package/release-only` 或 CI 打包链，不应占用本地 `full`
-- Android:
-  - 本地 `test` → `device-required`（需连接设备/模拟器，不能自动执行）
-- Go 后端:
-  - 本地 `build` / `quick` 优先映射到 `go build ./...`
-  - 本地 `test` 优先映射到 `go test ./...`
-  - 本地 `full` 优先映射到 `go build -v ./... && go test -v ./...`
-- Flutter 跨端:
-  - 本地 `build` / `quick` 优先映射到 `flutter build <target>` 或 `flutter pub get`
-  - 本地 `test` 优先映射到 `flutter test`（无 UI 集成测试时可自动执行）
-  - 本地 `full` 优先映射到特定平台的 release 构建
-- Node.js (插件与工具链):
-  - 本地 `build` / `quick` 优先映射到 `npm run build` 或 `pnpm build`
-  - 本地 `test` 优先映射到 `npm test` 或 `pnpm test`
-  - 本地 `full` 优先映射到 `npm run build && npm test`
-- 其他项目：映射到真实存在的自定义脚本
-
-### 测试命令平台门控规则
-
-| 平台 | TestCommand 状态 | 说明 |
-|------|-----------------|------|
-| Qt (Windows/macOS/Linux 桌面) | ✅ 自动执行 | `ctest --output-on-failure`，无设备依赖 |
-| WPF / WinForms | ✅ 自动执行 | `dotnet test` / `vstest.console.exe`，无设备依赖 |
-| Win32 C++ | ✅ 自动执行 | `ctest` / `vstest.console.exe`，无设备依赖 |
-| Harmony | ❌ device-required | 需鸿蒙设备或模拟器，跳过自动测试 |
-| Android | ❌ device-required | 需 ADB 连接设备或模拟器，跳过自动测试 |
-| iOS | ❌ device-required | 需 macOS + 设备/模拟器，跳过自动测试 |
-| Go 后端 | ✅ 自动执行 | `go test ./...`，无设备依赖 |
-| Flutter | ✅ 自动执行 | `flutter test`，无物理设备依赖（若含 integration_test 则标 device-required） |
-| Node.js / TS | ✅ 自动执行 | `npm test` 或 `pnpm test`，无设备依赖 |
+`harness:build`、`harness:test`、`harness:quick`、`harness:bugfix`、`harness:full` 是稳定语义层，不要求项目重写工具链或采用统一脚本语法。平台标签不能替代 `DeviceRequirement`，打包、签名和发布链不能冒充本地 `full`。
 
 ## 顺序化步骤
 
@@ -164,5 +75,6 @@ V1 统一按以下逻辑表达，不强制项目一定改成某种技术栈格�
 - 可作为 `dev-harness-context` 生成 `HARNESS.md` 后的补强能力
 - 只维护人工确认命令；不得覆盖 Context 在托管块中生成的自动识别候选
 - 为 auto-fix 内联 verify 阶段提供 build / test / quick / bugfix / full 的命令基础
+- Codebase Audit 发现验证命令缺口时可路由到本 Skill，但 Audit 不得自行猜测或确认命令
 - 不负责 UI 自动化
 - 不负责直接改写项目 CI

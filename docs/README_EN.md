@@ -1,8 +1,8 @@
 # dev-harness
 
-A platform-agnostic AI engineering skills bundle for structured bug fixing, project context, documentation organization, planning, and git workflow enforcement.
+A platform-agnostic project engineering contract layer for AI coding assistants. It standardizes context, documentation, planning, verification commands, and Git policy, and provides durable evidence workflows for known bugs and unknown codebase risks.
 
-Not a test framework. Not a CLI that auto-fixes bugs. A set of process constraints that reduce the cost of reproduction, root cause analysis, regression, and verification — when working with AI-assisted development.
+Its design goals are Consistency across agents, Evidence for important claims, and Continuity across long tasks and sessions. It is not a test framework, generic SDLC skill library, static analyzer, or auto-fix CLI.
 
 Supports Cursor, Codex CLI, OpenCode, and Antigravity.
 
@@ -17,10 +17,11 @@ Supports Cursor, Codex CLI, OpenCode, and Antigravity.
 | `dev-harness-context` | Scans a repo and generates `README.md`, `ARCHITECTURE.md`, `HARNESS.md`, `AGENTS.md` |
 | `dev-harness-docs` | Organizes an existing `doc/` or `docs/` root, indexes, progressive navigation, SSOT, archives, and links, and syncs verified facts into existing docs |
 | `dev-harness-planning` | Generates Dashboard and TaskDetails under the repository's existing documentation root |
-| `dev-harness-commands` | Standardizes `build / quick / bugfix / full` command entry points |
+| `dev-harness-commands` | Standardizes `build / test / quick / bugfix / full` command entry points |
 | `dev-harness-git-workflow` | Validates branch naming, generates commit messages, blocks debug artifacts |
 | `dev-harness-auto-fix` | Full pipeline: bug description / issue URL → root cause → fix → review → commit |
-| `dev-harness-retro` | Post-task retrospective — extracts AI mistakes into `LESSONS.md` |
+| `dev-harness-codebase-audit` | Dynamically partitions large repositories and persists evidence-backed findings without changing source |
+| `dev-harness-retro` | Explicit retrospective — classifies FACT / POLICY / LESSON and proposes contract promotions |
 
 ---
 
@@ -50,12 +51,14 @@ Supports Cursor, Codex CLI, OpenCode, and Antigravity.
 ./install.sh --target /path/to/target
 ```
 
-**Export a portable zip:**
+**Export a portable bundle directory:**
 
 ```bash
 ./install.sh --export dist
-# produces dist/dev-harness-vX.Y.Z.zip
+# produces dist/bundle/
 ```
+
+Maintainers create the versioned zip with `python release.py`.
 
 **Install a single skill** (dependencies resolved automatically):
 
@@ -82,11 +85,14 @@ audit and organize this repository's documentation structure and SSOT
 auto fix this bug: <description>
 auto fix https://github.com/owner/repo/issues/123
 
+# Audit unknown risks without modifying product source
+initialize a codebase audit from the canonical project context
+
 # Commit with standards
 help me commit my changes
 
-# Post-task retrospective
-summarize what went wrong this session
+# Explicit retrospective
+retro: summarize this session and propose promotion candidates
 ```
 
 **`dev-harness-context` also ships a minimal CLI:**
@@ -116,6 +122,10 @@ Behavior:
 | **Harmony** | HarmonyOS / ArkTS |
 | **Win32** | C++ / MSBuild |
 | **Qt** | Windows + Linux, with Shared C++ Core detection |
+| **Go** | Service boundaries, concurrency, persistence, and CGO risk prompts |
+| **Flutter** | State ownership, Platform Channels, and native boundaries |
+| **Node.js / TypeScript** | Workspaces, package entry points, plugins, and lifecycle hooks |
+| **FastAPI** | ASGI/router/service flow, auth/migration risks, and pytest/uvicorn evidence |
 
 Other stacks use the same evidence → AI analysis → deterministic validation pipeline. Only insufficiently supported claims become `Unknown`; low-confidence claims are routed to manual review.
 
@@ -125,11 +135,12 @@ The generated `AGENTS.md` includes: call chain candidates, architecture boundary
 
 ## Command Semantics
 
-After onboarding with `dev-harness-commands`, four stable entry points are defined in `HARNESS.md`:
+After onboarding with `dev-harness-commands`, five stable entry points are defined in `HARNESS.md`:
 
 | Command | Meaning |
 |---------|---------|
 | `harness:build` | Full compilation / build |
+| `harness:test` | Repository-backed automated test entry |
 | `harness:quick` | Fast compile-only check |
 | `harness:bugfix` | Bug-specific verification |
 | `harness:full` | Full build + all tests |
@@ -143,6 +154,11 @@ After onboarding with `dev-harness-commands`, four stable entry points are defin
 ```
 dev-harness/
 ├── auto-fix/SKILL.md
+├── codebase-audit/
+│   ├── SKILL.md
+│   ├── runtime.py             # snapshot, drift, state, finding and output guards
+│   ├── references/
+│   └── templates/
 ├── commands/SKILL.md
 ├── context/
 │   ├── SKILL.md

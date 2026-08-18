@@ -16,7 +16,7 @@ Use this skill when asked to:
 - turn requirements, PRDs, prototypes, screenshots, or rough notes into a backlog board and execution plan
 - reuse another project's planning format without copying its business content
 
-Do not use this for bug fixing, code review, or command mapping.
+Do not use this for ordinary one-file edits, bug fixing, code review, or command mapping. It is a project-, release-, or milestone-level planning contract.
 
 ## Required Inputs
 
@@ -63,8 +63,8 @@ TaskDetails is the execution layer. It contains task background, goals, files, s
 3. Read existing or referenced planning docs.
 4. Extract product goal, actors, workflows, hardware/software constraints, integration points, and acceptance criteria.
 5. Split work into one prerequisite task, P0 core tasks, P1 supporting tasks, and P2 future tasks.
-6. Generate Dashboard from `templates/Dashboard.template.md`.
-7. Generate TaskDetails from `templates/TaskDetails.template.md`.
+6. If the plan does not exist, generate Dashboard and TaskDetails from the bundled templates.
+7. If the plan exists, build a merge map keyed by existing Task ID: preserve unchanged rows, links, local labels and completed states; add or update only evidence-backed tasks. Do not regenerate either file from the template.
 8. Check every Dashboard task links to a TaskDetails heading.
 9. Search generated files for placeholder words: `TBD`, `TODO`, `FIXME`, `待补`, `占位`.
 10. Report the resolved documentation root, source files read, files created or updated, and verification evidence.
@@ -78,6 +78,10 @@ TaskDetails is the execution layer. It contains task background, goals, files, s
 - Keep TaskDetails concrete enough for an engineer or AI agent to start work without rereading all source docs.
 - Mark unknown protocols, APIs, SDKs, credentials, devices, and compliance requirements as blockers or risks.
 - Never copy another project's business-specific backlog items into the current project.
+- On refresh, preserve existing task IDs, links, project-local statuses, priorities, and user-confirmed completed states whenever their underlying work is unchanged.
+- Never mark a task completed from AI inference alone; require implementation and verification evidence or an explicit user status.
+- A Codebase Audit finding may be proposed as planning input, but do not add it to the roadmap until the user accepts the scope and priority.
+- Keep refresh diffs minimal: report reused IDs, added IDs, changed statuses and unresolved conflicts before writing.
 
 ## Verification
 

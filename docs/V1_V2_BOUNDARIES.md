@@ -2,7 +2,7 @@
 
 ## V1 定位
 
-`dev-harness` V1 的目标是：让已有项目具备最基本、可执行的 AI 工程化接入与 bugfix 证据闭环。
+`dev-harness` V1/VNext 的目标是：让已有项目具备一致的 Project Contract、可执行验证接口，以及 Bugfix 和大型代码库审计的证据闭环。
 
 适用项目：
 
@@ -16,12 +16,13 @@
 V1 解决的问题：
 
 - AI 第一次进入仓库时，不知道项目怎么读
-- AI 不知道 build / quick / bugfix / full 应该跑什么
+- AI 不知道 build / test / quick / bugfix / full 应该跑什么
 - AI 不知道哪些目录和文件是高风险区域
 - AI 在 NativeBridge / Win32 / C++ SDK 上容易盲改
 - Bugfix 没有固定的复现、定位、回归、验证基线
 - AI 容易把已有工作区修改混入本轮修复或提交
 - “已验证”和“已审查”没有绑定到最终代码 diff
+- 大型代码库无法一次装入上下文，跨会话扫描进度、证据和 Finding 容易丢失
 
 ## V1 已包含
 
@@ -37,6 +38,7 @@ V1 解决的问题：
 - 复用项目已有 `doc/` 或 `docs/` 根目录，不创建第二套文档树
 - 建立文档中心入口、渐进式导航、SSOT、落点和归档规则
 - 在同一文档根目录生成 `plan/Dashboard.md` 与 `plan/TaskDetails.md`
+- 在同一文档根目录维护 `audit/` 的任务、结果、Finding Registry 与报告
 - 不内建从代码生成全量 Diataxis 文档或基于分支 diff 的全仓文档陈旧检测
 
 ### 2. 客户端项目准入能力
@@ -60,6 +62,7 @@ V1 解决的问题：
 ### 4. 命令语义层
 
 - `harness:build`
+- `harness:test`
 - `harness:quick`
 - `harness:bugfix`
 - `harness:full`
@@ -87,6 +90,15 @@ V1 解决的问题：
 - 资源层
 - 原生桥接层
 - 打包层
+
+### 6. Codebase Audit V1
+
+- 基于 Canonical Context 动态生成 subsystem / runtime / platform / native / data 等审计分区，不内置巨型语言 checklist
+- AuditSnapshot 绑定 HEAD、branch、既有 dirty fingerprints、Context fingerprint、scope 和输出根
+- 状态保存在 `.git/dev-harness/codebase-audit/<run-id>/state.json`，支持跨会话 resume/status/task checkpoint
+- 只允许写入既有 `<docs-root>/audit/**`；源码、Context 或工作区漂移时 fail-closed 并把旧 confirmed Finding 标 stale
+- Finding 使用 candidate / needs-verification / confirmed / rejected / stale / resolved 状态并绑定 Evidence 与 Snapshot
+- 完成前强制 Cross-module Reconciliation；Audit 不修复源码、不创建 PR、不自动污染 Roadmap
 
 ## V1 明确不做
 
@@ -141,10 +153,11 @@ V1 解决的问题：
 满足以下条件即可视为 V1 封板：
 
 1. 能生成 4 个上下文文件
-2. 能输出 `build / quick / bugfix / full` 语义层
+2. 能输出 `build / test / quick / bugfix / full` 语义层
 3. 能显式标出高风险区域与禁改边界
 4. 对 NativeBridge 项目能输出“自动识别候选 / 需人工确认”
 5. 不会在缺少命令或证据时伪造完成
 6. 已有 dirty worktree 不会被本轮修复误改、误暂存或误提交
 7. 完成证据与最终 diff 一致，代码变化会使旧证据失效
 8. 已有 `doc/` 或 `docs/` 能被复用，文档整理和 planning 不会创建竞争根目录
+9. Codebase Audit 能跨会话恢复，且业务源码或 Context 漂移后不会继续发布旧 confirmed 结论

@@ -19,7 +19,7 @@ description: Use when you need to discover, initialize, or follow a repository-o
 
 ## 第一步：读取项目规范索引
 
-1. 读取仓库根目录 `AGENTS.md` 和 `LESSONS.md`（若存在）。
+1. 读取仓库根目录 `AGENTS.md`，通过其中的项目规范索引定位权威文档。
 2. 优先读取 AGENTS“项目规范索引”中的 Git 工作流、发布规范和变更日志路径。
 3. 索引缺失时，依次检查：
    - `docs/GIT_WORKFLOW.md`
@@ -84,22 +84,9 @@ Context 只刷新 AGENTS 托管索引，不复制规范正文。
 
 ## 默认 Git 契约
 
-### 分支模式
+完整默认值只在项目缺少相应规范且用户已经确认时按需读取 [references/default-contract.md](references/default-contract.md)。核心兼容值为 `single-branch` / `feature-branch`、Conventional Commits、annotated tag `vMAJOR.MINOR.PATCH`，release notes 按既定顺序省略空分类。
 
-- `single-branch`：允许按项目约定直接在默认分支开发和提交，不自动创建工作分支。
-- `feature-branch`：使用 `feat/`、`fix/`、`docs/`、`refactor/`、`test/`、`perf/`、`chore/` 等前缀。
-
-不得在项目未确认模式时强制创建分支。仓库自定义命名规则始终优先。
-
-### Commit
-
-默认格式：
-
-```text
-<type>(<scope>): <description>
-```
-
-`scope` 可选。默认 type 为：`feat`、`fix`、`docs`、`style`、`refactor`、`perf`、`test`、`build`、`ci`、`chore`、`revert`。
+### 精确提交边界
 
 用户明确要求提交时：
 
@@ -111,20 +98,7 @@ Context 只刷新 AGENTS 托管索引，不复制规范正文。
 6. 扫描新增行中的临时调试输出，如 `Console.WriteLine`、`Debug.Log`、裸 `print(`；疑似残留时停止并确认。
 7. 按项目规范生成 commit message；只有项目没有该主题且用户已确认默认契约时才使用上述 Conventional Commits。
 
-### Tag 和发布消息
-
-- 默认使用 annotated tag：`vMAJOR.MINOR.PATCH`。
-- tag annotation 与 release notes 都从 `CHANGELOG.md` 中匹配的版本生成。
-- 标题为 `Release vMAJOR.MINOR.PATCH`，正文按以下固定顺序输出非空分类：
-  1. `Breaking Changes`
-  2. `Added`
-  3. `Changed`
-  4. `Deprecated`
-  5. `Fixed`
-  6. `Removed`
-  7. `Security`
-- 必须省略空分类，不使用 `Deleted`。
-- 找不到对应版本的 changelog 条目时停止，询问是否创建；未经确认不得用 commit subject 编造发布内容。
+Tag annotation 与 release notes 必须来自 `CHANGELOG.md` 的匹配版本；缺失时停止，不得从 commit subject 编造发布事实。
 
 ## 输出
 
@@ -155,5 +129,6 @@ Context 只刷新 AGENTS 托管索引，不复制规范正文。
 - Context 负责规范路径索引；本 skill 不直接编辑 `agents.contract-index` 托管块
 - 不自动生成代码规范文档
 - 不修改构建验证契约 `HARNESS.md`
+- Codebase Audit 发现 Git / release policy gap 时可建议使用本 Skill；审计 Finding 不是执行 commit、tag、push 或 release 的授权
 - 不默认 push、创建 PR、发布 GitHub Release、部署或触发 CI
 - 项目或公司自己的规范文档始终高于本 skill 默认模板

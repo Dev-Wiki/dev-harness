@@ -14,7 +14,8 @@ Keep these responsibilities separate:
 - Let `dev-harness-context` own root `README.md`, `AGENTS.md`, `ARCHITECTURE.md`, and `HARNESS.md` managed sections.
 - Let `dev-harness-planning` own the active `plan/Dashboard.md` and `plan/TaskDetails.md` content.
 - Let `dev-harness-git-workflow` own release, CHANGELOG, tag, and commit conventions.
-- Let `dev-harness-retro` own `LESSONS.md` maintenance.
+- Let `dev-harness-retro` own explicit retrospective history and promotion candidates in `LESSONS.md`.
+- Let `dev-harness-codebase-audit` own content under `<docs-root>/audit/`; Docs owns only its navigation, links, placement, and archive governance.
 - Own the documentation root, index, navigation, placement, SSOT, discoverability, and archive rules here.
 - Own the verified-fact update discipline: only facts proven by code, configuration, or successful validation may be written; task logs, commit summaries, one-off paths, failed attempts, and personal preferences never enter project documentation.
 - Do not generate a full tutorial, API reference, or feature explanation unless the user explicitly requests content authoring. Organize and route those documents instead.
@@ -23,7 +24,7 @@ Keep these responsibilities separate:
 
 Infer the operation from the request:
 
-- **Audit**: inspect structure, duplicate ownership, orphaned documents, and broken navigation; do not edit files.
+- **Documentation Audit**: inspect documentation structure, duplicate ownership, orphaned documents, and broken navigation; do not confuse this operation with repository-wide codebase auditing and do not edit files.
 - **Initialize**: create the minimum index and documentation rules for a repository without an established documentation system.
 - **Organize**: propose and, when authorized, apply a safer information architecture to existing documents.
 - **Refresh**: update indexes, navigation, placement rules, and archive links after documents change.
@@ -49,7 +50,7 @@ Never rename an established root or create a second root merely to match a templ
 
 Read repository instructions before proposing changes:
 
-1. Read `LESSONS.md`, `AGENTS.md`, root `README.md`, and `ARCHITECTURE.md` when present.
+1. Read `AGENTS.md`, root `README.md`, and `ARCHITECTURE.md` when present. Read `LESSONS.md` only when the user explicitly includes retrospective history in scope.
 2. Inventory Markdown and documentation-framework files with `rg --files`; exclude generated, dependency, cache, build, and vendor directories.
 3. Read the current documentation index and navigation files first.
 4. Read representative or directly affected documents next. Do not recursively load a large documentation tree into context.
@@ -113,6 +114,7 @@ Workflow:
 6. Report modified files, how each fact was verified, and the remaining documentation gaps.
 
 Do not re-implement owned boundaries: managed `README.md` / `AGENTS.md` / `ARCHITECTURE.md` / `HARNESS.md` sections are refreshed by `dev-harness-context`, and release / CHANGELOG facts belong to `dev-harness-git-workflow`.
+Codebase Audit findings and task results belong to `<docs-root>/audit/`; this Skill may index or archive them but must not rewrite their claims or evidence.
 
 ## Apply Changes Safely
 
