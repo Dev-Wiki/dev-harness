@@ -4,6 +4,14 @@
 
 ---
 
+## v1.8.1 — 2026-08-19
+
+### Fixed
+
+- 将 `dev-harness-docs` 的 OpenAI 展示名与实际 Skill 名统一，并通过安装产物测试锁定该元数据，避免它单独显示为 `Dev Harness Docs`。
+
+---
+
 ## v1.8.0 — 2026-08-18
 
 ### Added

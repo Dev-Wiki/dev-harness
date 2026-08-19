@@ -82,6 +82,8 @@ class InstallBundleTests(unittest.TestCase):
             self.assertTrue((skill_root / "assets" / "documentation-rules.template.md").exists())
             self.assertTrue((skill_root / "assets" / "nav.template.md").exists())
             self.assertTrue((skill_root / "agents" / "openai.yaml").exists())
+            agent_metadata = (skill_root / "agents" / "openai.yaml").read_text(encoding="utf-8")
+            self.assertIn('display_name: "dev-harness-docs"', agent_metadata)
 
     def test_installed_git_workflow_includes_default_templates(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

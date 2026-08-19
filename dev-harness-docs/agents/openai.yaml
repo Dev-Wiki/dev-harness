@@ -1,4 +1,4 @@
 interface:
-  display_name: "Dev Harness Docs"
+  display_name: "dev-harness-docs"
   short_description: "Organize and maintain project documentation safely"
   default_prompt: "Use $dev-harness-docs to organize this repository documentation and define clear SSOT boundaries."
