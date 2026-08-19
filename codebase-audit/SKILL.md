@@ -11,6 +11,7 @@ description: Use when an existing repository needs a systematic, evidence-backed
 
 - 把 `dev-harness-context` 维护的 Context 当作唯一 canonical repository input。只读消费 `README.md`、`AGENTS.md`、`ARCHITECTURE.md`、`HARNESS.md` 及其规范索引；不要另建 Repository Context。
 - 只允许写入 `<docs-root>/audit/**` 和 Git 私有目录 `.git/dev-harness/codebase-audit/**`（worktree 中使用 Git 返回的实际私有路径）。
+- 不得为了补导航而由 Audit 修改 `<docs-root>/README.md` 或根 `README.md`；文档中心入口归 `dev-harness-docs`，Audit 只检查并记录 discoverability 状态与精确 handoff。
 - 不得修改业务源码、测试、配置、构建文件、Context 托管区或其他 Skill 的产物。
 - 只发现、验证和路由问题；不得自动修复、commit、创建 PR、发布或创建 Roadmap/计划任务。
 - 不得用固定语言、框架或“最佳实践”巨型 checklist 代替基于 Context 的动态分区。
@@ -29,8 +30,10 @@ description: Use when an existing repository needs a systematic, evidence-backed
 1. 确定仓库根、当前分支、HEAD、Git 私有目录和已有 dirty files。
 2. 读取 canonical Context、项目规范索引与 `HARNESS.md`。Context 缺失、证据被截断、与仓库明显不符或无法得到可记录的 Context fingerprint 时，停止并交给 `dev-harness-context` 刷新；不得自行补一套上下文。
 3. 解析唯一 `<docs-root>`：尊重用户指定的既有路径；否则复用已有索引、治理文件、活跃 `plan/` 或 `audit/` 所在根；仅有 `doc/` 或 `docs/` 时使用已有者。二者均为项目所有且归属不明，或二者皆不存在时停止并先交给文档治理流程建立 canonical root；Audit 不自行创建第二套文档体系。
-4. 校验所有预期输出都位于 `<docs-root>/audit/**`，所有运行状态都位于 Git 私有目录。
-5. 用 `runtime.py` 初始化或恢复运行并建立 `AuditSnapshot`。先读取 `python <skill-dir>/runtime.py --help`，再按实际接口使用 `init`、`resume` / `status`、`verify-workspace`、`checkpoint`、`upsert-finding`、`validate-output`、`checkpoint-cross-module` 和 `complete` 等语义操作；不硬编码未确认参数，不手工伪造或绕过状态校验。
+4. 只读检查 `<docs-root>/README.md` 或一个既有 route index 是否链接稳定入口 `<docs-root>/audit/Report.md`，将状态记为 `linked` 或 `docs-refresh-required`。缺入口不是 `AUD-*` Finding。
+5. 若用户同时授权 Docs Refresh，在 Audit 只读 preflight 已解析稳定路径后、`runtime.py init` 建立 Snapshot 前，由 `dev-harness-docs` 幂等补入口；Audit 自己不得越界写入。若只授权 Audit，继续运行但必须把精确 handoff 写入 Dashboard、Report 和最终回复。
+6. 校验所有预期输出都位于 `<docs-root>/audit/**`，所有运行状态都位于 Git 私有目录。
+7. 用 `runtime.py` 初始化或恢复运行并建立 `AuditSnapshot`。先读取 `python <skill-dir>/runtime.py --help`，再按实际接口使用 `init`、`resume` / `status`、`verify-workspace`、`checkpoint`、`upsert-finding`、`validate-output`、`checkpoint-cross-module` 和 `complete` 等语义操作；不硬编码未确认参数，不手工伪造或绕过状态校验。
 
 `AuditSnapshot` 至少绑定 base SHA、branch、preexisting dirty files 及内容 fingerprint、Context fingerprint、audit scope 和 output paths。
 
@@ -49,6 +52,7 @@ preflight → snapshot → dynamic partition → task execution
 4. 可疑点先进入 `candidate`，检查反证、旁路、生命周期和其他实现。证据不足时使用 `needs-verification`，不得提高措辞强度来替代验证。
 5. 对所有任务做去重、矛盾处理、完整调用链/数据流审查和跨平台影响检查，之后才能发布当前 `confirmed` 结论。
 6. 最终报告只汇总已验证 Findings、未决项和建议路由，不写脱离 Evidence 的长篇最佳实践建议。
+7. 最终报告单独记录 `Documentation Discoverability`：文档中心、稳定 Audit 入口、`linked/docs-refresh-required` 状态和精确 Docs handoff。
 
 ## 产物职责
 
@@ -61,6 +65,8 @@ preflight → snapshot → dynamic partition → task execution
 - `Report.md`：当前快照下的开发者总览，聚合 Findings 和 Cross-module 结论。
 
 各文档必须互相链接。详细证据只维护在 Finding 或 Task Result 的权威位置，其他文档链接过去，不复制正文。历史由 Git 承担；V1 不创建按时间滚动的归档副本。
+
+稳定外部入口是 `<docs-root>/audit/Report.md`。`<docs-root>/README.md` 或既有 route index 的入口由 Docs 维护；根 README 快捷链接可选。Audit 不得把缺失导航伪装成 Finding，也不得在活跃 Snapshot 中调用 Docs 修改 hub，否则会形成 workspace drift。
 
 ## Drift 与停止条件
 
@@ -91,6 +97,8 @@ Finding 必须遵循 `candidate → verification → confirmed/rejected`，并�
 
 交接只包含 Finding ID、当前 Snapshot、Evidence、影响、验收方向和建议 owner。授权审计不等于授权任何后续修改。
 
+产物 discoverability 缺口是运行级 Docs handoff，不需要 Finding ID。它必须包含文档中心路径、稳定目标 `audit/Report.md`、当前状态和最小动作“增加一个简短入口”；不得复制 Audit 结论或扩大为文档重组。
+
 ## 完成口径
 
-仅当所有计划内 Task 有结果或明确 blocker、所有发布的 confirmed Findings 绑定当前 Snapshot、重复和矛盾已收敛、Cross-module Reconciliation 已记录且最终 drift 校验通过时，才把运行标为完成。报告本次只写入哪些审计文档、状态路径、快照、Finding 计数、未决 Evidence gap 和建议 handoff。
+仅当所有计划内 Task 有结果或明确 blocker、所有发布的 confirmed Findings 绑定当前 Snapshot、重复和矛盾已收敛、Cross-module Reconciliation 已记录、最终 drift 校验通过，并且 Documentation Discoverability 已标记为 `linked` 或记录了精确 Docs Refresh handoff 时，才把运行标为完成。报告本次只写入哪些审计文档、状态路径、快照、Finding 计数、未决 Evidence gap、discoverability 状态和建议 handoff。

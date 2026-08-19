@@ -87,8 +87,20 @@ class ProjectContractTests(unittest.TestCase):
         self.assertIn("`dev-harness-auto-fix`", audit)
         self.assertIn("`dev-harness-planning`", audit)
         self.assertIn("own content under `<docs-root>/audit/`", docs)
+        self.assertIn("Documentation Discoverability", audit)
+        self.assertIn("`linked`", audit)
+        self.assertIn("`docs-refresh-required`", audit)
+        self.assertIn("Audit 自己不得越界写入", audit)
+        self.assertIn("## Publish Codebase Audit Navigation", docs)
         self.assertIn("`AUD-*` Finding", auto_fix)
         self.assertIn("Codebase Audit finding", planning)
+
+        dashboard = self.read("codebase-audit/templates/Dashboard.template.md")
+        report = self.read("codebase-audit/templates/Report.template.md")
+        for template in (dashboard, report):
+            self.assertIn("Documentation Discoverability", template)
+            self.assertIn("Stable Audit Entry", template)
+            self.assertIn("docs-refresh-required", template)
 
     def test_planning_refresh_preserves_ids_and_requires_completion_evidence(self) -> None:
         planning = self.read("planning/SKILL.md")

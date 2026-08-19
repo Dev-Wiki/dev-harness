@@ -14,6 +14,8 @@
 |---|---|
 | [{Title}]({relative/path.md}) | {Why a reader opens it} |
 
+When a Capability Catalog or equivalent current-scope SSOT is required, include it here or in the relevant reader route. When `audit/Report.md` exists, include one stable `Codebase Audit` entry here or in a justified route. Omit either entry when its target does not exist; do not leave placeholder or dangling links.
+
 ## Repository-level documents
 
 | Document | Responsibility |

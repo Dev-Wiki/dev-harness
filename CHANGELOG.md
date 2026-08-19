@@ -4,6 +4,18 @@
 
 ---
 
+## v1.9.0 — 2026-08-19
+
+### Added
+
+- `dev-harness-docs` 新增条件性 Capability Catalog 契约与自包含模板：复用已有范围 SSOT，缺失时按现有产品目录选择落点，并分离产品状态、适用范围、交付基线、验证级别和证据。
+
+### Changed
+
+- Codebase Audit 将文档可发现性纳入 Dashboard、Report 与完成口径；继续保持 `<docs-root>/audit/**` 写入边界，缺少文档中心入口时显式交给 Docs Refresh，根 README 快捷链接保持可选。
+
+---
+
 ## v1.8.1 — 2026-08-19
 
 ### Fixed

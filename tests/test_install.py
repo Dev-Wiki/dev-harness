@@ -78,6 +78,7 @@ class InstallBundleTests(unittest.TestCase):
 
             self.assertTrue((skill_root / "SKILL.md").exists())
             self.assertTrue((skill_root / "references" / "information-architecture.md").exists())
+            self.assertTrue((skill_root / "assets" / "capabilities.template.md").exists())
             self.assertTrue((skill_root / "assets" / "docs-index.template.md").exists())
             self.assertTrue((skill_root / "assets" / "documentation-rules.template.md").exists())
             self.assertTrue((skill_root / "assets" / "nav.template.md").exists())
@@ -258,6 +259,10 @@ class InstallBundleTests(unittest.TestCase):
                 self.assertIn("codebase-audit/references/finding-contract.md", names)
                 self.assertIn("skills/dev-harness-codebase-audit/runtime.py", names)
                 self.assertIn("dev-harness-docs/SKILL.md", names)
+                self.assertIn("dev-harness-docs/assets/capabilities.template.md", names)
+                self.assertIn(
+                    "skills/dev-harness-docs/assets/capabilities.template.md", names
+                )
                 zf.extractall(extracted)
 
             result = subprocess.run(

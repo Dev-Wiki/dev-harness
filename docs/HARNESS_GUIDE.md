@@ -47,7 +47,7 @@ dev-harness-context refresh <repo-path>
 
 AGENTS 中只保留轻量的项目规范索引。Context 会识别已有 Git 工作流、代码规范、发布规范和 changelog 文档并刷新路径，但不会创建这些专业文档。Git/提交/tag/发布规范缺失时由 `dev-harness-git-workflow` 在用户确认后初始化；代码规范不自动生成；`CHANGELOG.md` 仅在确认初始化或首次发布时创建。
 
-如果仓库已经积累了较多文档，使用 `dev-harness-docs` 识别现有 `doc/` 或 `docs/` 根目录，整理文档入口、渐进式导航、SSOT 与归档规则。它不会为了匹配模板重命名已有文档根目录，也不会生成第二套目录。代码或验证完成后，也可以用它的 `Update` 操作把已验证、可复用的事实同步进现有文档；未验证内容保持待确认，不做全量重写。
+如果仓库已经积累了较多文档，使用 `dev-harness-docs` 识别现有 `doc/` 或 `docs/` 根目录，整理文档入口、渐进式导航、SSOT 与归档规则。当前能力散落或无法可靠统计时，它会条件性建立 Capability Catalog；已有等价 Owner 则复用。它不会为了匹配模板重命名已有文档根目录，也不会生成第二套目录。代码或验证完成后，也可以用它的 `Update` 操作把已验证、可复用的事实同步进现有文档；未验证内容保持待确认，不做全量重写。
 
 然后用 `dev-harness-commands` 补齐真实命令映射：
 
@@ -81,11 +81,11 @@ auto fix
 | Skill | 用途 |
 |-------|------|
 | `dev-harness-context` | 初始化上下文文件，并按固定 Markdown 标题安全刷新自动识别章节 |
-| `dev-harness-docs` | 整理文档根目录、索引、渐进式导航、SSOT、归档和链接，并同步已验证事实 |
+| `dev-harness-docs` | 整理文档根目录、索引、渐进式导航、SSOT、Capability Catalog、归档和链接，并同步已验证事实 |
 | `dev-harness-planning` | 在项目现有文档根目录生成 Dashboard 与 TaskDetails |
 | `dev-harness-commands` | 补齐 build / test / quick / bugfix / full 的真实命令映射 |
 | `dev-harness-auto-fix` | 执行内置的复现、定位、修复、审查与验证流程 |
-| `dev-harness-codebase-audit` | 基于 Canonical Context 渐进扫描大型代码库，持久化证据与 Finding，不修改业务源码 |
+| `dev-harness-codebase-audit` | 基于 Canonical Context 渐进扫描大型代码库，持久化证据与 Finding；缺少审计入口时显式交给 Docs Refresh，不越界修改文档中心 |
 | `dev-harness-git-workflow` | 遵循项目已有 Git 规范；缺失时确认并初始化提交、tag、changelog 和发布约定 |
 | `dev-harness-retro` | 仅在用户显式要求时复盘，分类 FACT / POLICY / LESSON 并更新 `LESSONS.md` |
 

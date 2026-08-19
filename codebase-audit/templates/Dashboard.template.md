@@ -23,6 +23,17 @@
 | Output Root | `{docs-root}/audit` |
 | Private State | `{git-private-state-path}` |
 
+## Documentation Discoverability
+
+| Field | Value |
+|---|---|
+| Documentation Hub | `{docs-root}/README.md or route index` |
+| Stable Audit Entry | `{docs-root}/audit/Report.md` |
+| Status | `{linked/docs-refresh-required}` |
+| Docs Handoff | `{none or add one concise hub link to audit/Report.md}` |
+
+> Audit records this status but never edits the documentation hub. A missing link is a Docs Refresh handoff, not an `AUD-*` Finding.
+
 ## Task Status
 
 | Task | Scope | Status | Result | Dependencies | Last Checkpoint |

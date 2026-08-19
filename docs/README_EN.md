@@ -17,12 +17,12 @@ Supports Cursor, Codex CLI, OpenCode, and Antigravity.
 | Skill | Description |
 |-------|-------------|
 | `dev-harness-context` | Scans a repo and generates `README.md`, `ARCHITECTURE.md`, `HARNESS.md`, `AGENTS.md` |
-| `dev-harness-docs` | Organizes an existing `doc/` or `docs/` root, indexes, progressive navigation, SSOT, archives, and links, and syncs verified facts into existing docs |
+| `dev-harness-docs` | Organizes an existing `doc/` or `docs/` root, indexes, progressive navigation, SSOT, conditional Capability Catalogs, archives, and links, and syncs verified facts into existing docs |
 | `dev-harness-planning` | Generates Dashboard and TaskDetails under the repository's existing documentation root |
 | `dev-harness-commands` | Standardizes `build / test / quick / bugfix / full` command entry points |
 | `dev-harness-git-workflow` | Validates branch naming, generates commit messages, blocks debug artifacts |
 | `dev-harness-auto-fix` | Full pipeline: bug description / issue URL → root cause → fix → review → commit |
-| `dev-harness-codebase-audit` | Dynamically partitions large repositories and persists evidence-backed findings without changing source |
+| `dev-harness-codebase-audit` | Dynamically partitions large repositories and persists evidence-backed findings without changing source; missing documentation-hub links become explicit Docs Refresh handoffs |
 | `dev-harness-retro` | Explicit retrospective — classifies FACT / POLICY / LESSON and proposes contract promotions |
 
 ---
@@ -83,12 +83,15 @@ scan this repo and generate context files
 # Organize project documentation without creating a second doc root
 audit and organize this repository's documentation structure and SSOT
 
+# Inventory currently supported features, reusing an equivalent scope SSOT when present
+inventory this repository's supported features and, when needed, create or refresh a Capability Catalog with product status, applicability, delivery baseline, and verification level
+
 # Fix a bug
 auto fix this bug: <description>
 auto fix https://github.com/owner/repo/issues/123
 
 # Audit unknown risks without modifying product source
-initialize a codebase audit from the canonical project context
+initialize a codebase audit from the canonical project context; if the documentation hub does not link audit/Report.md, refresh that navigation before audit initialization
 
 # Commit with standards
 help me commit my changes
@@ -190,7 +193,7 @@ dev-harness/
 
 ## V1 / V2 Boundary
 
-V1 / VNext is the current project-contract layer for existing projects. It covers canonical context, documentation and planning governance, five verification command semantics, Git policy discovery, evidence-driven bug fixing, and resumable codebase audit. In the VNext design record, “VNext” names the v1.8.0 evolution within the V1 boundary; it is not another name for the V2 backlog.
+V1 / VNext is the current project-contract layer for existing projects. It covers canonical context, documentation and planning governance, conditional current-capability catalogs, five verification command semantics, Git policy discovery, evidence-driven bug fixing, and resumable codebase audit with an explicit documentation-discoverability handoff. The v1.8.0 design record introduced this VNext evolution, and v1.9.0 extends it with capability inventory and audit discoverability while remaining inside the same V1 boundary; VNext is not another name for the V2 backlog.
 
 V1 explicitly excludes: UI automation, screenshot-driven verification, log/metric/trace platforms, multi-worktree runtime, auto PR/review loop, native-layer auto-repair.
 

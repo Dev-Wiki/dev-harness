@@ -26,11 +26,19 @@ Create a destination only when the repository has content for it. Do not create 
 
 Keep status and detailed decisions in the writable owner. Keep indexes concise and link to the owner instead of repeating details.
 
+When applicable, assign these facts to separate owners:
+
+- current observable capabilities → the existing current-scope SSOT or a Capability Catalog;
+- future work and task status → `{docs-root}/plan/`;
+- released changes → the project CHANGELOG;
+- codebase audit claims and evidence → `{docs-root}/audit/`, with only a concise route from the documentation hub.
+
 ## Navigation rules
 
 - Keep every active document reachable from `{docs-root}/README.md` or one route index.
 - Read indexes before deep documents.
 - Open large reference collections through their local README or interface index.
+- Link an existing `{docs-root}/audit/Report.md` from the documentation hub; do not copy its findings into the index.
 - Keep root repository documents lightweight.
 
 ## Archive rules

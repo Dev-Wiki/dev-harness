@@ -32,7 +32,19 @@ V1 目标不是自动化一切，而是先让 AI 具备最基本的工程操作�
 
 新增或移动这些文档后运行 `dev-harness-context refresh <repo-path>`，只更新 AGENTS 托管索引，不覆盖人工内容。
 
-项目存在较多深度文档时，使用 `dev-harness-docs` 复用已有 `doc/` 或 `docs/` 根目录，建立文档中心入口、按读者任务组织的渐进式导航、SSOT 与归档规则。项目较小时保持单层索引即可，不强制创建空目录或 `nav/`。
+项目存在较多深度文档时，使用 `dev-harness-docs` 复用已有 `doc/` 或 `docs/` 根目录，建立文档中心入口、按读者任务组织的渐进式导航、SSOT 与归档规则。当前功能散落、不同角色/平台/版本支持范围不一致或无法可靠统计时，条件性建立 Capability Catalog；已有等价范围 SSOT 时直接复用。项目较小时保持单层索引即可，不强制创建空目录、`nav/` 或能力目录。
+
+Codebase Audit 的稳定入口是 `<docs-root>/audit/Report.md`。Audit 只维护 `audit/` 内的证据；若文档中心尚未链接该入口，由 Docs Refresh 幂等补一条导航，根 README 快捷链接可选。
+
+常用触发方式：
+
+```text
+# 功能范围已经零散在多个文档时
+盘点这个仓库当前已支持的功能，必要时建立或刷新 Capability Catalog
+
+# 开始大型代码库审计，并保证结果能从文档中心找到
+基于项目 Context 初始化 codebase audit；若文档中心缺少 audit/Report.md 入口，先刷新文档导航
+```
 
 ## 3. 首次准入检查
 

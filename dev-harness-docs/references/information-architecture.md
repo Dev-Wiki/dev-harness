@@ -7,11 +7,12 @@ Use this reference when defining navigation, assigning SSOT ownership, or reorga
 1. Repository entry layers
 2. Reader routes
 3. Content placement
-4. SSOT layers
-5. Archive lifecycle
-6. Migration protocol
-7. Verified-fact update discipline
-8. Optional content-authoring integration
+4. Capability Catalog
+5. SSOT layers
+6. Archive lifecycle
+7. Migration protocol
+8. Verified-fact update discipline
+9. Optional content-authoring integration
 
 ## 1. Repository entry layers
 
@@ -60,10 +61,34 @@ Use purpose as the primary classifier:
 | How is this deployed, restored, or delivered? | Operations guide | `deployment/` |
 | How was a known failure diagnosed and resolved? | Troubleshooting record | `troubleshooting/` |
 | What work is active and what blocks it? | Plan | `plan/` |
+| What problems did the latest codebase audit confirm? | Codebase Audit report | `audit/Report.md` |
 
 Use Diataxis as a content-quality lens, not as a mandatory top-level directory layout. Existing domain directories may contain clearly labeled how-to, reference, and explanation documents without being reorganized solely for theoretical purity.
 
-## 4. SSOT layers
+Codebase Audit owns the report, findings, tasks, and evidence under `<docs-root>/audit/`. Documentation governance owns only the stable link from `<docs-root>/README.md` or one justified route index to `audit/Report.md`. Keep that entry concise; a root README shortcut is optional when it already links to the documentation hub.
+
+## 4. Capability Catalog
+
+A Capability Catalog is the current product-surface SSOT. Establish one only when capability facts are scattered, support varies by scope or delivery baseline, or the repository cannot reliably answer what it supports now. Reuse an equivalent existing owner regardless of filename.
+
+If no equivalent owner exists, use `<docs-root>/product/CAPABILITIES.md` when an established product directory already exists; otherwise use `<docs-root>/CAPABILITIES.md`. Do not create `product/` solely to match this convention.
+
+Use one stable ID for each leaf capability that a user or integrator can observe and verify. Apply these counting rules:
+
+- capability domains, screens, routes, endpoints, modules, tasks, and tests are not independently countable features;
+- record role, platform, provider, vehicle, firmware, release, or deployment differences as scope instead of duplicating the same capability;
+- keep product status, delivery baseline, and verification level as separate facts;
+- calculate summary totals from current leaf rows and state which delivery baseline the total represents;
+- preserve an ID when status, scope, or evidence changes;
+- exclude `Pending confirmation / 待确认` rows from supported totals.
+
+Product status answers whether the behavior is Supported, Partial, Experimental, or Deprecated. Delivery baseline distinguishes released versions from the current repository or not-yet-released work. Verification level distinguishes code evidence, automated tests, runtime validation, and target-environment validation. One field must not silently stand in for another.
+
+Do not infer support from implementation inventory alone. Menus and routes can remain for deprecated behavior; tests can cover rejected or disabled paths; plans and requirements can describe work that does not exist. Every current row needs evidence and a link to the owner of its detailed rules.
+
+The catalog owns current support only. Planning owns future work and task state, CHANGELOG owns released deltas, and architecture, reference, integration, validation, and usage documents own local detail.
+
+## 5. SSOT layers
 
 Use three layers for changing project facts:
 
@@ -84,7 +109,7 @@ Archive rule: <when the owner stops being active>
 
 When two documents appear authoritative, do not merge them silently. Identify their audiences, select an owner with evidence, and convert the other into a link or historical snapshot after confirmation.
 
-## 5. Archive lifecycle
+## 6. Archive lifecycle
 
 Archive only when active maintenance has ended:
 
@@ -97,7 +122,7 @@ Archive only when active maintenance has ended:
 
 Never use `archive/` as a dumping ground for documents whose ownership is merely unclear.
 
-## 6. Migration protocol
+## 7. Migration protocol
 
 For an existing tree, propose a table before applying moves:
 
@@ -114,7 +139,7 @@ Use these rules:
 - Treat case-only renames and non-ASCII path changes as portability-sensitive.
 - Request confirmation for bulk moves, deletions, or redirects that cannot be preserved.
 
-## 7. Verified-fact update discipline
+## 8. Verified-fact update discipline
 
 After code or validation changes, only verified, reusable project facts may be written into existing documents.
 
@@ -137,7 +162,7 @@ Update flow:
 
 Managed context sections (`README.md` / `AGENTS.md` / `ARCHITECTURE.md` / `HARNESS.md`) are refreshed by `dev-harness-context`; release and CHANGELOG facts belong to the project Git workflow. This discipline does not bypass those owners.
 
-## 8. Optional content-authoring integration
+## 9. Optional content-authoring integration
 
 After structure and ownership are settled, a content-writing workflow may fill identified gaps:
 

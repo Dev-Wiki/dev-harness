@@ -278,6 +278,8 @@ class OutputAndFindingContractTests(GitRepoCase):
             store.validate_output("/tmp/report.md")
         with self.assertRaises(self.runtime.OutputPathError):
             store.validate_output("../Report.md")
+        with self.assertRaises(self.runtime.OutputPathError):
+            store.validate_output("../README.md")
 
         outside = self.repo.parent / f"{self.repo.name}-outside"
         outside.mkdir()

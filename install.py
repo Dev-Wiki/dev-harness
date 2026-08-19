@@ -84,6 +84,7 @@ DOCS_REFERENCE_DIR = DOCS_SOURCE_DIR / "references"
 DOCS_REFERENCE_FILES = ["information-architecture.md"]
 DOCS_ASSET_DIR = DOCS_SOURCE_DIR / "assets"
 DOCS_ASSET_FILES = [
+    "capabilities.template.md",
     "docs-index.template.md",
     "documentation-rules.template.md",
     "nav.template.md",

@@ -79,6 +79,36 @@ Create `<docs-root>/DOCUMENTATION.md` for placement, SSOT, navigation, and archi
 
 Create `nav/` only when the documentation has at least three stable reader or task routes and a single index has become difficult to scan. Use [assets/nav.template.md](assets/nav.template.md) for each justified route. Do not copy another project's route names blindly.
 
+## Govern a Capability Catalog
+
+A Capability Catalog answers **what the product supports now**. Treat it as a conditional product-scope SSOT, not as a mandatory file for every repository.
+
+Require a catalog or an equivalent existing owner when any of these conditions applies:
+
+- current capability facts are spread across multiple active documents;
+- support differs by role, platform, vehicle, firmware, provider, deployment mode, or release baseline;
+- plans, release history, menus, routes, or implementation notes are being used as a proxy for current support;
+- the repository cannot reliably answer how many observable capabilities are supported now.
+
+Do not split out a catalog when a small project's existing current-scope document already answers those questions clearly. Reuse an equivalent SSOT regardless of filename and link to it instead of creating a duplicate merely to match this contract.
+
+When no equivalent owner exists, resolve the path without creating a directory only for the template:
+
+1. If an established product documentation directory exists, use `<docs-root>/product/CAPABILITIES.md`.
+2. Otherwise use `<docs-root>/CAPABILITIES.md`.
+
+Use [assets/capabilities.template.md](assets/capabilities.template.md) as the semantic contract while preserving the project's language and local conventions. Keep product status, availability scope, delivery baseline, and verification level separate. Count stable leaf capabilities, not domains, pages, routes, APIs, modules, tasks, or tests. Derive summary counts from the catalog rows whenever it changes.
+
+Operation boundaries:
+
+- **Documentation Audit** reports a missing, duplicated, or uncountable capability owner; it does not create the catalog.
+- **Organize** may establish the owner and navigation when the user authorized documentation organization.
+- **Update** may add or change only capabilities backed by current code, configuration, successful tests, runtime validation, or target-environment validation.
+- Never infer product support from route, menu, endpoint, file, or test counts alone.
+- Put unverified candidates under `Pending confirmation / 待确认`; do not include them in supported totals.
+
+The catalog owns current observable support. Planning owns future work and task status; CHANGELOG owns released deltas; architecture, implementation, integration, and reference documents own their local detail. Link those owners from the catalog instead of copying their bodies. Add the selected capability owner to `<docs-root>/README.md` or one justified route index; root `README.md` may contain only a short summary and link.
+
 ## Enforce SSOT
 
 Assign each changing fact exactly one writable owner:
@@ -134,6 +164,20 @@ When editing:
 5. Preserve encoding, line endings, frontmatter, framework-specific metadata, and user-owned prose.
 6. Keep existing `doc/` versus `docs/` naming and local language conventions.
 
+## Publish Codebase Audit Navigation
+
+Codebase Audit owns the claims and evidence under `<docs-root>/audit/**`; Docs owns the route that makes those artifacts discoverable.
+
+During **Refresh**, **Organize**, or **Update**:
+
+1. If `<docs-root>/audit/Report.md` exists, or an explicit Audit discoverability handoff identifies that stable target, check whether `<docs-root>/README.md` or one justified route index already links to it.
+2. When the link is missing, add one concise, project-style entry such as `Codebase Audit` or `代码库审计`; do not copy finding counts, conclusions, or evidence into the index.
+3. Make the update idempotent: preserve an equivalent existing entry and never add duplicate links.
+4. Do not modify `audit/Report.md`, `audit/Findings.md`, Audit tasks, results, or private state while performing the navigation refresh.
+5. A root `README.md` shortcut is optional when it already reaches the documentation hub.
+
+For a paired new Audit run, perform the Docs navigation update after read-only Audit preflight resolves the stable paths but **before** Audit initializes its snapshot. Modifying the hub during an active Audit run would be workspace drift. If a run is already active, report the exact Docs handoff instead of editing the hub silently.
+
 ## Coordinate with Planning
 
 Resolve the same `<docs-root>` before invoking or following `dev-harness-planning`:
@@ -157,6 +201,8 @@ rg -n 'TBD|TODO|FIXME|待补|占位' "$DOCS_ROOT"
 Also verify:
 
 - every new or moved document is reachable from `<docs-root>/README.md` or one justified navigation route;
+- every established Capability Catalog is reachable from the documentation hub, uses stable leaf IDs, and keeps current support separate from plans and released deltas;
+- every existing `<docs-root>/audit/Report.md` is reachable from the documentation hub or has an explicit pending Docs Refresh handoff;
 - every relative Markdown link changed by the task resolves to an existing target or valid anchor;
 - only one project-owned documentation root is active;
 - index documents do not repeat detailed status or implementation notes;

@@ -5,7 +5,7 @@
 
 ## 版本命名
 
-设计方案中的 **VNext** 指从既有 V1 向 v1.8.0 Project Contract 与 Codebase Audit 能力的兼容演进，仍属于本文件定义的 V1 范围；它不是 V2 的别名。当前实现与后续排期分别以本文件和 `V2_BACKLOG.md` 为准，设计记录中的实施阶段不作为活动任务清单。
+设计方案中的 **VNext** 指从既有 V1 向 v1.8.0 Project Contract 与 Codebase Audit 能力的兼容演进，仍属于本文件定义的 V1 范围；v1.9.0 在同一边界内补充 Capability Catalog 与 Audit 文档可发现性，不改变 V2 边界。VNext 不是 V2 的别名。当前实现与后续排期分别以本文件和 `V2_BACKLOG.md` 为准，设计记录中的实施阶段不作为活动任务清单。
 
 ## V1 定位
 
@@ -44,6 +44,8 @@ V1 解决的问题：
 
 - 复用项目已有 `doc/` 或 `docs/` 根目录，不创建第二套文档树
 - 建立文档中心入口、渐进式导航、SSOT、落点和归档规则
+- 当前能力事实分散、支持范围有角色/平台/版本差异或无法可靠统计时，条件性建立 Capability Catalog；已有等价范围 SSOT 时复用
+- Capability Catalog 分离产品状态、适用范围、交付基线和验证级别，只统计有稳定 ID 与证据的叶子能力
 - 在同一文档根目录生成 `plan/Dashboard.md` 与 `plan/TaskDetails.md`
 - 在同一文档根目录维护 `audit/` 的任务、结果、Finding Registry 与报告
 - 不内建从代码生成全量 Diataxis 文档或基于分支 diff 的全仓文档陈旧检测
@@ -106,6 +108,7 @@ V1 解决的问题：
 - 只允许写入既有 `<docs-root>/audit/**`；源码、Context 或工作区漂移时 fail-closed 并把旧 confirmed Finding 标 stale
 - Finding 使用 candidate / needs-verification / confirmed / rejected / stale / resolved 状态并绑定 Evidence 与 Snapshot
 - 完成前强制 Cross-module Reconciliation；Audit 不修复源码、不创建 PR、不自动污染 Roadmap
+- 稳定入口为 `<docs-root>/audit/Report.md`；缺少文档中心链接时记录 `docs-refresh-required`，由 Docs 在 Audit Snapshot 建立前补入口，Audit 不越界修改 hub
 
 ## V1 明确不做
 
@@ -167,4 +170,6 @@ V1 解决的问题：
 6. 已有 dirty worktree 不会被本轮修复误改、误暂存或误提交
 7. 完成证据与最终 diff 一致，代码变化会使旧证据失效
 8. 已有 `doc/` 或 `docs/` 能被复用，文档整理和 planning 不会创建竞争根目录
-9. Codebase Audit 能跨会话恢复，且业务源码或 Context 漂移后不会继续发布旧 confirmed 结论
+9. 当前能力复杂或分散时有唯一、可验证、可统计的 Owner，简单项目和已有等价 SSOT 不被强制拆文档
+10. Codebase Audit 能跨会话恢复，且业务源码或 Context 漂移后不会继续发布旧 confirmed 结论
+11. Codebase Audit 的 Report 已从文档中心可达，或明确记录待执行的 Docs Refresh handoff

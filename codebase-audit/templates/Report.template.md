@@ -9,6 +9,17 @@
 - [Audit Tasks](tasks/)
 - [Task Results](results/)
 
+## Documentation Discoverability
+
+| Field | Value |
+|---|---|
+| Documentation Hub | `{docs-root}/README.md or route index` |
+| Stable Audit Entry | `{docs-root}/audit/Report.md` |
+| Status | `{linked/docs-refresh-required}` |
+| Owner / Action | `{dev-harness-docs / none or add one concise hub link}` |
+
+> Audit does not edit the documentation hub. When status is `docs-refresh-required`, this table is the exact navigation handoff and does not require an `AUD-*` Finding.
+
 ## Snapshot
 
 | Field | Value |
