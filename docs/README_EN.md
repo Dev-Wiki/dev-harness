@@ -22,7 +22,7 @@ Supports Cursor, Codex CLI, OpenCode, and Antigravity.
 | `dev-harness-commands` | Standardizes `build / test / quick / bugfix / full` command entry points |
 | `dev-harness-git-workflow` | Validates branch naming, generates commit messages, blocks debug artifacts |
 | `dev-harness-auto-fix` | Full pipeline: bug description / issue URL → root cause → fix → review → commit |
-| `dev-harness-codebase-audit` | Dynamically partitions large repositories and persists evidence-backed findings without changing source; missing documentation-hub links become explicit Docs Refresh handoffs |
+| `dev-harness-codebase-audit` | Audits engineering quality, behavioral correctness, and cross-module consistency in user-owned or explicitly authorized repositories; dynamically partitions the codebase and persists evidence-backed findings without changing product source |
 | `dev-harness-retro` | Explicit retrospective — classifies FACT / POLICY / LESSON and proposes contract promotions |
 
 ---
@@ -90,8 +90,11 @@ inventory this repository's supported features and, when needed, create or refre
 auto fix this bug: <description>
 auto fix https://github.com/owner/repo/issues/123
 
-# Audit unknown risks without modifying product source
+# Audit unknown engineering defects without modifying product source; output defaults to Chinese
 initialize a codebase audit from the canonical project context; if the documentation hub does not link audit/Report.md, refresh that navigation before audit initialization
+
+# Request English audit artifacts explicitly
+initialize a codebase audit from the canonical project context and write all audit artifacts in English only
 
 # Commit with standards
 help me commit my changes
@@ -193,7 +196,7 @@ dev-harness/
 
 ## V1 / V2 Boundary
 
-V1 / VNext is the current project-contract layer for existing projects. It covers canonical context, documentation and planning governance, conditional current-capability catalogs, five verification command semantics, Git policy discovery, evidence-driven bug fixing, and resumable codebase audit with an explicit documentation-discoverability handoff. The v1.8.0 design record introduced this VNext evolution, v1.9.0 extends it with capability inventory and audit discoverability, and v1.9.1 improves Chinese terminology and template localization without changing the V1 boundary; VNext is not another name for the V2 backlog.
+V1 / VNext is the current project-contract layer for existing projects. It covers canonical context, documentation and planning governance, conditional current-capability catalogs, five verification command semantics, Git policy discovery, evidence-driven bug fixing, and resumable codebase audit with an explicit documentation-discoverability handoff. The v1.8.0 design record introduced this VNext evolution, v1.9.0 extends it with capability inventory and audit discoverability, v1.9.1 improves Chinese terminology and template localization, and v1.10.0 clarifies the Engineering Audit scope, output-language contract, focused runtime verification, and Finding identity gate. These releases do not change the V1 boundary; VNext is not another name for the V2 backlog.
 
 V1 explicitly excludes: UI automation, screenshot-driven verification, log/metric/trace platforms, multi-worktree runtime, auto PR/review loop, native-layer auto-repair.
 

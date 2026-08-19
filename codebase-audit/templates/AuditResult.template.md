@@ -1,62 +1,68 @@
-# Audit Result {Axx} — `{Behavior Domain}`
+# 审计结果 {Axx} — `{行为域}`
 
-> **职责**：本文件记录 [对应 Task](../tasks/{Axx}-{slug}.md) 的检查范围、Evidence、candidate、反证和缺口。它不是最终报告；稳定 Finding 维护在 [Findings.md](../Findings.md)。
+> **职责**：本文件记录 [对应任务](../tasks/{Axx}-{slug}.md) 的检查范围、证据（Evidence）、候选项（Candidate）、反证和缺口。它不是最终报告；稳定 Finding 维护在 [Findings.md](../Findings.md)。
 
-## Navigation
+## 导航
 
-- [Dashboard](../Dashboard.md)
-- [Audit Task](../tasks/{Axx}-{slug}.md)
-- [Finding Registry](../Findings.md)
-- [Current Report](../Report.md)
+- [审计看板](../Dashboard.md)
+- [审计任务](../tasks/{Axx}-{slug}.md)
+- [问题登记表（Finding Registry）](../Findings.md)
+- [当前报告](../Report.md)
 
-## Snapshot
+## 审计快照（Snapshot）
 
-| Field | Value |
+| 字段 | 值 |
 |---|---|
-| Audit Run / Task | `{run-id}` / `{Axx}` |
-| Base SHA / Branch | `{sha}` / `{branch}` |
-| Context Fingerprint | `{fingerprint}` |
-| Dirty Fingerprint | `{fingerprint/clean}` |
-| Drift Status | `{valid/WorkspaceDrift/STALE}` |
-| Result Status | `{running/blocked/stale/completed}` |
+| 审计运行 ID / 任务 | `{run-id}` / `{Axx}` |
+| 基线 SHA / 分支 | `{sha}` / `{branch}` |
+| Context 指纹 | `{fingerprint}` |
+| 审计前工作区指纹 | `{fingerprint/clean}` |
+| 漂移状态 | `{有效/检测到 WorkspaceDrift/已失效}` |
+| 结果状态 | `{进行中/受阻/已失效/已完成}` |
 
-## Coverage Executed
+## 实际覆盖
 
-- **Entry points followed**: `{symbols/paths}`
-- **Call chains / data flows**: `{chains examined}`
-- **Boundaries examined**: `{boundary sides}`
-- **Excluded or unread scope**: `{scope and reason}`
+- **已追踪入口**：`{symbols/paths}`
+- **调用链 / 数据流**：`{已检查链路}`
+- **已检查边界**：`{边界两侧}`
+- **排除或未读取范围**：`{范围及原因}`
 
-## Evidence
+## 证据（Evidence）
 
-| Evidence ID | Path / Command / Artifact | Observation | Supports / Contradicts | Snapshot |
+| 证据 ID | 路径 / 命令 / 产物 | 观察结果 | 支持 / 反驳 | Snapshot |
 |---|---|---|---|---|
-| `{E-Axx-01}` | `{path:line or command}` | `{observed behavior}` | `{candidate/claim ID}` | `{sha/fingerprint}` |
+| `{E-Axx-01}` | `{path:line 或命令}` | `{观察到的行为}` | `{candidate/claim ID}` | `{sha/fingerprint}` |
 
-## Candidate Outcomes
+## 候选项（Candidate）验证结果
 
-| Local ID | Status | Claim | Evidence | Counter-evidence | Registry Mapping |
-|---|---|---|---|---|---|
-| `{Axx-C01}` | `{candidate/needs-verification/confirmed/rejected/stale}` | `{falsifiable claim}` | `{Evidence IDs}` | `{checks/results}` | `{AUD-nnn/pending}` |
+| 本地 ID | 状态 | 主张（Claim） | 证据（Evidence） | 反证（Counter-evidence） | 同一性 / 修复边界判断（Identity） | 登记表映射 |
+|---|---|---|---|---|---|---|
+| `{Axx-C01}` | `{候选项/待验证/已确认/已排除/已失效}` | `{可证伪主张}` | `{Evidence IDs}` | `{检查及结果}` | `{根因、owner、修复边界；保持独立或待复核}` | `{AUD-nnn/待分配}` |
 
-> Task-local `confirmed` 表示本任务范围内的验证要求已满足；只有完成全局 cross-module reconciliation 后，才能作为 Report 中当前有效的 confirmed Finding。
+> “任务内已确认（`confirmed`）”只表示本任务范围内的验证要求已满足；只有完成全局跨模块复核（Cross-module Reconciliation）后，才能作为 Report 中当前有效的已确认 Finding。位于同一模块或机制不足以合并 Candidate。
 
-## Counter-evidence and Alternatives
+## 反证与替代实现
 
-- `{guard, cleanup, alternate implementation, platform branch, exception path, or test inspected}`
+- `{已检查的前置条件、清理路径、替代实现、平台分支、异常路径或测试}`
 
-## Evidence Gaps / Blockers
+## 证据缺口与阻塞项
 
-- `{missing caller, unavailable runtime, device, command, permission, or ambiguous Context}`
+- `{缺失 caller、不可用运行环境、设备、命令、执行条件或存在歧义的 Context}`
 
-## Cross-module Inputs
+## 跨模块复核输入
 
-| Boundary / Claim | Related Task | Question to Reconcile | Evidence Link |
+| 边界 / 主张（Claim） | 相关任务 | 待复核问题 | Evidence 链接 |
 |---|---|---|---|
-| `{boundary}` | `{Ayy}` | `{duplication/contradiction/end-to-end question}` | `{section/Evidence ID}` |
+| `{boundary}` | `{Ayy}` | `{identity/矛盾/端到端问题}` | `{section/Evidence ID}` |
 
-## Checkpoint
+### 复核结论
 
-- **Last durable stage**: `{stage}`
-- **Next action**: `{next evidence step or reconciliation}`
-- **Snapshot validation**: `{command/result summary}`
+- **Finding 同一性**：`{合并/保持独立/待验证，以及四项 identity 条件的证据}`
+- **矛盾处理**：`{已解决结论/待验证缺口}`
+- **严重度 / 置信度变化**：`{变化及原因/无}`
+
+## 检查点
+
+- **最近持久化阶段**：`{stage}`
+- **下一动作**：`{下一证据步骤或复核动作}`
+- **Snapshot 校验**：`{命令/结果摘要}`

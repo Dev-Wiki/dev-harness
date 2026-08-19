@@ -50,8 +50,11 @@ Auto Fix 仍是最成熟的证据工作流：`复现 → 可证伪的根因假�
 # 盘点当前已支持的功能（已有同类功能说明文档时复用）
 盘点这个仓库当前已支持的功能，必要时按支持状态、适用范围、交付版本和验证方式建立或刷新 Capability Catalog
 
-# 审计大型存量代码库（只输出审计文档，不修改业务代码；缺入口时先刷新文档导航）
+# 审计自己拥有或明确授权的大型存量代码库（默认生成中文文档，不修改业务代码）
 基于项目 Context 初始化 codebase audit，并按模块边界分阶段执行；若文档中心尚未链接 audit/Report.md，先补齐该导航
+
+# 需要全英文审计产物时必须显式说明
+基于项目 Context 初始化 codebase audit，所有审计文档使用全英文
 
 # 只分析，不改代码
 分析这个 bug：登录后点击设置崩溃，使用 analyze 模式
@@ -127,7 +130,7 @@ AI 会在每一步输出进度和证据，而不是闷头改完告诉你"修好�
 | Skill | 干什么用 |
 |-------|---------|
 | `dev-harness-auto-fix` | 可选择 analyze / fix / commit / unattended；用运行时约束复现、可证伪的根因假设、RED/GREEN、diff 绑定审查与精确提交 |
-| `dev-harness-codebase-audit` | 基于 Canonical Context 动态分区大型代码库，跨会话持久化任务、证据与 Finding，并在仓库漂移时 fail-closed |
+| `dev-harness-codebase-audit` | 对用户拥有或明确授权的代码库执行工程质量、行为正确性和跨模块一致性审计，动态分区并跨会话持久化任务、证据与 Finding，在仓库漂移时 fail-closed |
 
 > 每个 skill 的模板、references 和脚本跟随该 skill 自己安装，保持资源自包含。
 
@@ -146,11 +149,14 @@ AI 会在每一步输出进度和证据，而不是闷头改完告诉你"修好�
 
 ### Codebase Audit 的边界
 
-Codebase Audit 面向“仓库中还有哪些未知问题”，先按 subsystem、runtime/platform boundary、shared core、native bridge、数据与外部集成动态分区，再沿调用链和数据流渐进读取。它不内置巨型语言 checklist，也不修改源码。
+Codebase Audit 面向用户拥有或明确授权的代码仓库，回答“仓库中还有哪些未知工程问题”。它聚焦工程质量、行为正确性和跨模块一致性，先按 subsystem、runtime/platform boundary、shared core、native bridge、数据与外部集成动态分区，再沿调用链和数据流渐进读取。它不是 penetration testing 或 offensive security workflow，不内置巨型语言 checklist，也不修改业务源码。
 
 - 审计状态位于 `.git/dev-harness/codebase-audit/<run-id>/state.json`；
 - 版本化产物位于已有 `<docs-root>/audit/`，包含 Dashboard、稳定 Finding Registry、任务、结果和总报告；
+- 默认生成符合中文阅读习惯的审计文档；只有用户显式要求全英文时才切换为英文，内部状态枚举不随显示语言变化；
 - Confirmed Finding 必须有代码或运行证据、反证检查与 Snapshot；
+- Candidate 默认独立保留；只有根因、职责归属、修复边界和单一修复效果均一致时才合并；
+- 运行时验证围绕项目声明行为，优先使用本地、确定性、最小复现；
 - HEAD、分支、Context 或业务源码漂移后，旧证据会被标记 stale；
 - Audit 固定入口为 `<docs-root>/audit/Report.md`；文档中心缺少入口时显式交给 Docs Refresh，Audit 本身不越界修改 hub；
 - 缺陷交给 Auto Fix，架构/技术债交给 Planning，验证命令或治理缺口交给相应维护文档。

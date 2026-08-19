@@ -85,7 +85,7 @@ auto fix
 | `dev-harness-planning` | 在项目现有文档根目录生成 Dashboard 与 TaskDetails |
 | `dev-harness-commands` | 补齐 build / test / quick / bugfix / full 的真实命令映射 |
 | `dev-harness-auto-fix` | 执行内置的复现、定位、修复、审查与验证流程 |
-| `dev-harness-codebase-audit` | 基于 Canonical Context 渐进扫描大型代码库，持久化证据与 Finding；缺少审计入口时显式交给 Docs Refresh，不越界修改文档中心 |
+| `dev-harness-codebase-audit` | 对用户拥有或明确授权的代码库执行工程质量、行为正确性和跨模块一致性审计，持久化证据与 Finding；默认生成中文文档，显式要求全英文时才切换语言 |
 | `dev-harness-git-workflow` | 遵循项目已有 Git 规范；缺失时确认并初始化提交、tag、changelog 和发布约定 |
 | `dev-harness-retro` | 仅在用户显式要求时复盘，分类 FACT / POLICY / LESSON 并更新 `LESSONS.md` |
 
@@ -97,6 +97,8 @@ auto fix
 使用 dev-harness-auto-fix 处理这个 bug：<描述现象>。
 先确认最小复现条件并收集证据（日志/截图/版本），确认根因后再修改代码。
 ```
+
+Codebase Audit 默认使用自然中文生成 Dashboard、Finding Registry、Task Result 和 Report，状态显示为“候选项、待验证、已确认、已排除、已失效、已解决”，runtime 仍保存稳定的英文枚举。需要英文产物时，在调用中显式要求“所有审计文档使用全英文”。Audit 只验证项目声明行为的正确性，不用于渗透测试或攻击性安全流程。
 
 ### 2.3 回归测试
 

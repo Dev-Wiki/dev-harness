@@ -4,6 +4,21 @@
 
 ---
 
+## v1.10.0 — 2026-08-20
+
+### Added
+
+- `dev-harness-codebase-audit` 新增明确的 Engineering Audit Scope：面向用户拥有或明确授权的代码仓库，聚焦工程质量、行为正确性和跨模块一致性，并与 penetration testing / offensive security workflow 清晰分离。
+- Codebase Audit 新增运行级 `output_language` 约定：默认生成自然中文审计文档，只有用户显式要求全英文时才生成英文文档；内部状态枚举保持稳定，中文仅作为显示层。
+
+### Changed
+
+- Codebase Audit 的运行时验证明确限定为本地、确定性、最小复现，围绕项目声明行为验证触发条件、状态变化、错误传播和高影响操作的实际结果。
+- Finding 合并增加 identity gate：Candidate 默认独立保留，只有根因、职责归属、修复边界及单一修复效果均一致时才合并，并继续在 Cross-module Reconciliation 中完成端到端复核、矛盾处理和 Severity / Confidence 重排。
+- Audit references、templates 与示例改用工程质量语义和自然中文表达，保留 Audit Snapshot、Finding Registry、Evidence / Counter-evidence、状态机、workspace drift、fail-closed 与只审计不修改业务源码等既有能力。
+
+---
+
 ## v1.9.1 — 2026-08-19
 
 ### Changed

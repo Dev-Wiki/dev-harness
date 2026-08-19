@@ -98,9 +98,89 @@ class ProjectContractTests(unittest.TestCase):
         dashboard = self.read("codebase-audit/templates/Dashboard.template.md")
         report = self.read("codebase-audit/templates/Report.template.md")
         for template in (dashboard, report):
-            self.assertIn("Documentation Discoverability", template)
-            self.assertIn("Stable Audit Entry", template)
+            self.assertIn("文档可发现性", template)
+            self.assertIn("固定审计入口", template)
             self.assertIn("docs-refresh-required", template)
+
+    def test_codebase_audit_scope_is_engineering_not_offensive(self) -> None:
+        audit = self.read("codebase-audit/SKILL.md")
+
+        self.assertIn("工程质量、行为正确性和跨模块一致性审计", audit)
+        for concern in (
+            "correctness defects",
+            "configuration defects",
+            "lifecycle / state inconsistencies",
+            "cross-module contract violations",
+            "error propagation",
+            "concurrency / resource-management issues",
+            "destructive-operation correctness",
+            "build/runtime inconsistencies",
+            "maintainability / technical debt",
+            "testing / verification gaps",
+            "documentation/code drift",
+        ):
+            self.assertIn(concern, audit)
+        self.assertIn("不是 penetration testing 或 offensive security workflow", audit)
+        self.assertIn("本地、确定性、最小复现", audit)
+        self.assertIn("不得面向第三方目标", audit)
+        self.assertIn("privilege escalation", audit)
+        self.assertIn("weaponization", audit)
+
+    def test_codebase_audit_candidate_identity_and_reconciliation_stay_strict(self) -> None:
+        finding_contract = self.read("codebase-audit/references/finding-contract.md")
+        cross_module = self.read("codebase-audit/references/cross-module-review.md")
+
+        for identity_condition in (
+            "根因一致",
+            "owner / responsibility boundary 一致",
+            "修复边界基本一致",
+            "一个修复可以合理同时解决多个现象",
+        ):
+            self.assertIn(identity_condition, finding_contract)
+            self.assertIn(identity_condition, cross_module)
+        self.assertIn("缺失 base 后仍返回 partial workspace", finding_contract)
+        self.assertIn("循环 base 导致无限递归", finding_contract)
+        for stage in (
+            "Task findings",
+            "Boundary Ledger",
+            "Finding identity reconciliation",
+            "Contradiction resolution",
+            "End-to-end trace",
+            "Severity / Confidence re-ranking",
+            "Final Report",
+        ):
+            self.assertIn(stage, cross_module)
+
+    def test_codebase_audit_defaults_to_chinese_and_keeps_internal_enums(self) -> None:
+        audit = self.read("codebase-audit/SKILL.md")
+        dashboard = self.read("codebase-audit/templates/Dashboard.template.md")
+        findings = self.read("codebase-audit/templates/Findings.template.md")
+
+        self.assertIn("其他情况默认 `zh-CN`", audit)
+        self.assertIn("显式要求“全英文”", audit)
+        self.assertIn("文档语言", dashboard)
+        self.assertIn("`{zh-CN/en}`", dashboard)
+        for internal, display in (
+            ("candidate", "候选项"),
+            ("needs-verification", "待验证"),
+            ("confirmed", "已确认"),
+            ("rejected", "已排除"),
+            ("stale", "已失效"),
+            ("resolved", "已解决"),
+        ):
+            self.assertIn(f"`{internal}`", audit)
+            self.assertIn(display, findings)
+        for template in (
+            "Dashboard.template.md",
+            "Findings.template.md",
+            "AuditTask.template.md",
+            "AuditResult.template.md",
+            "Report.template.md",
+        ):
+            content = self.read(f"codebase-audit/templates/{template}")
+            self.assertIn("## 导航", content, template)
+            self.assertIn("Snapshot", content, template)
+            self.assertIn("Evidence", content, template)
 
     def test_planning_refresh_preserves_ids_and_requires_completion_evidence(self) -> None:
         planning = self.read("planning/SKILL.md")

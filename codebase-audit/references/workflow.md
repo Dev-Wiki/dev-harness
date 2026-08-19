@@ -10,16 +10,18 @@
 - 任一旧 Evidence 只有在 Snapshot 仍有效时才能支撑当前结论。
 - 任何 Task 的局部结论都必须进入全局 reconciliation。
 - 固定开发者入口为 `<docs-root>/audit/Report.md`；Audit 只读检查外部导航，Docs 负责维护文档中心链接。
+- 本轮 `output_language` 由用户显式要求或默认值 `zh-CN` 决定，记录在 Dashboard 并在跨会话恢复时保持一致；它不属于 Evidence Snapshot。
 
 ## Phase 0 — Preflight / Resume
 
 1. 读取仓库级 `AGENTS.md`、`README.md`、`ARCHITECTURE.md`、`HARNESS.md`、`LESSONS.md` 和规范索引（存在时）。
 2. 解析唯一 `<docs-root>`；禁止为 Audit 创建第二个文档根。
-3. 只读检查 `<docs-root>/README.md` 或一个既有 route index 是否链接 `audit/Report.md`。把结果记录为 `linked` 或 `docs-refresh-required`；这不是代码 Finding，不分配 `AUD-*`。
-4. 若同一用户授权同时包含 Docs Refresh，在所有只读 preflight 检查通过后、Audit Snapshot 建立前，由 `dev-harness-docs` 幂等添加固定入口。若只授权 Audit，不修改 hub，继续运行并持久化精确 handoff。
-5. 读取 `runtime.py --help` 并按实际接口使用语义操作：`init` 建立运行，`resume` / `status` 恢复或查看状态，`verify-workspace` 校验快照，`checkpoint` 持久化阶段，`upsert-finding` 维护 Finding，`validate-output` 校验输出边界与契约。不要硬编码未确认参数，也不要手工编辑 `state.json`。
-6. 新运行创建模板产物；恢复运行先读取 state、Dashboard、Task 和 Result，再校验工作区。
-7. 用 `validate-output` 检查输出路径：拒绝绝对越界、`..` 逃逸、符号链接逃逸、文档中心和任何业务文件目标。
+3. 确定 `output_language`：只有显式全英文请求使用 `en`，否则使用 `zh-CN`。恢复时读取 Dashboard 已记录值；不得根据仓库主要语言自行切换。
+4. 只读检查 `<docs-root>/README.md` 或一个既有 route index 是否链接 `audit/Report.md`。把结果记录为 `linked` 或 `docs-refresh-required`；这不是代码 Finding，不分配 `AUD-*`。
+5. 若同一用户授权同时包含 Docs Refresh，在所有只读 preflight 检查通过后、Audit Snapshot 建立前，由 `dev-harness-docs` 幂等添加固定入口。若只授权 Audit，不修改 hub，继续运行并持久化精确 handoff。
+6. 读取 `runtime.py --help` 并按实际接口使用语义操作：`init` 建立运行，`resume` / `status` 恢复或查看状态，`verify-workspace` 校验快照，`checkpoint` 持久化阶段，`upsert-finding` 维护 Finding，`validate-output` 校验输出边界与契约。不要硬编码未确认参数，也不要手工编辑 `state.json`。
+7. 新运行按 `output_language` 创建模板产物并把选择写入 Dashboard；恢复运行先读取 state、Dashboard、Task 和 Result，再校验工作区与文档语言一致性。
+8. 用 `validate-output` 检查输出路径：拒绝绝对越界、`..` 路径外移、符号链接指向审计根外部、文档中心和任何业务文件目标。
 
 若 Context 缺失、明显过期、被截断或无法绑定 fingerprint，返回 `ContextRequired`，建议运行 `dev-harness-context` 后重新开始。不要边审计边发明新的仓库模型。
 
@@ -44,7 +46,7 @@
 
 1. 创建或刷新 `Dashboard.md` 的 Task 索引。
 2. 从 `AuditTask.template.md` 创建 `tasks/Axx-*.md`。
-3. 记录每个 Task 的 Context 来源、入口、边界、排除项、证据策略、依赖和状态。
+3. 记录每个 Task 的 Context 来源、入口、边界、排除项、证据策略、依赖和状态。面向读者的名称和问题按 `output_language` 表达，不直接复制 Context 中缺少行为说明的风险标签。
 4. checkpoint partition plan；恢复后复用未漂移的 Task，不为凑数量重新切片。
 
 ## Phase 3 — Progressive Task Execution
@@ -57,26 +59,28 @@ Context / repository map
   → entry point
   → caller / callee
   → owner / lifecycle / boundary
-  → focused code or runtime evidence
+  → focused code or local behavior evidence
 ```
 
 执行规则：
 
 1. 开始 Task 前校验 drift，并把 Dashboard 的 Current Focus 指向该 Task。
 2. 沿行为链读取最少必要文件，记录实际覆盖和未覆盖范围。
-3. 把可疑点保留为 task-local candidate；不要因为命名、风格或一次搜索直接确认问题。
+3. 每个可疑现象独立保留为 task-local candidate；不要因为命名、风格、一次搜索、同一模块或同一机制就直接确认或合并问题。
 4. 从 `AuditResult.template.md` 创建对应 `results/Axx-*.md`，记录 Evidence、反证、缺口和需要其他 Task 回答的问题。
 5. 原子 checkpoint Task 状态。中断后从最后一个有效 checkpoint 恢复，不从聊天记忆猜测进度。
+
+需要运行证据时，优先在 `/tmp` 或临时目录构造最小、可回收的本地复现，调用项目自身 CLI/API，检查错误输入、边界输入、循环配置、实际状态变化和错误传播。验证目标是项目声明行为的正确性；不得超出 `SKILL.md` Scope 定义的工程验证边界。
 
 ## Phase 4 — Finding Verification
 
 读取 [finding-contract.md](finding-contract.md)。对每个 candidate：
 
-1. 写出可证伪 Claim、风险机制和预期观察。
+1. 为每个 candidate 分别写出可证伪 Claim、影响机制、触发条件和预期观察。
 2. 跟踪相关 caller/callee、数据流、owner 和 lifecycle。
 3. 搜索旁路、反例、保护条件、其他实现和运行/测试证据。
 4. 证据充分时进入 `confirmed`，被否定时进入 `rejected`，仍缺关键证据时进入 `needs-verification`。
-5. 通过 `upsert-finding` 把同一根因映射到一个稳定 `AUD-nnn`；不要按出现次数重复建项或绕过状态转换。
+5. 通过 `upsert-finding` 维护稳定 `AUD-nnn`；只有 identity gate 已证明根因、owner、修复边界和单一修复效果一致时才复用 ID。证据不足时保留独立 Finding，不按模块或表象强行聚类，也不绕过状态转换。
 
 局部验证通过只代表“可进入 reconciliation”。报告前仍可能被合并、降级、改为 stale 或重新排序。
 
@@ -84,7 +88,23 @@ Context / repository map
 
 读取并完整执行 [cross-module-review.md](cross-module-review.md)。至少：
 
-- 合并重复根因；
+```text
+Task findings
+    ↓
+Boundary Ledger
+    ↓
+Finding identity reconciliation
+    ↓
+Contradiction resolution
+    ↓
+End-to-end trace
+    ↓
+Severity / Confidence re-ranking
+    ↓
+Final Report
+```
+
+- 根据 identity gate 合并已证明属于同一 Finding 的现象，并保持其他 candidate 独立；
 - 解决 Task 间矛盾；
 - 贯通边界两端的调用链、数据流、生命周期和所有权；
 - 检查 shared core 对所有 caller/platform 的影响；
@@ -98,7 +118,7 @@ Context / repository map
 1. 再次校验 Snapshot；发现 drift 时停止并执行 stale 处理。
 2. 更新 `Findings.md`，让每个状态和 Evidence 指向唯一权威条目。
 3. 更新 `Dashboard.md` 的计数、状态、阻塞和 Last Verified Snapshot。
-4. 从 `Report.template.md` 生成 `Report.md`：汇总当前 confirmed P0–P3、cross-module Findings、needs-verification 和 handoff。
+4. 从 `Report.template.md` 生成 `Report.md`：按本轮 `output_language` 汇总当前 confirmed P0–P3、cross-module Findings、needs-verification 和 handoff。中文模式使用中文状态显示，内部状态值和 runtime state 保持英文枚举。
 5. 在 Dashboard 与 Report 中同步 Documentation Discoverability：文档中心、固定入口、`linked/docs-refresh-required` 状态、维护方和具体动作。缺入口时不得声称 Audit 已能从项目文档中心找到。
 6. 使用 `validate-output` 并校验文档互链、Task/Result 一一对应、Finding ID 唯一、所有确认项含 Snapshot/Evidence。
 7. checkpoint completion。不要在 Audit 内执行 handoff 的修改、计划创建、文档中心更新、commit 或 PR。
@@ -132,6 +152,7 @@ Audit 与 Docs 的职责分离如下：
 - [ ] 所有 confirmed Finding 有当前 Snapshot 和 Evidence。
 - [ ] 相同根因已去重，矛盾已解决或降为 needs-verification。
 - [ ] Cross-module Reconciliation 已记录。
+- [ ] 所有当前 Audit 文档使用同一 `output_language`，Dashboard 已记录该值，且不存在非必要的中英混排。
 - [ ] 最终 drift 和路径边界校验通过。
 - [ ] Dashboard、Findings、Report、Task、Result 互相可达。
 - [ ] Documentation Discoverability 为 `linked`，或 Dashboard、Report 和最终回复都记录了精确 Docs Refresh handoff。

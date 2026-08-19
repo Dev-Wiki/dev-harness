@@ -5,7 +5,7 @@
 
 ## 版本命名
 
-设计方案中的 **VNext** 指从既有 V1 向 v1.8.0 Project Contract 与 Codebase Audit 功能的兼容演进，仍属于本文件定义的 V1 范围；v1.9.0 在同一边界内补充 Capability Catalog 与 Audit 文档入口可达性，v1.9.1 进一步统一中文术语和模板表达，均不改变 V2 边界。VNext 不是 V2 的别名。当前实现与后续排期分别以本文件和 `V2_BACKLOG.md` 为准，设计记录中的实施阶段不作为活动任务清单。
+设计方案中的 **VNext** 指从既有 V1 向 v1.8.0 Project Contract 与 Codebase Audit 功能的兼容演进，仍属于本文件定义的 V1 范围；v1.9.0 在同一边界内补充 Capability Catalog 与 Audit 文档入口可达性，v1.9.1 进一步统一中文术语和模板表达，v1.10.0 明确 Engineering Audit 职责、输出语言约定、最小行为验证和 Finding identity gate，均不改变 V2 边界。VNext 不是 V2 的别名。当前实现与后续排期分别以本文件和 `V2_BACKLOG.md` 为准，设计记录中的实施阶段不作为活动任务清单。
 
 ## V1 定位
 
@@ -102,12 +102,15 @@ V1 解决的问题：
 
 ### 6. Codebase Audit V1
 
+- 面向用户拥有或明确授权的代码仓库，聚焦工程质量、行为正确性和跨模块一致性；不是 penetration testing 或 offensive security workflow
 - 基于 Canonical Context 动态生成 subsystem / runtime / platform / native / data 等审计分区，不内置巨型语言 checklist
 - AuditSnapshot 绑定 HEAD、branch、既有 dirty fingerprints、Context fingerprint、scope 和输出根
 - 状态保存在 `.git/dev-harness/codebase-audit/<run-id>/state.json`，支持跨会话 resume/status/task checkpoint
 - 只允许写入既有 `<docs-root>/audit/**`；源码、Context 或工作区漂移时 fail-closed 并把旧 confirmed Finding 标 stale
-- Finding 使用 candidate / needs-verification / confirmed / rejected / stale / resolved 状态并绑定 Evidence 与 Snapshot
-- 完成前强制 Cross-module Reconciliation；Audit 不修复源码、不创建 PR、不自动污染 Roadmap
+- Finding 使用 candidate / needs-verification / confirmed / rejected / stale / resolved 内部状态并绑定 Evidence 与 Snapshot；默认文档使用自然中文显示，用户显式要求全英文时才切换
+- Candidate 默认独立保留，只有根因、职责归属、修复边界和单一修复效果均一致时才允许合并
+- 运行时验证围绕项目声明行为，优先使用本地、确定性、最小复现
+- 完成前强制 Cross-module Reconciliation，执行 Finding 身份核对、矛盾处理、端到端链路复核和 Severity / Confidence 重排；Audit 不修复源码、不创建 PR、不自动污染 Roadmap
 - 固定入口为 `<docs-root>/audit/Report.md`；缺少文档中心链接时记录 `docs-refresh-required`，由 Docs 在 Audit Snapshot 建立前补入口，Audit 不越界修改 hub
 
 ## V1 明确不做

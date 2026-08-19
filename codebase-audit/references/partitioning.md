@@ -10,9 +10,9 @@
 - 运行入口、后台 worker、回调和生命周期；
 - UI、adapter、FFI/native、service、data/persistence 等边界；
 - platform / build variant / shared core；
-- 外部系统、权限或信任边界；
+- 外部系统、permission model boundary 或外部操作边界；
 - 构建、打包和验证入口；
-- Context 明示的高风险或待确认项。
+- Context 明示的高影响或待确认项。
 
 每个分区理由必须引用 Context 路径或其中的仓库 evidence。Context 未确认的架构不能在 Task 中升级成事实。
 
@@ -20,7 +20,7 @@
 
 1. **画边界图**：列出入口、模块、shared owners、数据存储、外部依赖和平台分叉。
 2. **找行为链**：把同一调用链、数据流、所有权或生命周期组合为候选域。
-3. **切在可验证边界**：让一个 Task 能回答具体风险问题，并有明确 entry points 和 exclusions。
+3. **切在可验证边界**：让一个 Task 能回答具体的正确性或影响问题，并有明确 entry points 和 exclusions。
 4. **保留接缝**：任何跨 Task 边界都登记 producer/consumer、caller/callee、owner/borrower 或 write/read 两端。
 5. **控制规模**：大型仓库通常使用 4–10 个主 Task，小型仓库可更少；不要为了目标数量强拆或合并。
 6. **检查覆盖**：每个 in-scope Context 事实至少映射到一个 Task；每条重要边界至少有一个主 Task 和一个 reconciliation 输入。
@@ -33,8 +33,8 @@
 
 - 多 caller、多平台或 shared core；
 - 生命周期、线程、ownership 或异步回调跨边界；
-- 数据持久化、迁移、授权或外部副作用；
-- Context 标为高风险、证据不足或契约不清；
+- 数据持久化、迁移、permission model 状态或外部副作用；
+- Context 标为高影响、证据不足或契约不清；
 - 缺少可执行验证入口。
 
 这些只决定阅读顺序，不直接证明存在 Finding，也不预设 category 或 severity。
@@ -51,11 +51,11 @@
 | Entry Points | 最小起始位置 |
 | Important Boundaries | 接缝两端和相关 Task |
 | Exclusions | 本 Task 明确不覆盖什么 |
-| Evidence Strategy | search → chain → focused read/probe |
+| Evidence Strategy | search → chain → focused read / behavior verification |
 | Dependencies | 前置 Task、共享证据和待回答问题 |
 | Snapshot | 当前代码与 Context 基线 |
 
-建议 ID `A01`、`A02`…；名称描述行为域，例如 `A03-session-lifecycle`，不要只写技术栈名。
+建议 ID `A01`、`A02`…；名称描述行为域，例如 `A03-session-lifecycle`，不要只写技术栈名。Task 标题和问题应描述实际工程行为，例如“工作区路径与操作边界”“执行前置检查与状态变化”，不要仅复制 Context 中缺少具体机制的风险标签。默认中文产物使用自然中文名称；仅在 `output_language=en` 时使用全英文自然语言。
 
 ## Coverage Review
 
@@ -65,7 +65,7 @@
 - 是否存在只扫描一端的 runtime/platform/data boundary；
 - shared core 是否覆盖所有主要 caller；
 - build variant、后台执行或异常路径是否被无意排除；
-- 两个 Task 是否其实在扫描同一根因；
+- 两个 Task 是否可能覆盖相关现象；在 identity gate 完成前仍保持各自 candidate 独立；
 - 任一 Task 是否过大到必须批量加载无关文件。
 
 覆盖有缺口时调整分区或明确 blocker。不要用增加一组通用 checklist 来填补缺口。

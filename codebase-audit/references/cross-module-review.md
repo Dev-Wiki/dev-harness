@@ -2,6 +2,24 @@
 
 这是每次 Audit 的强制全局阶段。Task Result 是局部证据，不是可以直接拼接成 Report 的最终结论。
 
+最终收敛必须完整经过：
+
+```text
+Task findings
+    ↓
+Boundary Ledger
+    ↓
+Finding identity reconciliation
+    ↓
+Contradiction resolution
+    ↓
+End-to-end trace
+    ↓
+Severity / Confidence re-ranking
+    ↓
+Final Report
+```
+
 ## Inputs
 
 - 当前有效 `AuditSnapshot`；
@@ -23,20 +41,21 @@
 
 ## 2. Reconcile Identity
 
-按根因、owner 和修复边界聚类 candidates：
+先逐项判断 candidate identity，再按根因、owner 和修复边界聚类。只有证据同时证明根因一致、owner / responsibility boundary 一致、修复边界基本一致，并且一个修复可以合理同时解决多个现象时，才允许合并：
 
 - 合并同一根因的多模块症状，保留最早稳定 Finding ID；
 - 保留 source Task、alias、影响平台和所有 Evidence 链接；
 - 若表象相同但机制不同，保留独立 Finding；
+- 若位于同一模块或宽泛机制但任一 identity 条件未闭合，继续保留独立 Finding；
 - 把只重复描述最佳实践而无具体机制的 candidate 拒绝或退回验证。
 
 ## 3. Resolve Contradictions
 
 显式列出冲突，而不是选择更自信的 Task：
 
-| Claim | Supporting Result | Contradicting Result | Missing Probe | Decision |
+| Claim | Supporting Result | Contradicting Result | Missing Verification | Decision |
 |---|---|---|---|---|
-| `{claim}` | `{link}` | `{link}` | `{probe}` | `{resolved/needs-verification}` |
+| `{claim}` | `{link}` | `{link}` | `{reproduction or behavior evidence}` | `{resolved/needs-verification}` |
 
 检查条件编译、平台 variant、启动/清理顺序、异常路径、并发时序和其他实现。无法用证据解决的冲突必须降为 `needs-verification`。
 
@@ -51,6 +70,11 @@ entry/UI lifecycle → state/manager → wrapper/adapter
 
 同时检查：
 
+- configuration → runtime；
+- state → mutation；
+- precondition → side effect；
+- module → module；
+- input/state → transformation → output/side effect；
 - 调用是否可达，返回或错误是否被正确传播；
 - owner 的创建、共享、取消和销毁顺序；
 - 数据在边界两端的类型、单位、空值和一致性；
@@ -77,7 +101,8 @@ entry/UI lifecycle → state/manager → wrapper/adapter
 在 Report 和相关 Result 中记录：
 
 - Boundary coverage ledger 或其权威链接；
-- merged/aliased Finding IDs；
+- merged/aliased Finding IDs，以及四项 identity 条件的证据；
+- 保持独立的相关 Candidate 及未合并理由；
 - contradictions 与决议；
 - 新发现的跨模块 Finding；
 - severity/confidence 变化；

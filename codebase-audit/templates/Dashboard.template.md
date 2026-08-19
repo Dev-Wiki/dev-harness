@@ -1,71 +1,80 @@
-# Codebase Audit Dashboard
+# 代码库审计看板
 
-> **职责**：本文件只维护当前 Audit 的快照、任务状态、Finding 计数、当前焦点和阻塞。问题正文维护在 [Findings.md](Findings.md)，总体结论维护在 [Report.md](Report.md)。
+> **职责**：本文件只维护当前 Audit 的快照、输出语言、任务状态、Finding 计数、当前焦点和阻塞。问题正文维护在 [Findings.md](Findings.md)，总体结论维护在 [Report.md](Report.md)。
 
-## Navigation
+## 导航
 
-- [Finding Registry](Findings.md)
-- [Current Report](Report.md)
-- [Audit Tasks](tasks/)
-- [Task Results](results/)
+- [问题登记表（Finding Registry）](Findings.md)
+- [当前报告](Report.md)
+- [审计任务](tasks/)
+- [任务结果](results/)
 
-## Snapshot
+## 审计快照（Snapshot）
 
-| Field | Value |
+| 字段 | 值 |
 |---|---|
-| Audit Run | `{run-id}` |
-| Status | `{initialized/running/blocked/stale/completed}` |
-| Base SHA | `{sha}` |
-| Branch | `{branch}` |
-| Preexisting Dirty Fingerprint | `{fingerprint/clean}` |
-| Context Fingerprint | `{fingerprint}` |
-| Audit Scope | `{include/exclude summary}` |
-| Output Root | `{docs-root}/audit` |
-| Private State | `{git-private-state-path}` |
+| 审计运行 ID | `{run-id}` |
+| 运行状态 | `{待初始化/进行中/受阻/已失效/已完成}` |
+| 基线 SHA | `{sha}` |
+| 分支 | `{branch}` |
+| 审计前工作区指纹 | `{fingerprint/clean}` |
+| Context 指纹 | `{fingerprint}` |
+| 审计范围 | `{include/exclude summary}` |
+| 输出根目录 | `{docs-root}/audit` |
+| 私有状态路径 | `{git-private-state-path}` |
 
-## Documentation Discoverability
+## 输出约定
 
-| Field | Value |
+| 字段 | 值 |
 |---|---|
-| Documentation Hub | `{docs-root}/README.md or route index` |
-| Stable Audit Entry | `{docs-root}/audit/Report.md` |
-| Status | `{linked/docs-refresh-required}` |
-| Docs Handoff | `{none or add one concise hub link to audit/Report.md}` |
+| 文档语言 | `{zh-CN/en}` |
+| 语言来源 | `{默认 zh-CN/用户显式要求全英文/既有运行记录}` |
 
-> Audit records this status but never edits the documentation hub. A missing link is a Docs Refresh handoff, not an `AUD-*` Finding.
+> `output_language` 是文档约定，不属于 Audit Snapshot fingerprint；语言变化本身不使 Evidence 或 Finding 失效。
 
-## Task Status
+## 文档可发现性
 
-| Task | Scope | Status | Result | Dependencies | Last Checkpoint |
+| 字段 | 值 |
+|---|---|
+| 文档中心 | `{docs-root}/README.md 或既有导航索引` |
+| 固定审计入口 | `{docs-root}/audit/Report.md` |
+| 状态 | `{已链接（linked）/需刷新文档（docs-refresh-required）}` |
+| Docs 交接 | `{无/在文档中心增加一个指向 audit/Report.md 的简短入口}` |
+
+> Audit 只记录该状态，不修改文档中心。缺少入口属于 Docs Refresh 交接，不是 `AUD-*` Finding。
+
+## 任务状态
+
+| 任务 | 范围 | 状态 | 结果 | 依赖 | 最近检查点 |
 |---|---|---|---|---|---|
-| [A01 — `{scope}`](tasks/A01-{slug}.md) | `{behavior domain}` | `{pending/running/blocked/stale/completed}` | [Result](results/A01-{slug}.md) | `{task IDs/none}` | `{snapshot/checkpoint}` |
+| [A01 — `{范围}`](tasks/A01-{slug}.md) | `{行为域}` | `{待开始/进行中/受阻/已失效/已完成}` | [结果](results/A01-{slug}.md) | `{任务 ID/无}` | `{快照/检查点}` |
 
-## Finding Counts
+## 问题计数（Finding）
 
-| P0 | P1 | P2 | P3 | Needs Verification | Rejected | Stale | Resolved |
+| P0 | P1 | P2 | P3 | 待验证 | 已排除 | 已失效 | 已解决 |
 |---:|---:|---:|---:|---:|---:|---:|---:|
 | `{0}` | `{0}` | `{0}` | `{0}` | `{0}` | `{0}` | `{0}` | `{0}` |
 
-## Current Focus
+## 当前焦点
 
-- **Task**: `{task link/none}`
-- **Question**: `{current audit question}`
-- **Next checkpoint**: `{next durable step}`
+- **任务**：`{任务链接/无}`
+- **当前问题**：`{当前审计问题}`
+- **下一检查点**：`{下一持久化步骤}`
 
-## Blockers
+## 阻塞项
 
-- `{blocker or none; link to task/result evidence}`
+- `{阻塞项或无；链接到任务/结果证据}`
 
-## Last Verified Snapshot
+## 最近验证的快照
 
-- **Verified at**: `{timestamp/checkpoint}`
-- **Drift status**: `{valid/WorkspaceDrift/STALE}`
-- **Cross-module reconciliation**: `{pending/completed/stale}`
+- **验证位置**：`{时间戳/检查点}`
+- **漂移状态**：`{有效/检测到 WorkspaceDrift/已失效}`
+- **跨模块复核（Cross-module Reconciliation）**：`{待开始/已完成/已失效}`
 
-## Evidence
+## 证据（Evidence）
 
-- Canonical Context: `{README/AGENTS/ARCHITECTURE/HARNESS links}`
-- Snapshot record: `{private state reference; do not copy private state into docs}`
-- Last drift validation: `{command/result summary}`
+- Canonical Context：`{README/AGENTS/ARCHITECTURE/HARNESS links}`
+- 审计快照记录：`{私有状态引用；不要把私有状态复制到文档}`
+- 最近漂移校验：`{命令/结果摘要}`
 
 > 任务范围和局部证据只写入对应 [Task](tasks/) / [Result](results/)；不要在本文件复制 Finding 详情。

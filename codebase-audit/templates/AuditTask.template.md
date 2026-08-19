@@ -1,75 +1,75 @@
-# Audit Task {Axx} — `{Behavior Domain}`
+# 审计任务 {Axx} — `{行为域}`
 
 > **职责**：本文件定义本轮要扫描什么，不保存最终 Finding 正文。执行证据写入 [对应 Result](../results/{Axx}-{slug}.md)，全局 Finding 写入 [Findings.md](../Findings.md)，运行状态写入 [Dashboard.md](../Dashboard.md)。
 
-## Navigation
+## 导航
 
-- [Dashboard](../Dashboard.md)
-- [Finding Registry](../Findings.md)
-- [Current Report](../Report.md)
-- [Task Result](../results/{Axx}-{slug}.md)
+- [审计看板](../Dashboard.md)
+- [问题登记表（Finding Registry）](../Findings.md)
+- [当前报告](../Report.md)
+- [任务结果](../results/{Axx}-{slug}.md)
 
-## Snapshot
+## 审计快照（Snapshot）
 
-| Field | Value |
+| 字段 | 值 |
 |---|---|
-| Audit Run | `{run-id}` |
-| Base SHA / Branch | `{sha}` / `{branch}` |
-| Context Fingerprint | `{fingerprint}` |
-| Dirty Fingerprint | `{fingerprint/clean}` |
-| Task Status | `{pending/running/blocked/stale/completed}` |
+| 审计运行 ID | `{run-id}` |
+| 基线 SHA / 分支 | `{sha}` / `{branch}` |
+| Context 指纹 | `{fingerprint}` |
+| 审计前工作区指纹 | `{fingerprint/clean}` |
+| 任务状态 | `{待开始/进行中/受阻/已失效/已完成}` |
 
-## Scope
+## 范围
 
-- **Behavior domain**: `{call chain, data flow, ownership, lifecycle, or boundary}`
-- **In-scope paths**: `{entry paths; not a mechanical file slice}`
-- **Audit questions**: `{specific falsifiable questions}`
+- **行为域**：`{调用链、数据流、所有权、生命周期或边界}`
+- **范围内路径**：`{入口路径；不能是机械文件切片}`
+- **审计问题**：`{具体且可证伪的问题}`
 
-## Why This Scope Exists
+## 分区依据
 
-- `{Context fact and link/path that justifies the task}`
+- `{支持该任务的 Context 事实及链接/路径}`
 
-## Entry Points
+## 入口
 
-- `{symbol/path:line and why it is an entry}`
+- `{symbol/path:line 及其作为入口的理由}`
 
-## Important Boundaries
+## 重要边界
 
-| Boundary | This Side | Other Side | Related Task |
+| 边界 | 当前侧 | 另一侧 | 相关任务 |
 |---|---|---|---|
 | `{boundary}` | `{owner/caller/producer}` | `{borrower/callee/consumer}` | `{Ayy link}` |
 
-## Exclusions
+## 排除项
 
-- `{explicitly excluded scope and owning task/reason}`
+- `{明确排除的范围及负责该范围的任务/原因}`
 
-## Evidence
+## 证据（Evidence）
 
-### Partition Evidence
+### 分区证据
 
-- `{canonical Context path/section → repository evidence}`
+- `{canonical Context 路径/章节 → 仓库证据}`
 
-### Evidence Strategy
+### 证据策略
 
-1. `{search terms/symbol discovery}`
-2. `{caller/callee or data-flow trace}`
-3. `{owner/lifecycle/boundary checks}`
-4. `{focused code read, command, or runtime probe}`
+1. `{搜索词/符号发现}`
+2. `{caller/callee 或数据流追踪}`
+3. `{owner/lifecycle/boundary 检查}`
+4. `{聚焦代码阅读、命令或本地最小复现/行为验证}`
 
-### Required Counter-evidence
+### 必查反证（Counter-evidence）
 
-- `{guards, cleanup, alternate implementations, platform variants, exception paths, or tests to inspect}`
+- `{要检查的前置条件、清理路径、替代实现、平台分支、异常路径或测试}`
 
-## Dependencies / Related Tasks
+## 依赖与相关任务
 
-- **Depends on**: `{task IDs/none}`
-- **Provides to**: `{task IDs/cross-module review}`
-- **Open questions**: `{questions another task must answer}`
+- **依赖**：`{任务 ID/无}`
+- **提供给**：`{任务 ID/跨模块复核}`
+- **待回答问题**：`{需要其他任务回答的问题}`
 
-## Completion Gate
+## 完成门禁
 
-- [ ] Planned scope and exclusions are accounted for.
-- [ ] Result records actual coverage, Evidence and gaps.
-- [ ] Candidates follow the Finding state contract.
-- [ ] Boundary inputs are ready for cross-module reconciliation.
-- [ ] Snapshot remains valid at checkpoint.
+- [ ] 计划范围和排除项均有交代。
+- [ ] 任务结果（Result）记录了实际覆盖、Evidence 和缺口。
+- [ ] 候选项（Candidate）遵循 Finding 状态契约，并在 identity gate 前保持独立。
+- [ ] 边界输入已可用于跨模块复核（Cross-module Reconciliation）。
+- [ ] 检查点处 Snapshot 仍然有效。

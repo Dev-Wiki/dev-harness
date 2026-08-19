@@ -34,7 +34,9 @@ V1 目标不是自动化一切，而是先让 AI 具备最基本的工程操作�
 
 项目存在较多深度文档时，使用 `dev-harness-docs` 复用已有 `doc/` 或 `docs/` 根目录，建立文档中心入口、按读者任务组织的渐进式导航、SSOT 与归档规则。当前功能信息分散、不同角色/平台/版本支持范围不一致或无法可靠统计时，按需建立 Capability Catalog；已有同类功能说明文档时直接复用。项目较小时保持单层索引即可，不强制创建空目录、`nav/` 或功能清单目录。
 
-Codebase Audit 的固定入口是 `<docs-root>/audit/Report.md`。Audit 只维护 `audit/` 内的证据；若文档中心尚未链接该入口，由 Docs Refresh 幂等补一条导航，根 README 快捷链接可选。
+Codebase Audit 面向用户拥有或明确授权的代码仓库，执行工程质量、行为正确性和跨模块一致性审计，不作为渗透测试或攻击性安全流程。固定入口是 `<docs-root>/audit/Report.md`；Audit 只维护 `audit/` 内的证据，若文档中心尚未链接该入口，由 Docs Refresh 幂等补一条导航，根 README 快捷链接可选。
+
+Audit 产物默认使用自然中文，保留 Finding / Task ID、P0–P3、内部状态枚举、路径、代码符号和命令等必要英文。只有调用时显式要求“全英文”或 `English only`，才生成全英文文档；语言只影响显示，不改变 Snapshot 或 Finding 身份。
 
 常用触发方式：
 
@@ -44,6 +46,9 @@ Codebase Audit 的固定入口是 `<docs-root>/audit/Report.md`。Audit 只维�
 
 # 开始大型代码库审计，并保证结果能从文档中心找到
 基于项目 Context 初始化 codebase audit；若文档中心缺少 audit/Report.md 入口，先刷新文档导航
+
+# 需要全英文审计产物时
+基于项目 Context 初始化 codebase audit，所有审计文档使用全英文
 ```
 
 ## 3. 首次接入检查
