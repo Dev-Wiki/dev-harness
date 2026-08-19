@@ -4,6 +4,19 @@
 
 ---
 
+## v1.9.1 — 2026-08-19
+
+### Changed
+
+- Capability Catalog、文档治理、Context、Planning、Audit、Retro 与 Bugfix 模板统一采用自然中文表达，避免把 `observable capability`、`leaf capability`、`owner`、`promote` 等概念逐词翻译成生硬术语。
+- Context 新生成文档使用“代码风格示例”“核心业务流程”“编译与启动问题排查”“新增功能的一般流程”等标题，并兼容识别和迁移旧标题。
+
+### Fixed
+
+- `dev-harness-docs` 增加中文术语约束和防直译测试，明确“可观测性”仅用于日志、指标和链路追踪，不用于描述产品功能。
+
+---
+
 ## v1.9.0 — 2026-08-19
 
 ### Added

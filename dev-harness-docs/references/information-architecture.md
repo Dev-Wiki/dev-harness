@@ -69,24 +69,26 @@ Codebase Audit owns the report, findings, tasks, and evidence under `<docs-root>
 
 ## 4. Capability Catalog
 
-A Capability Catalog is the current product-surface SSOT. Establish one only when capability facts are scattered, support varies by scope or delivery baseline, or the repository cannot reliably answer what it supports now. Reuse an equivalent existing owner regardless of filename.
+A Capability Catalog is the authoritative document for what the product supports now. Establish one only when current-function facts are scattered, support varies by applicability or released version, or the repository cannot reliably answer what it supports now. Reuse an existing document that already serves the same current-function purpose, regardless of filename.
 
-If no equivalent owner exists, use `<docs-root>/product/CAPABILITIES.md` when an established product directory already exists; otherwise use `<docs-root>/CAPABILITIES.md`. Do not create `product/` solely to match this convention.
+If no such document exists, use `<docs-root>/product/CAPABILITIES.md` when an established product directory already exists; otherwise use `<docs-root>/CAPABILITIES.md`. Do not create `product/` solely to match this convention.
 
-Use one stable ID for each leaf capability that a user or integrator can observe and verify. Apply these counting rules:
+Use one stable ID for each independently verifiable function item that a user or integrator can exercise and confirm. Apply these counting rules:
 
-- capability domains, screens, routes, endpoints, modules, tasks, and tests are not independently countable features;
-- record role, platform, provider, vehicle, firmware, release, or deployment differences as scope instead of duplicating the same capability;
-- keep product status, delivery baseline, and verification level as separate facts;
-- calculate summary totals from current leaf rows and state which delivery baseline the total represents;
-- preserve an ID when status, scope, or evidence changes;
+- functional areas, screens, routes, endpoints, modules, tasks, and tests are not independently countable product functions;
+- record role, platform, provider, vehicle, firmware, release, or deployment differences as applicability instead of duplicating the same function item;
+- keep support status, applicability, version placement, and verification method as separate facts;
+- calculate summary totals from current function rows and state which version the total represents;
+- preserve an ID when support status, applicability, version placement, verification method, or evidence changes;
 - exclude `Pending confirmation / 待确认` rows from supported totals.
 
-Product status answers whether the behavior is Supported, Partial, Experimental, or Deprecated. Delivery baseline distinguishes released versions from the current repository or not-yet-released work. Verification level distinguishes code evidence, automated tests, runtime validation, and target-environment validation. One field must not silently stand in for another.
+Support status answers whether the behavior is supported, partially supported, experimental, or deprecated. Version placement distinguishes released versions from the current development version. Verification method distinguishes code evidence, automated tests, runtime validation, and target-environment validation. Applicability records the roles, platforms, providers, vehicles, firmware, versions, or deployment modes for which the function is available. One field must not silently stand in for another.
 
-Do not infer support from implementation inventory alone. Menus and routes can remain for deprecated behavior; tests can cover rejected or disabled paths; plans and requirements can describe work that does not exist. Every current row needs evidence and a link to the owner of its detailed rules.
+Match the repository's primary language and local writing conventions. For zh-CN documents, use `产品功能清单`, `当前已支持功能`, `可独立验证的功能项`, `功能分类`, `功能说明`, `支持状态`, `适用范围`, `版本归属`, `验证方式`, `当前开发版本`, `权威维护文档`, and `已有同类功能说明文档`. Use `可观测性` only for engineering observability such as logs, metrics, and distributed traces, never as a label for product functions. English repositories may use natural English equivalents.
 
-The catalog owns current support only. Planning owns future work and task state, CHANGELOG owns released deltas, and architecture, reference, integration, validation, and usage documents own local detail.
+Do not infer support from implementation inventory alone. Menus and routes can remain for deprecated behavior; tests can cover rejected or disabled paths; plans and requirements can describe work that does not exist. Every current row needs evidence and a link to the authoritative document for its detailed rules.
+
+The catalog is authoritative for current support only. Planning owns future work and task state, CHANGELOG owns released deltas, and architecture, reference, integration, validation, and usage documents own local detail.
 
 ## 5. SSOT layers
 
@@ -102,12 +104,12 @@ For each fact that changes over time, record:
 
 ```text
 Fact: <what changes>
-Owner: <single writable document>
+Authoritative document: <single maintained document>
 Readers: <indexes or documents that link to it>
-Archive rule: <when the owner stops being active>
+Archive rule: <when the authoritative document stops being active>
 ```
 
-When two documents appear authoritative, do not merge them silently. Identify their audiences, select an owner with evidence, and convert the other into a link or historical snapshot after confirmation.
+When two documents appear authoritative, do not merge them silently. Identify their audiences, select one authority with evidence, and convert the other into a link or historical snapshot after confirmation.
 
 ## 6. Archive lifecycle
 

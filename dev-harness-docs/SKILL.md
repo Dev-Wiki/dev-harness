@@ -83,35 +83,53 @@ Create `nav/` only when the documentation has at least three stable reader or ta
 
 A Capability Catalog answers **what the product supports now**. Treat it as a conditional product-scope SSOT, not as a mandatory file for every repository.
 
-Require a catalog or an equivalent existing owner when any of these conditions applies:
+Require a catalog or an existing document with the same current-function scope when any of these conditions applies:
 
-- current capability facts are spread across multiple active documents;
-- support differs by role, platform, vehicle, firmware, provider, deployment mode, or release baseline;
+- current product-function facts are spread across multiple active documents;
+- support differs by role, platform, vehicle, firmware, provider, deployment mode, or released version;
 - plans, release history, menus, routes, or implementation notes are being used as a proxy for current support;
-- the repository cannot reliably answer how many observable capabilities are supported now.
+- the repository cannot reliably answer which independently verifiable product functions are supported now, or how many there are.
 
 Do not split out a catalog when a small project's existing current-scope document already answers those questions clearly. Reuse an equivalent SSOT regardless of filename and link to it instead of creating a duplicate merely to match this contract.
 
-When no equivalent owner exists, resolve the path without creating a directory only for the template:
+When no such current-function document exists, resolve the path without creating a directory only for the template:
 
 1. If an established product documentation directory exists, use `<docs-root>/product/CAPABILITIES.md`.
 2. Otherwise use `<docs-root>/CAPABILITIES.md`.
 
-Use [assets/capabilities.template.md](assets/capabilities.template.md) as the semantic contract while preserving the project's language and local conventions. Keep product status, availability scope, delivery baseline, and verification level separate. Count stable leaf capabilities, not domains, pages, routes, APIs, modules, tasks, or tests. Derive summary counts from the catalog rows whenever it changes.
+Use [assets/capabilities.template.md](assets/capabilities.template.md) as the semantic contract while preserving the project's language and local conventions. Keep support status, applicability, version placement, and verification method separate. Count one stable ID per independently verifiable function item, not per functional area, page, route, API, module, task, or test. Derive summary counts from the catalog rows whenever it changes.
+
+Localize headings and prose by meaning instead of translating the English words one by one. For a zh-CN repository, prefer this vocabulary:
+
+| Meaning | Natural zh-CN |
+|---|---|
+| Current functions | 当前已支持功能 |
+| Independently verifiable function item | 可独立验证的功能项 |
+| Functional area | 功能分类 |
+| Function | 功能说明 |
+| Support status | 支持状态 |
+| Applicability | 适用范围 |
+| Version placement | 版本归属 |
+| Verification method | 验证方式 |
+| Current development version | 当前开发版本 |
+| Authoritative maintenance document | 权威维护文档 |
+| Existing current-function document | 已有同类功能说明文档 |
+
+Reserve observability terminology (`可观测性`) for logs, metrics, and distributed traces; do not use it to describe product functions. An English repository may keep natural English headings and prose.
 
 Operation boundaries:
 
-- **Documentation Audit** reports a missing, duplicated, or uncountable capability owner; it does not create the catalog.
-- **Organize** may establish the owner and navigation when the user authorized documentation organization.
-- **Update** may add or change only capabilities backed by current code, configuration, successful tests, runtime validation, or target-environment validation.
+- **Documentation Audit** reports a missing, duplicated, or uncountable current-function authority; it does not create the catalog.
+- **Organize** may establish the authoritative document and navigation when the user authorized documentation organization.
+- **Update** may add or change only function items backed by current code, configuration, successful tests, runtime validation, or target-environment validation.
 - Never infer product support from route, menu, endpoint, file, or test counts alone.
 - Put unverified candidates under `Pending confirmation / 待确认`; do not include them in supported totals.
 
-The catalog owns current observable support. Planning owns future work and task status; CHANGELOG owns released deltas; architecture, implementation, integration, and reference documents own their local detail. Link those owners from the catalog instead of copying their bodies. Add the selected capability owner to `<docs-root>/README.md` or one justified route index; root `README.md` may contain only a short summary and link.
+The catalog is authoritative only for current function support. Planning owns future work and task status; CHANGELOG owns released deltas; architecture, implementation, integration, and reference documents own their local detail. Link those authorities from the catalog instead of copying their bodies. Add the selected current-function document to `<docs-root>/README.md` or one justified route index; root `README.md` may contain only a short summary and link.
 
 ## Enforce SSOT
 
-Assign each changing fact exactly one writable owner:
+Designate exactly one authoritative maintenance document for each changing fact:
 
 - Keep index documents concise: status summary, one-line description, and links.
 - Keep topic documents authoritative for cross-task status and decisions.
@@ -201,7 +219,7 @@ rg -n 'TBD|TODO|FIXME|待补|占位' "$DOCS_ROOT"
 Also verify:
 
 - every new or moved document is reachable from `<docs-root>/README.md` or one justified navigation route;
-- every established Capability Catalog is reachable from the documentation hub, uses stable leaf IDs, and keeps current support separate from plans and released deltas;
+- every established Capability Catalog is reachable from the documentation hub, uses stable IDs for independently verifiable function items, and keeps current support separate from plans and released deltas;
 - every existing `<docs-root>/audit/Report.md` is reachable from the documentation hub or has an explicit pending Docs Refresh handoff;
 - every relative Markdown link changed by the task resolves to an existing target or valid anchor;
 - only one project-owned documentation root is active;

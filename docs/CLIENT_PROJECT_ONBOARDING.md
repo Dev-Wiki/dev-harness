@@ -32,9 +32,9 @@ V1 目标不是自动化一切，而是先让 AI 具备最基本的工程操作�
 
 新增或移动这些文档后运行 `dev-harness-context refresh <repo-path>`，只更新 AGENTS 托管索引，不覆盖人工内容。
 
-项目存在较多深度文档时，使用 `dev-harness-docs` 复用已有 `doc/` 或 `docs/` 根目录，建立文档中心入口、按读者任务组织的渐进式导航、SSOT 与归档规则。当前功能散落、不同角色/平台/版本支持范围不一致或无法可靠统计时，条件性建立 Capability Catalog；已有等价范围 SSOT 时直接复用。项目较小时保持单层索引即可，不强制创建空目录、`nav/` 或能力目录。
+项目存在较多深度文档时，使用 `dev-harness-docs` 复用已有 `doc/` 或 `docs/` 根目录，建立文档中心入口、按读者任务组织的渐进式导航、SSOT 与归档规则。当前功能信息分散、不同角色/平台/版本支持范围不一致或无法可靠统计时，按需建立 Capability Catalog；已有同类功能说明文档时直接复用。项目较小时保持单层索引即可，不强制创建空目录、`nav/` 或功能清单目录。
 
-Codebase Audit 的稳定入口是 `<docs-root>/audit/Report.md`。Audit 只维护 `audit/` 内的证据；若文档中心尚未链接该入口，由 Docs Refresh 幂等补一条导航，根 README 快捷链接可选。
+Codebase Audit 的固定入口是 `<docs-root>/audit/Report.md`。Audit 只维护 `audit/` 内的证据；若文档中心尚未链接该入口，由 Docs Refresh 幂等补一条导航，根 README 快捷链接可选。
 
 常用触发方式：
 
@@ -46,7 +46,7 @@ Codebase Audit 的稳定入口是 `<docs-root>/audit/Report.md`。Audit 只维�
 基于项目 Context 初始化 codebase audit；若文档中心缺少 audit/Report.md 入口，先刷新文档导航
 ```
 
-## 3. 首次准入检查
+## 3. 首次接入检查
 
 对客户端项目，至少补齐以下信息：
 
@@ -99,7 +99,7 @@ Codebase Audit 的稳定入口是 `<docs-root>/audit/Report.md`。Audit 只维�
 
 ## 6. 完成定义
 
-一个客户端项目完成 V1 准入，至少满足：
+一个客户端项目完成 V1 接入，至少满足：
 
 1. AI 能读到完整上下文文件
 2. AI 能找到构建入口

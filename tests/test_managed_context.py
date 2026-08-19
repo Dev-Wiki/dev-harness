@@ -93,6 +93,27 @@ class ManagedContextTests(unittest.TestCase):
         self.assertIn("## Human\nuser after\n", merged)
         self.assertNotIn("Generated title", merged)
 
+    def test_merge_migrates_legacy_heading_to_natural_title(self) -> None:
+        existing = "# Demo\n\n## 代码风格锚点\nold\n"
+        generated = "# Demo\n\n## 代码风格示例\nnew\n"
+        specs = (
+            SectionSpec(
+                "agents.style-anchors",
+                2,
+                "代码风格示例",
+                ("代码风格锚点",),
+            ),
+        )
+
+        merged, changed_ids, legacy_ids = merge_markdown_sections(
+            existing, generated, specs
+        )
+
+        self.assertEqual(changed_ids, ["agents.style-anchors"])
+        self.assertEqual(legacy_ids, ())
+        self.assertIn("## 代码风格示例\nnew\n", merged)
+        self.assertNotIn("代码风格锚点", merged)
+
     def test_atomic_write_preserves_file_mode(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "AGENTS.md"

@@ -13,7 +13,10 @@ class DocsSkillContractTests(unittest.TestCase):
         self.assertIn("If only `doc/` exists, use `doc/`", skill)
         self.assertIn("If only `docs/` exists, use `docs/`", skill)
         self.assertIn("Never rename an established root or create a second root", skill)
-        self.assertIn("Assign each changing fact exactly one writable owner", skill)
+        self.assertIn(
+            "Designate exactly one authoritative maintenance document for each changing fact",
+            skill,
+        )
         self.assertIn("Create `nav/` only when", skill)
         self.assertIn('rg --files "$DOCS_ROOT"', skill)
 
@@ -47,23 +50,92 @@ class DocsSkillContractTests(unittest.TestCase):
         self.assertIn("Never infer product support from route", skill)
         self.assertIn("Planning owns future work and task status", skill)
         self.assertIn("CHANGELOG owns released deltas", skill)
-        self.assertIn("stable ID for each leaf capability", reference)
+        self.assertIn(
+            "stable ID for each independently verifiable function item", reference
+        )
         self.assertIn("exclude `Pending confirmation / 待确认` rows", reference)
         for column in (
             "ID",
-            "Capability domain",
-            "Observable capability",
-            "Product status",
-            "Availability scope",
-            "Delivery baseline",
-            "Verification level",
-            "Evidence",
-            "Details",
+            "功能分类",
+            "功能说明",
+            "支持状态",
+            "适用范围",
+            "版本归属",
+            "验证方式",
+            "证据",
+            "详情",
         ):
             self.assertIn(column, template)
-        for status in ("Supported", "Partial", "Experimental", "Deprecated"):
+        for status in ("已支持", "部分支持", "试验性", "已弃用"):
             self.assertIn(status, template)
-        self.assertIn("Pending confirmation / 待确认", template)
+        self.assertIn("## 待确认", template)
+        self.assertIn("当前开发版本与最新发布版本分别统计", template)
+        self.assertIn(
+            "“支持状态”“适用范围”“版本归属”和“验证方式”必须分别记录",
+            template,
+        )
+
+    def test_capability_catalog_uses_natural_zh_cn_terms(self) -> None:
+        paths = (
+            ROOT / "dev-harness-docs" / "SKILL.md",
+            ROOT
+            / "dev-harness-docs"
+            / "references"
+            / "information-architecture.md",
+            ROOT / "dev-harness-docs" / "assets" / "capabilities.template.md",
+            ROOT
+            / "dev-harness-docs"
+            / "assets"
+            / "documentation-rules.template.md",
+        )
+        source = "\n".join(path.read_text(encoding="utf-8") for path in paths)
+
+        for translated_term in (
+            "当前产品可观察能力",
+            "可观察能力",
+            "叶子能力",
+            "能力域",
+            "交付基线",
+            "验证等级",
+            "当前仓库",
+            "唯一可写清单",
+            "已有等价 Owner",
+        ):
+            self.assertNotIn(translated_term, source)
+
+        source_lower = source.lower()
+        for translation_trigger in (
+            "current observable capabilities",
+            "observable capability",
+            "leaf capability",
+            "capability domain",
+            "delivery baseline",
+            "verification level",
+            "current repository",
+            "writable owner",
+            "equivalent owner",
+        ):
+            self.assertNotIn(translation_trigger, source_lower)
+
+        for natural_term in (
+            "产品功能清单",
+            "当前已支持功能",
+            "可独立验证的功能项",
+            "功能分类",
+            "功能说明",
+            "支持状态",
+            "适用范围",
+            "版本归属",
+            "验证方式",
+            "当前开发版本",
+            "权威维护文档",
+            "已有同类功能说明文档",
+        ):
+            self.assertIn(natural_term, source)
+
+        self.assertIn("中文仓库使用自然中文", source)
+        self.assertIn("英文仓库可改用自然英文", source)
+        self.assertIn("“可观测性”只用于日志、指标和链路追踪", source)
 
     def test_docs_refresh_owns_codebase_audit_discoverability(self) -> None:
         skill = (ROOT / "dev-harness-docs" / "SKILL.md").read_text(encoding="utf-8")

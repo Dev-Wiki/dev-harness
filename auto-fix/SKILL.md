@@ -89,7 +89,7 @@ python <skill-dir>/runtime.py verify-workspace --state <state.json> --changed-fi
 
 读取 `references/bugfix-flow/repro.md`，产出 ReproProcedure、ReproCommand、FailureSignature、PassCriteria 和 EvidenceGap。无法稳定复现时可继续只读探测，但不得假装已经复现。
 
-### 3. 可证伪根因分析
+### 3. 可证伪的根因假设分析
 
 读取 `references/bugfix-flow/triage.md`。每个假设必须包含：
 

@@ -1,49 +1,51 @@
-# Documentation maintenance
+# 文档维护规则
 
-> Documentation root: `{docs-root}`
+> 文档根目录：`{docs-root}`
+>
+> 请按仓库的主要语言填写。中文仓库使用下列自然中文；英文仓库可使用自然英文，不必保留中文栏名。
 
-## Entry layers
+## 文档层级
 
-| Layer | Owner | Responsibility |
+| 层级 | 权威文档 | 职责 |
 |---|---|---|
-| Repository entry | `README.md`, `AGENTS.md`, `ARCHITECTURE.md`, `HARNESS.md` | Short summaries and links |
-| Documentation hub | `{docs-root}/README.md` | Reader routes and active indexes |
-| Deep documentation | `{docs-root}/...` | Authoritative product and engineering detail |
+| 仓库入口 | `README.md`、`AGENTS.md`、`ARCHITECTURE.md`、`HARNESS.md` | 简短说明和链接 |
+| 文档中心 | `{docs-root}/README.md` | 阅读路径和当前有效入口 |
+| 详细文档 | `{docs-root}/...` | 产品和工程细节 |
 
-## Placement rules
+## 存放规则
 
-| Content | Destination |
+| 内容 | 存放位置 |
 |---|---|
-| {Document type} | `{docs-root}/{directory}/` |
+| {文档类型} | `{docs-root}/{目录}/` |
 
-Create a destination only when the repository has content for it. Do not create empty category directories.
+仅在仓库确有对应内容时创建目录，不要创建空分类目录。
 
-## SSOT map
+## 事实来源对应表
 
-| Fact or topic | Writable owner | Linking indexes | Archive condition |
+| 事实或主题 | 权威维护文档 | 引用入口 | 归档条件 |
 |---|---|---|---|
-| {Changing fact} | `{path}` | `{path}` | {Condition} |
+| {会变化的事实} | `{路径}` | `{路径}` | {条件} |
 
-Keep status and detailed decisions in the writable owner. Keep indexes concise and link to the owner instead of repeating details.
+状态和详细决策只在权威维护文档中更新。入口文档保持简洁，只链接到权威文档，不重复正文。
 
-When applicable, assign these facts to separate owners:
+需要时，将下列信息分别放在各自的权威文档中：
 
-- current observable capabilities → the existing current-scope SSOT or a Capability Catalog;
-- future work and task status → `{docs-root}/plan/`;
-- released changes → the project CHANGELOG;
-- codebase audit claims and evidence → `{docs-root}/audit/`, with only a concise route from the documentation hub.
+- 当前已支持功能 → 已有同类功能说明文档，或产品功能清单；
+- 未来工作和任务进度 → `{docs-root}/plan/`；
+- 已发布变更 → 项目的 CHANGELOG；
+- 代码库审计结论和证据 → `{docs-root}/audit/`，文档中心只保留简短入口。
 
-## Navigation rules
+## 导航规则
 
-- Keep every active document reachable from `{docs-root}/README.md` or one route index.
-- Read indexes before deep documents.
-- Open large reference collections through their local README or interface index.
-- Link an existing `{docs-root}/audit/Report.md` from the documentation hub; do not copy its findings into the index.
-- Keep root repository documents lightweight.
+- 每份当前有效文档都能从 `{docs-root}/README.md` 或某个阅读路径入口到达。
+- 先阅读索引，再按需打开详细文档。
+- 大型参考资料集合通过其本地 README 或接口索引进入。
+- 若 `{docs-root}/audit/Report.md` 已存在，应从文档中心链接到它，不要把审计结论复制进索引。
+- 仓库根目录文档保持简洁。
 
-## Archive rules
+## 归档规则
 
-1. Link the archived document to the current authority.
-2. Mark it archived or superseded before moving it.
-3. Update incoming links and active indexes.
-4. Preserve historical content unless deletion is explicitly approved.
+1. 在归档文档中链接到当前权威文档。
+2. 移动前将文档明确标记为“已归档”或“已被取代”。
+3. 更新所有入站链接和当前有效索引。
+4. 除非用户明确批准删除，否则保留历史内容。

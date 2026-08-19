@@ -1,15 +1,15 @@
 # V1 / VNext 与 V2 边界
 
-> 文档角色：本文件是当前能力范围、非目标和封板标准的唯一事实源。
+> 文档角色：本文件是当前已支持功能范围、非目标和封板标准的唯一事实源。
 > [`dev-harness VNext 优化与 Codebase Audit 设计方案`](dev-harness%20VNext%20%E4%BC%98%E5%8C%96%E4%B8%8E%20Codebase%20Audit%20%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md) 记录 v1.8.0 的设计依据；[`V2_BACKLOG.md`](V2_BACKLOG.md) 只记录未来候选，不覆盖本文件。
 
 ## 版本命名
 
-设计方案中的 **VNext** 指从既有 V1 向 v1.8.0 Project Contract 与 Codebase Audit 能力的兼容演进，仍属于本文件定义的 V1 范围；v1.9.0 在同一边界内补充 Capability Catalog 与 Audit 文档可发现性，不改变 V2 边界。VNext 不是 V2 的别名。当前实现与后续排期分别以本文件和 `V2_BACKLOG.md` 为准，设计记录中的实施阶段不作为活动任务清单。
+设计方案中的 **VNext** 指从既有 V1 向 v1.8.0 Project Contract 与 Codebase Audit 功能的兼容演进，仍属于本文件定义的 V1 范围；v1.9.0 在同一边界内补充 Capability Catalog 与 Audit 文档入口可达性，v1.9.1 进一步统一中文术语和模板表达，均不改变 V2 边界。VNext 不是 V2 的别名。当前实现与后续排期分别以本文件和 `V2_BACKLOG.md` 为准，设计记录中的实施阶段不作为活动任务清单。
 
 ## V1 定位
 
-`dev-harness` V1 / VNext 的目标是：让已有项目具备一致的 Project Contract、可执行验证接口，以及 Bugfix 和大型代码库审计的证据闭环。
+`dev-harness` V1 / VNext 的目标是：让已有项目具备一致的 Project Contract、可执行验证接口，以及 Bugfix 和大型代码库审计的完整证据链。
 
 适用项目：
 
@@ -17,7 +17,7 @@
 - Harmony 手机 / PC App
 - Win32 应用
 - WPF + NativeBridge + Win32 / C++ SDK 这类混合项目
-- Qt 客户端（当前保留接入能力，但不作为本轮优先增强目标）
+- Qt 客户端（当前仍支持接入，但不作为本轮优先增强目标）
 - Go、Flutter、Node.js 项目（按各自高风险边界门控）
 
 V1 解决的问题：
@@ -29,7 +29,7 @@ V1 解决的问题：
 - Bugfix 没有固定的复现、定位、回归、验证基线
 - AI 容易把已有工作区修改混入本轮修复或提交
 - “已验证”和“已审查”没有绑定到最终代码 diff
-- 大型代码库无法一次装入上下文，跨会话扫描进度、证据和 Finding 容易丢失
+- 大型代码库无法在一次会话中完整载入上下文，跨会话扫描进度、证据和 Finding 容易丢失
 
 ## V1 已包含
 
@@ -43,14 +43,14 @@ V1 解决的问题：
 ### 1.1 文档与规划组织
 
 - 复用项目已有 `doc/` 或 `docs/` 根目录，不创建第二套文档树
-- 建立文档中心入口、渐进式导航、SSOT、落点和归档规则
-- 当前能力事实分散、支持范围有角色/平台/版本差异或无法可靠统计时，条件性建立 Capability Catalog；已有等价范围 SSOT 时复用
-- Capability Catalog 分离产品状态、适用范围、交付基线和验证级别，只统计有稳定 ID 与证据的叶子能力
+- 建立文档中心入口、渐进式导航、SSOT、文档归属和归档规则
+- 当前功能信息分散、支持范围有角色/平台/版本差异或无法可靠统计时，按需建立 Capability Catalog；已有同类功能说明文档时复用
+- Capability Catalog 分别记录支持状态、适用范围、交付版本和验证方式，只统计有稳定 ID 与证据、可独立验证的功能项
 - 在同一文档根目录生成 `plan/Dashboard.md` 与 `plan/TaskDetails.md`
 - 在同一文档根目录维护 `audit/` 的任务、结果、Finding Registry 与报告
 - 不内建从代码生成全量 Diataxis 文档或基于分支 diff 的全仓文档陈旧检测
 
-### 2. 客户端项目准入能力
+### 2. 客户端项目接入支持
 
 - 优先识别 `WPF / Harmony / Win32 / Unknown`
 - 识别 `WPF + NativeBridge` 混合项目的基础特征
@@ -58,7 +58,7 @@ V1 解决的问题：
 - 提取高风险目录与禁改区域
 - 提取调用链候选、架构边界规则、禁止操作清单、探索建议
 
-### 3. NativeBridge 风险显式化
+### 3. NativeBridge 风险识别与明确标注
 
 - 识别 `*.vcxproj`
 - 识别 `DllImport`
@@ -108,7 +108,7 @@ V1 解决的问题：
 - 只允许写入既有 `<docs-root>/audit/**`；源码、Context 或工作区漂移时 fail-closed 并把旧 confirmed Finding 标 stale
 - Finding 使用 candidate / needs-verification / confirmed / rejected / stale / resolved 状态并绑定 Evidence 与 Snapshot
 - 完成前强制 Cross-module Reconciliation；Audit 不修复源码、不创建 PR、不自动污染 Roadmap
-- 稳定入口为 `<docs-root>/audit/Report.md`；缺少文档中心链接时记录 `docs-refresh-required`，由 Docs 在 Audit Snapshot 建立前补入口，Audit 不越界修改 hub
+- 固定入口为 `<docs-root>/audit/Report.md`；缺少文档中心链接时记录 `docs-refresh-required`，由 Docs 在 Audit Snapshot 建立前补入口，Audit 不越界修改 hub
 
 ## V1 明确不做
 
@@ -149,7 +149,7 @@ V1 解决的问题：
 - 自动抽取更细的 `Service -> Interface -> Bridge -> Native` 调用链
 - 高风险文件评分
 - 更细的 marshaling / callback / thread / handle 风险分类
-- 人工确认结果持久化回写
+- 持久保存人工确认结果，并写回相应文档
 
 ### 5. Agent Loop Automation
 
@@ -170,6 +170,6 @@ V1 解决的问题：
 6. 已有 dirty worktree 不会被本轮修复误改、误暂存或误提交
 7. 完成证据与最终 diff 一致，代码变化会使旧证据失效
 8. 已有 `doc/` 或 `docs/` 能被复用，文档整理和 planning 不会创建竞争根目录
-9. 当前能力复杂或分散时有唯一、可验证、可统计的 Owner，简单项目和已有等价 SSOT 不被强制拆文档
+9. 当前功能复杂或分散时有唯一、可验证、可统计的权威文档；简单项目和已有同类功能说明文档不被强制拆分
 10. Codebase Audit 能跨会话恢复，且业务源码或 Context 漂移后不会继续发布旧 confirmed 结论
 11. Codebase Audit 的 Report 已从文档中心可达，或明确记录待执行的 Docs Refresh handoff

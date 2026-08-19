@@ -3,7 +3,7 @@
 ## 模块依赖关系图
 {文本表示的依赖关系，例如 ModuleA -> ModuleB -> ModuleC 或 Unknown}
 
-## 核心功能流
+## 核心业务流程
 {主要功能调用链或 Unknown}
 
 ## 架构模式

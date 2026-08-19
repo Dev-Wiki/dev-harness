@@ -1,6 +1,6 @@
 # Audit Result {Axx} — `{Behavior Domain}`
 
-> **职责**：本文件保存 [对应 Task](../tasks/{Axx}-{slug}.md) 的局部覆盖、Evidence、candidate、反证和缺口。它不是最终报告；稳定 Finding 维护在 [Findings.md](../Findings.md)。
+> **职责**：本文件记录 [对应 Task](../tasks/{Axx}-{slug}.md) 的检查范围、Evidence、candidate、反证和缺口。它不是最终报告；稳定 Finding 维护在 [Findings.md](../Findings.md)。
 
 ## Navigation
 
@@ -39,7 +39,7 @@
 |---|---|---|---|---|---|
 | `{Axx-C01}` | `{candidate/needs-verification/confirmed/rejected/stale}` | `{falsifiable claim}` | `{Evidence IDs}` | `{checks/results}` | `{AUD-nnn/pending}` |
 
-> Task-local `confirmed` 表示局部验证门禁已通过；只有完成全局 cross-module reconciliation 后才可作为 Report 中的当前 confirmed Finding。
+> Task-local `confirmed` 表示本任务范围内的验证要求已满足；只有完成全局 cross-module reconciliation 后，才能作为 Report 中当前有效的 confirmed Finding。
 
 ## Counter-evidence and Alternatives
 

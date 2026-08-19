@@ -1189,6 +1189,7 @@ def render_agents(
         .replace("{架构边界规则或 Unknown}", architecture_rules, 1)
         .replace("{禁止操作清单或 Unknown}", forbidden_operations, 1)
         .replace("{高风险文件标注或 Unknown}", high_risk_files, 1)
+        .replace("{新增功能的一般流程或 Unknown}", feature_paths, 1)
         .replace("{新增功能标准路径或 Unknown}", feature_paths, 1)
         .replace("{代码安全规范或 Unknown}", code_safety_rules, 1)
         .replace("{多版本注意事项或 Unknown}", multi_version_notes, 1)
@@ -1196,6 +1197,7 @@ def render_agents(
         .replace("{提问与探索建议或 Unknown}", exploration_suggestions, 1)
         .replace("{自动识别候选或 Unknown}", auto_detected_candidates, 1)
         .replace("{需人工确认或 Unknown}", manual_review_items, 1)
+        .replace("{代码风格示例或 Unknown}", style_anchors, 1)
         .replace("{代码风格锚点或 Unknown}", style_anchors, 1)
     )
 
@@ -1237,6 +1239,7 @@ def render_harness(
     return (
         template.replace("{项目类型或 Unknown}", project_type, 1)
         .replace("{命令或 Unknown}", build_step, 1)
+        .replace("{编译与启动问题排查结果或 Unknown}", build_bootstrap, 1)
         .replace("{编译启动诊断或 Unknown}", build_bootstrap, 1)
         .replace("{命令或 Unknown}", test_step, 1)
         .replace("{命令或 Unknown}", quick_step, 1)

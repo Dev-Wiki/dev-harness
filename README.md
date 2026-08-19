@@ -12,21 +12,21 @@
 - **Evidence（证据）**：关键结论绑定仓库、命令、diff、测试、调用链或快照；
 - **Continuity（连续性）**：长任务、上下文压缩和会话切换后可从项目产物与 Git 私有状态恢复。
 
-这些能力共同组成逻辑上的 **Project Contract**，不额外复制成一个中心配置文件：
+这些组成部分共同构成逻辑上的 **Project Contract**，不额外复制成一个中心配置文件：
 
 ```text
 Project Contract
 ├── Context: README / ARCHITECTURE / AGENTS
 ├── Verification Interface: HARNESS.md
 ├── Documentation Governance: 现有 doc/ 或 docs/
-├── Current Capabilities: 已有范围 SSOT 或条件性 Capability Catalog
+├── Current Capabilities: 已有功能范围说明文档，必要时建立 Capability Catalog
 ├── Planning Contract: <docs-root>/plan/
 ├── Git Policy: 项目自己的 Git / release / changelog 文档
-├── Retrospective Knowledge: LESSONS.md 与提升候选
+├── Retrospective Knowledge: LESSONS.md 与待纳入正式规范的候选结论
 └── Codebase Audit: <docs-root>/audit/ + Git 私有状态
 ```
 
-Auto Fix 仍是最成熟的证据工作流：`复现 → 可证伪根因 → RED → 最小修复 → GREEN → 审查 → 最终验证`。Codebase Audit 则解决大型存量仓库无法一次装入上下文时，如何分阶段扫描未知问题并持久化证据。
+Auto Fix 仍是最成熟的证据工作流：`复现 → 可证伪的根因假设 → RED → 最小修复 → GREEN → 审查 → 最终验证`。Codebase Audit 则解决大型存量仓库无法在一次会话中完整载入上下文时，如何分阶段扫描未知问题并持久化证据。
 
 ---
 
@@ -47,8 +47,8 @@ Auto Fix 仍是最成熟的证据工作流：`复现 → 可证伪根因 → RED
 # 更新文档（只写入代码/验证已证明的事实）
 按本次改动同步仓库文档中的命令、路径和事实
 
-# 盘点当前已支持的功能（已有等价范围 SSOT 时复用）
-盘点这个仓库当前已支持的功能，必要时按产品状态、适用范围、交付基线和验证级别建立或刷新 Capability Catalog
+# 盘点当前已支持的功能（已有同类功能说明文档时复用）
+盘点这个仓库当前已支持的功能，必要时按支持状态、适用范围、交付版本和验证方式建立或刷新 Capability Catalog
 
 # 审计大型存量代码库（只输出审计文档，不修改业务代码；缺入口时先刷新文档导航）
 基于项目 Context 初始化 codebase audit，并按模块边界分阶段执行；若文档中心尚未链接 audit/Report.md，先补齐该导航
@@ -67,8 +67,8 @@ Auto Fix 仍是最成熟的证据工作流：`复现 → 可证伪根因 → RED
 # 提交代码（自动检查分支命名、拦截调试残留）
 帮我提交当前修改
 
-# 显式复盘（分类为 FACT / POLICY / LESSON，稳定结论再提升）
-retro：总结这次任务并沉淀 promotion candidates
+# 显式复盘（分类为 FACT / POLICY / LESSON，稳定结论再写入正式规范）
+retro：总结这次任务，并整理可纳入正式规范的候选结论
 ```
 
 AI 会在每一步输出进度和证据，而不是闷头改完告诉你"修好了"。
@@ -120,13 +120,13 @@ AI 会在每一步输出进度和证据，而不是闷头改完告诉你"修好�
 | `dev-harness-planning` | 根据需求文档、原型或参考格式，在现有文档根目录生成 `plan/Dashboard.md` 和 `TaskDetails.md` |
 | `dev-harness-commands` | 把项目中的真实命令统一映射为 `build / test / quick / bugfix / full` 五个语义入口 |
 | `dev-harness-git-workflow` | 优先遵循项目 Git 规范；缺失时确认并初始化提交、tag、changelog 和发布约定 |
-| `dev-harness-retro` | 仅在用户显式触发时复盘，分类 FACT / POLICY / LESSON，并输出契约提升候选 |
+| `dev-harness-retro` | 仅在用户显式触发时复盘，分类 FACT / POLICY / LESSON，并输出待纳入正式规范的候选结论 |
 
 ### Evidence-driven Long-running Workflows
 
 | Skill | 干什么用 |
 |-------|---------|
-| `dev-harness-auto-fix` | 可选择 analyze / fix / commit / unattended；用运行时约束复现、可证伪根因、RED/GREEN、diff 绑定审查与精确提交 |
+| `dev-harness-auto-fix` | 可选择 analyze / fix / commit / unattended；用运行时约束复现、可证伪的根因假设、RED/GREEN、diff 绑定审查与精确提交 |
 | `dev-harness-codebase-audit` | 基于 Canonical Context 动态分区大型代码库，跨会话持久化任务、证据与 Finding，并在仓库漂移时 fail-closed |
 
 > 每个 skill 的模板、references 和脚本跟随该 skill 自己安装，保持资源自包含。
@@ -138,7 +138,7 @@ AI 会在每一步输出进度和证据，而不是闷头改完告诉你"修好�
 开始任务时，auto-fix 会把已有修改记录进 `WorkspaceSnapshot`。这些修改可以原样保留，不要求 stash 或清空；AI 只维护本轮对话产生的 `AutoFixChangedFiles`。
 
 - 已有脏文件不被修改、暂存或提交。
-- 如果目标文件在任务开始时已经脏，流程停止，让用户决定如何合并语义。
+- 如果目标文件在任务开始时已经脏，流程停止，由用户决定如何处理或合并已有修改。
 - commit 模式只逐文件暂存本轮集合；暂存区含其他内容时报告冲突，不替用户取消暂存。
 - HEAD、分支、已有修改或未声明文件发生漂移时停止，避免把别的工作误算成本轮结果。
 
@@ -152,8 +152,8 @@ Codebase Audit 面向“仓库中还有哪些未知问题”，先按 subsystem�
 - 版本化产物位于已有 `<docs-root>/audit/`，包含 Dashboard、稳定 Finding Registry、任务、结果和总报告；
 - Confirmed Finding 必须有代码或运行证据、反证检查与 Snapshot；
 - HEAD、分支、Context 或业务源码漂移后，旧证据会被标记 stale；
-- Audit 稳定入口为 `<docs-root>/audit/Report.md`；文档中心缺少入口时显式交给 Docs Refresh，Audit 本身不越界修改 hub；
-- 缺陷交给 Auto Fix，架构/技术债交给 Planning，验证命令或治理缺口交给对应 owner。
+- Audit 固定入口为 `<docs-root>/audit/Report.md`；文档中心缺少入口时显式交给 Docs Refresh，Audit 本身不越界修改 hub；
+- 缺陷交给 Auto Fix，架构/技术债交给 Planning，验证命令或治理缺口交给相应维护文档。
 
 ---
 
@@ -190,24 +190,24 @@ dev-harness-context refresh /path/to/repo --analysis /tmp/context-analysis.json
 
 `AGENTS.md` 保持为轻量索引：构建与验证指向 `HARNESS.md`，Git、代码风格、发布和 changelog 指向各自的专业文档。详细规则不全部塞入 AGENTS。
 
-| 资源 / 事实 | 写入 Owner | 其他 Skill 的行为 |
+| 资源 / 事实 | 维护位置 | 其他 Skill 的行为 |
 |-------------|------------|-------------------|
-| Canonical Context 与根文档固定章节 | Context | 只读消费，不复制另一套 Context |
-| HARNESS 自动候选 / 人工确认命令 | Context / Commands | Auto Fix 和普通 Agent 只读执行已确认入口 |
+| Canonical Context 与根文档固定章节 | Context | 只读取，不复制另一套 Context |
+| HARNESS 自动候选 / 人工确认命令 | Context / Commands | Auto Fix 和普通 Agent 只执行已确认入口 |
 | docs root、索引、SSOT、归档 | Docs | Planning / Audit 复用同一个 root |
-| 当前已支持能力与统计口径 | 已有范围 SSOT / Capability Catalog | Docs 治理 Owner 与入口；Planning / CHANGELOG 不复制当前状态 |
+| 当前已支持功能与统计口径 | 已有功能范围说明文档 / Capability Catalog | Docs 维护权威文档与入口；Planning / CHANGELOG 不复制当前状态 |
 | `<docs-root>/plan/*` | Planning | Docs 只做导航和归档治理 |
-| Git / tag / release / changelog policy | Git Workflow | 其他 Skill 只读消费，动作分离授权 |
+| Git / tag / release / changelog policy | Git Workflow | 其他 Skill 只读取，相关操作需单独授权 |
 | `.git/dev-harness/auto-fix/*` | Auto Fix | Git 私有状态 |
 | `<docs-root>/audit/*` 与对应 Git 私有状态 | Codebase Audit | Docs 只做导航；后续处理通过 handoff |
 | `LESSONS.md` 与 Promotion Candidates | Retro | 不自动升级为正式 Fact / Policy |
 
 - `dev-harness-context` 只识别这些文档并在 `refresh` 时更新索引，不自动创建 Git、代码或发布规范，也不自动创建 `CHANGELOG.md`。
-- `dev-harness-docs` 维护项目已有 `doc/` 或 `docs/` 的信息架构、入口、SSOT 和归档规则；能力事实分散或无法统计时条件性建立 Capability Catalog，已有等价 Owner 则复用，不改名或创建第二套文档根目录。
+- `dev-harness-docs` 维护项目已有 `doc/` 或 `docs/` 的信息架构、入口、SSOT 和归档规则；功能信息分散或无法统计时按需建立 Capability Catalog，已有承担相同职责的文档则复用，不改名或创建第二套文档根目录。
 - `dev-harness-planning` 复用同一个文档根目录，将 Dashboard 作为索引层、TaskDetails 作为执行与专题层。
 - `dev-harness-codebase-audit` 独占 `<docs-root>/audit/` 的审计内容；Docs 只负责导航、链接和归档治理。缺少外部入口时 Audit 记录 `docs-refresh-required`，不自行修改文档中心。
 - `dev-harness-git-workflow` 先读取项目或团队已有规范；没有规范时才分析历史、展示候选，并在用户确认后初始化默认规范。
-- `dev-harness-retro` 只在显式触发时维护复盘历史；Lesson 默认不是硬规则，稳定 Fact/Policy 提升到对应 owner。
+- `dev-harness-retro` 只在显式触发时维护复盘历史；Lesson 默认不是硬规则，稳定的 Fact/Policy 写入相应正式文档。
 - 代码规范文档只做识别，不根据 lint/formatter 配置自动生成。
 - `CHANGELOG.md` 在用户确认初始化或开始首次发布时创建；默认发布分类为 Breaking Changes、Added、Changed、Deprecated、Fixed、Removed、Security，空分类不进入 tag message 或 release notes。
 
@@ -216,9 +216,9 @@ dev-harness-context refresh /path/to/repo --analysis /tmp/context-analysis.json
 ## 文档导航
 
 - [文档中心](docs/README.md)：按使用、维护、范围与设计记录组织全部项目文档。
-- [V1 / VNext 与 V2 边界](docs/V1_V2_BOUNDARIES.md)：当前能力范围和封板标准的唯一事实源。
+- [V1 / VNext 与 V2 边界](docs/V1_V2_BOUNDARIES.md)：当前已支持功能范围和封板标准的唯一事实源。
 - [VNext 优化与 Codebase Audit 设计方案](docs/dev-harness%20VNext%20%E4%BC%98%E5%8C%96%E4%B8%8E%20Codebase%20Audit%20%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md)：v1.8.0 的设计依据与取舍记录，不作为后续排期表。
-- [V2 Backlog](docs/V2_BACKLOG.md)：超出当前边界的候选能力与启动条件。
+- [V2 Backlog](docs/V2_BACKLOG.md)：超出当前边界的候选功能与启动条件。
 
 设计记录解释“为什么这样设计”，边界文档说明“当前承诺什么”，Backlog 记录“未来可能做什么”；三者不重复维护状态。
 
@@ -227,10 +227,10 @@ dev-harness-context refresh /path/to/repo --analysis /tmp/context-analysis.json
 ## 设计边界
 
 **dev-harness 做了什么：**
-- 固定跨 Agent 的 Project Contract 格式、owner 和交接边界
+- 固定跨 Agent 的 Project Contract 格式、维护职责和交接边界
 - 用 Git 私有状态、工作区快照和 diff hash 把关键边界变成可测试契约
 - 让 bugfix 与大型代码库审计可恢复、可追溯、可验证
-- 让项目上下文、当前能力、深度文档和计划共享清晰入口与 SSOT，避免重复文档根目录
+- 让项目上下文、当前已支持功能、深度文档和计划共享清晰入口与 SSOT，避免重复文档根目录
 - 跨平台、跨 IDE，纯 skills bundle，不需要改你的项目工具链
 
 **dev-harness 不做什么：**

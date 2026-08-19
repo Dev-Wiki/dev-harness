@@ -31,7 +31,7 @@ python -m unittest discover -s tests -v
 
 关键不是命令名，而是职责固定。
 
-## 2. 每层最少需要证明什么
+## 2. 每层至少需要证明什么
 
 ### `test:quick`
 
@@ -51,7 +51,7 @@ python -m unittest discover -s tests -v
 - 在提交、合并或发布前运行
 - 不要求最快，但要有明确边界
 
-## 3. 失败输出最少标准
+## 3. 失败输出的最低要求
 
 无论哪层失败，至少要能看到：
 
@@ -62,7 +62,7 @@ python -m unittest discover -s tests -v
 - 实际结果
 - 错误码、异常栈、日志或 trace id
 
-## 4. 推荐落地方式
+## 4. 推荐实施方式
 
 项目接入 harness 时，优先做这几件事：
 
@@ -73,10 +73,10 @@ python -m unittest discover -s tests -v
 
 ## 5. 验证证据要求
 
-任何“测试通过”“修复完成”“harness 生效”的说法，都必须基于 fresh verification evidence：
+任何“测试通过”“修复完成”“harness 生效”的说法，都必须基于本次重新执行得到的验证证据：
 
-- 现跑现看
-- 读完整输出
-- 明确通过数量或 exit code
+- 在本次任务中重新执行
+- 检查完整输出
+- 明确通过数量或退出码
 
 没有证据，不得声称完成。

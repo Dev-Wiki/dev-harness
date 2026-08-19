@@ -5,11 +5,11 @@ description: Use when an existing repository needs a systematic, evidence-backed
 
 # dev-harness-codebase-audit
 
-对无法一次装入上下文的存量代码库做渐进式审计。让 AI 负责语义理解，让 `runtime.py` 负责快照、状态、漂移和写入边界；不要把本 Skill 变成语言规则库或静态分析器。
+对无法在一次会话中完整载入上下文的存量代码库做渐进式审计。让 AI 负责语义理解，让 `runtime.py` 负责快照、状态、漂移和写入边界；不要把本 Skill 变成语言规则库或静态分析器。
 
 ## 硬边界
 
-- 把 `dev-harness-context` 维护的 Context 当作唯一 canonical repository input。只读消费 `README.md`、`AGENTS.md`、`ARCHITECTURE.md`、`HARNESS.md` 及其规范索引；不要另建 Repository Context。
+- 把 `dev-harness-context` 维护的 Context 当作唯一 canonical repository input。只读使用 `README.md`、`AGENTS.md`、`ARCHITECTURE.md`、`HARNESS.md` 及其规范索引；不要另建 Repository Context。
 - 只允许写入 `<docs-root>/audit/**` 和 Git 私有目录 `.git/dev-harness/codebase-audit/**`（worktree 中使用 Git 返回的实际私有路径）。
 - 不得为了补导航而由 Audit 修改 `<docs-root>/README.md` 或根 `README.md`；文档中心入口归 `dev-harness-docs`，Audit 只检查并记录 discoverability 状态与精确 handoff。
 - 不得修改业务源码、测试、配置、构建文件、Context 托管区或其他 Skill 的产物。
@@ -30,7 +30,7 @@ description: Use when an existing repository needs a systematic, evidence-backed
 1. 确定仓库根、当前分支、HEAD、Git 私有目录和已有 dirty files。
 2. 读取 canonical Context、项目规范索引与 `HARNESS.md`。Context 缺失、证据被截断、与仓库明显不符或无法得到可记录的 Context fingerprint 时，停止并交给 `dev-harness-context` 刷新；不得自行补一套上下文。
 3. 解析唯一 `<docs-root>`：尊重用户指定的既有路径；否则复用已有索引、治理文件、活跃 `plan/` 或 `audit/` 所在根；仅有 `doc/` 或 `docs/` 时使用已有者。二者均为项目所有且归属不明，或二者皆不存在时停止并先交给文档治理流程建立 canonical root；Audit 不自行创建第二套文档体系。
-4. 只读检查 `<docs-root>/README.md` 或一个既有 route index 是否链接稳定入口 `<docs-root>/audit/Report.md`，将状态记为 `linked` 或 `docs-refresh-required`。缺入口不是 `AUD-*` Finding。
+4. 只读检查 `<docs-root>/README.md` 或一个既有 route index 是否链接固定入口 `<docs-root>/audit/Report.md`，将状态记为 `linked` 或 `docs-refresh-required`。缺入口不是 `AUD-*` Finding。
 5. 若用户同时授权 Docs Refresh，在 Audit 只读 preflight 已解析稳定路径后、`runtime.py init` 建立 Snapshot 前，由 `dev-harness-docs` 幂等补入口；Audit 自己不得越界写入。若只授权 Audit，继续运行但必须把精确 handoff 写入 Dashboard、Report 和最终回复。
 6. 校验所有预期输出都位于 `<docs-root>/audit/**`，所有运行状态都位于 Git 私有目录。
 7. 用 `runtime.py` 初始化或恢复运行并建立 `AuditSnapshot`。先读取 `python <skill-dir>/runtime.py --help`，再按实际接口使用 `init`、`resume` / `status`、`verify-workspace`、`checkpoint`、`upsert-finding`、`validate-output`、`checkpoint-cross-module` 和 `complete` 等语义操作；不硬编码未确认参数，不手工伪造或绕过状态校验。
@@ -52,7 +52,7 @@ preflight → snapshot → dynamic partition → task execution
 4. 可疑点先进入 `candidate`，检查反证、旁路、生命周期和其他实现。证据不足时使用 `needs-verification`，不得提高措辞强度来替代验证。
 5. 对所有任务做去重、矛盾处理、完整调用链/数据流审查和跨平台影响检查，之后才能发布当前 `confirmed` 结论。
 6. 最终报告只汇总已验证 Findings、未决项和建议路由，不写脱离 Evidence 的长篇最佳实践建议。
-7. 最终报告单独记录 `Documentation Discoverability`：文档中心、稳定 Audit 入口、`linked/docs-refresh-required` 状态和精确 Docs handoff。
+7. 最终报告单独记录 `Documentation Discoverability`：文档中心、固定 Audit 入口、`linked/docs-refresh-required` 状态和精确 Docs handoff。
 
 ## 产物职责
 
@@ -61,7 +61,7 @@ preflight → snapshot → dynamic partition → task execution
 - `Dashboard.md`：仅维护运行快照、任务状态、计数、当前焦点和阻塞；链接到其他产物，不放 Finding 正文。
 - `Findings.md`：稳定 Finding Registry；同一根因复用 ID，记录状态、Snapshot 和 Evidence。
 - `tasks/Axx-*.md`：当前轮次要扫描什么，以及范围、边界、排除项、证据策略和依赖。
-- `results/Axx-*.md`：对应 Task 的局部覆盖、candidate、反证、证据缺口和跨模块输入。
+- `results/Axx-*.md`：对应 Task 的检查范围、candidate、反证、证据缺口和跨模块输入。
 - `Report.md`：当前快照下的开发者总览，聚合 Findings 和 Cross-module 结论。
 
 各文档必须互相链接。详细证据只维护在 Finding 或 Task Result 的权威位置，其他文档链接过去，不复制正文。历史由 Git 承担；V1 不创建按时间滚动的归档副本。

@@ -28,13 +28,13 @@ v1.8.0 已落地本文的稳定设计结论：以 Consistency / Evidence / Conti
 
 `dev-harness` 的核心定位应收敛为：
 
-> **为不同开发者、不同 AI Agent、不同会话和不同项目阶段提供一致的项目工程契约、可验证证据和可持续状态。**
+> **为不同开发者、不同 AI Agent、不同会话和不同项目阶段提供一致的项目工程契约、可验证证据，以及可恢复、可持续维护的任务状态。**
 
 三个核心关键词：
 
 1. **Consistency（一致性）**：同一项目换开发者、换 Codex / Claude / Gemini 后，项目上下文、规划格式、文档组织、验证命令和 Git 流程仍保持一致。
 2. **Evidence（证据）**：关键结论不能只依赖 AI 声明，必须能绑定真实仓库、命令、diff、测试、调用链或快照。
-3. **Continuity（连续性）**：长任务、上下文压缩、会话切换、项目演进后仍可以从项目产物和 Git 私有状态继续，而不是依赖聊天记忆。
+3. **Continuity（连续性）**：长任务、上下文压缩、会话切换或项目演进后，仍可依据项目产物和 Git 私有状态恢复工作，而不是依赖聊天记忆。
 
 同时支持：
 
@@ -328,7 +328,7 @@ Codebase Audit **不是教 AI 应该检查什么**。
 
 它解决的是：
 
-> **大型代码库无法一次装入上下文时，如何让 AI 可靠地分阶段扫描未知问题，并把进度、证据、Finding 和跨模块结论持久化。**
+> **大型代码库无法在一次会话中完整载入上下文时，如何让 AI 可靠地分阶段扫描未知问题，并持久保存进度、证据、Finding 和跨模块结论。**
 
 它与 Auto Fix 的边界：
 
@@ -668,17 +668,17 @@ Verification command gap
 
 ## 8. 跨 Skill 所有权矩阵
 
-实施时请检查当前仓库是否存在职责碰撞，并尽量按下表收敛。
+实施时请检查当前仓库是否存在职责重叠或冲突，并按下表明确归属。
 
 | 资源 / 事实 | Owner | 其他 Skill 行为 |
 |---|---|---|
-| Repository evidence / canonical context | Context | 只读消费 |
+| Repository evidence / canonical context | Context | 只读使用 |
 | README / ARCHITECTURE / AGENTS managed sections | Context | 不直接覆盖 |
 | HARNESS 自动候选 | Context | Commands 可读取 |
-| HARNESS 人工确认命令 | Commands | Auto-fix / 普通 Agent 消费 |
+| HARNESS 人工确认命令 | Commands | Auto-fix / 普通 Agent 使用 |
 | docs root / index / SSOT / archive | Docs | Planning/Audit 复用 |
 | `<docs-root>/plan/*` | Planning | Docs 只做导航治理 |
-| Git / tag / release / changelog policy | Git Workflow | 其他 Skill 只读消费 |
+| Git / tag / release / changelog policy | Git Workflow | 其他 Skill 只读使用 |
 | `.git/dev-harness/auto-fix/*` | Auto Fix | 私有状态 |
 | `<docs-root>/audit/*` | Codebase Audit | Docs 只做导航/归档 |
 | `.git/dev-harness/codebase-audit/*` | Codebase Audit | 私有状态 |
@@ -714,7 +714,7 @@ SKILL.md
 
 目标不是追求最短 SKILL，而是：
 
-> **Agent 在不需要某个细节时，不应为它支付固定上下文成本。**
+> **Agent 在不需要某个细节时，不应因此长期占用固定的上下文空间。**
 
 ---
 
@@ -741,7 +741,7 @@ codebase-audit/
 
 如果现有 repo 有更统一的 Python contract/runtime 组织方式，可以复用；不要为了这个目录图重复创建公共逻辑。
 
-### V1 `runtime.py` 只做确定性能力
+### V1 `runtime.py` 只负责确定性操作
 
 建议仅负责：
 
@@ -942,7 +942,7 @@ Agent 自己已经有搜索、阅读、推理能力。V1 只解决长任务可�
 
 ### 现有 Skill
 
-- Context、Commands、Git Workflow、Planning、Docs 的规范化价值保持；
+- Context、Commands、Git Workflow、Planning、Docs 继续发挥统一规范的作用；
 - Auto Fix 的严格证据链不弱化；
 - Retro 变成开发者显式触发，不把单次 AI 失误自动固化成永久事实。
 
@@ -959,7 +959,7 @@ Agent 自己已经有搜索、阅读、推理能力。V1 只解决长任务可�
 
 ### Packaging
 
-- Codex / Cursor / OpenCode / Antigravity 当前支持方式不回退；
+- 保持对 Codex / Cursor / OpenCode / Antigravity 现有安装方式的兼容；
 - 新 Skill 可以全量和单独安装；
 - 现有 tests + 新增 tests 全部通过。
 

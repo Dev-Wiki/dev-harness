@@ -45,6 +45,7 @@ class SectionSpec:
     section_id: str
     level: int
     title: str
+    legacy_titles: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -74,25 +75,40 @@ SECTION_SPECS: dict[str, tuple[SectionSpec, ...]] = {
         SectionSpec("agents.architecture", 2, "3. 架构边界规则"),
         SectionSpec("agents.forbidden", 2, "4. 禁止操作清单"),
         SectionSpec("agents.high-risk", 2, "5. 高风险文件标注"),
-        SectionSpec("agents.feature-path", 2, "6. 新增功能标准路径"),
+        SectionSpec(
+            "agents.feature-path",
+            2,
+            "6. 新增功能的一般流程",
+            ("6. 新增功能标准路径",),
+        ),
         SectionSpec("agents.safety", 2, "7. 代码安全规范"),
         SectionSpec("agents.versions", 2, "8. 多版本/多定制注意事项"),
         SectionSpec("agents.logging", 2, "9. 日志规范"),
         SectionSpec("agents.exploration", 2, "10. 提问与探索建议"),
         SectionSpec("agents.candidates", 2, "11. 自动识别候选"),
         SectionSpec("agents.manual-review", 2, "12. 需人工确认"),
-        SectionSpec("agents.style-anchors", 2, "13. 代码风格锚点（仓库抽样）"),
+        SectionSpec(
+            "agents.style-anchors",
+            2,
+            "13. 代码风格示例（仓库抽样）",
+            ("13. 代码风格锚点（仓库抽样）",),
+        ),
     ),
     "ARCHITECTURE.md": (
         SectionSpec("architecture.dependencies", 2, "模块依赖关系图"),
-        SectionSpec("architecture.flow", 2, "核心功能流"),
+        SectionSpec("architecture.flow", 2, "核心业务流程", ("核心功能流",)),
         SectionSpec("architecture.pattern", 2, "架构模式"),
         SectionSpec("architecture.interfaces", 2, "模块接口与通信方式"),
         SectionSpec("architecture.modules", 2, "关键模块标记"),
     ),
     "HARNESS.md": (
         SectionSpec("harness.project-type", 2, "项目类型"),
-        SectionSpec("harness.bootstrap", 2, "编译启动诊断"),
+        SectionSpec(
+            "harness.bootstrap",
+            2,
+            "编译与启动问题排查",
+            ("编译启动诊断",),
+        ),
         SectionSpec("harness.commands", 2, "自动识别构建命令候选"),
         SectionSpec("harness.high-risk", 2, "高风险目录"),
         SectionSpec("harness.restricted", 2, "禁改区域"),
@@ -272,11 +288,14 @@ def parse_markdown_sections(text: str, specs: tuple[SectionSpec, ...]) -> dict[s
     headings = _headings(text)
     sections: dict[str, MarkdownSection] = {}
     for spec in specs:
-        matching = [item for item in headings if item[1] == spec.title]
+        accepted_titles = (spec.title, *spec.legacy_titles)
+        matching = [item for item in headings if item[1] in accepted_titles]
         if not matching:
             raise ManagedDocumentError(f"missing fixed heading: {'#' * spec.level} {spec.title}")
         if len(matching) > 1:
-            raise ManagedDocumentError(f"duplicate fixed heading: {spec.title}")
+            raise ManagedDocumentError(
+                f"duplicate fixed heading or legacy alias: {spec.title}"
+            )
         level, title, start, body_start = matching[0]
         if level != spec.level:
             raise ManagedDocumentError(

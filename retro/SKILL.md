@@ -1,6 +1,6 @@
 ---
 name: dev-harness-retro
-description: 仅在用户明确要求 retro、复盘、总结并沉淀或维护 LESSONS.md 时，回顾任务并把结论分类为 FACT、POLICY、LESSON，输出有证据的提升候选
+description: 仅在用户明确要求 retro、复盘、总结并沉淀或维护 LESSONS.md 时，回顾任务并把结论分类为 FACT、POLICY、LESSON，输出有证据、可纳入正式文档的候选结论
 ---
 
 # dev-harness-retro
@@ -23,7 +23,7 @@ description: 仅在用户明确要求 retro、复盘、总结并沉淀或维护 
 
 | 类型 | 含义 | 进入条件 | 默认去向 |
 |------|------|----------|----------|
-| `FACT` | 当前项目可客观验证的事实 | 有仓库路径、配置、测试或运行证据 | `LESSONS.md` 中的 Promotion Candidate；提升到 Context 等 owner 后不再重复维护 |
+| `FACT` | 当前项目可客观验证的事实 | 有仓库路径、配置、测试或运行证据 | `LESSONS.md` 中的 Promotion Candidate；写入 Context 等正式文档后不再重复维护 |
 | `POLICY` | 开发者或团队决定采用的规范 | 有用户明确确认；Git 历史和既有习惯只能作为候选证据 | `LESSONS.md` 中的 Promotion Candidate，等待写入对应正式规范 |
 | `LESSON` | 本次任务的经验、AI 行为问题或暂时注意事项 | 能说明具体情境、观察和更稳妥做法 | 保留在 `LESSONS.md`，默认不是硬约束 |
 
@@ -34,9 +34,9 @@ description: 仅在用户明确要求 retro、复盘、总结并沉淀或维护 
 - `LESSON` 不自动成为永久约束；
 - 无可复核证据的项目断言只能记录为待验证 Lesson，不能伪装成 Fact。
 
-## 所有权与提升
+## 所有权与正式写入
 
-稳定结论应提升到现有 Project Contract owner，而不是要求所有 Agent 永久加载整份历史：
+稳定结论应写入现有 Project Contract 中对应的权威文档，而不是要求所有 Agent 永久加载整份历史：
 
 | 候选内容 | Canonical owner |
 |----------|-----------------|
@@ -56,7 +56,7 @@ Retro 只输出 Promotion Candidates。写入正式规范前必须再次检查 o
 # LESSONS — 项目复盘记录
 
 > 由 dev-harness-retro 在用户显式触发时维护。
-> 本文件中的 LESSON 默认不是永久硬约束；稳定事实和政策应提升到对应 Project Contract。
+> 本文件中的 LESSON 默认不是永久硬约束；稳定事实和政策应写入对应 Project Contract。
 
 ## 复盘条目
 
@@ -71,7 +71,7 @@ Retro 只输出 Promotion Candidates。写入正式规范前必须再次检查 o
 
 ID 使用 `R` 加三位数字，例如 `R001`，已有 ID 不重用。对语义相同的条目更新原 ID，不制造重复历史。
 
-兼容旧版：若现有 `LESSONS.md` 使用“活跃规则 / 归档规则”表，先原样保留。只有本次显式 Retro 确实需要编辑时，才把涉及的旧条目标为 legacy Lesson 或迁移到新表；不得删除用户历史，也不得把旧条目自动提升为 Fact/Policy。
+兼容旧版：若现有 `LESSONS.md` 使用“活跃规则 / 归档规则”表，先原样保留。只有本次显式 Retro 确实需要编辑时，才把涉及的旧条目标为 legacy Lesson 或迁移到新表；不得删除用户历史，也不得自动把旧条目写入正式文档或认定为 Fact/Policy。
 
 ## 工作流
 
@@ -81,8 +81,8 @@ ID 使用 `R` 加三位数字，例如 `R001`，已有 ID 不重用。对语义�
 4. 将每条内容分类为 `FACT`、`POLICY` 或 `LESSON`，并列出证据缺口。
 5. 与现有 `LESSONS.md` 按语义去重；复用旧 ID。
 6. 先向用户展示准备记录的分类结果。`POLICY` 的确认可以在这一步取得。
-7. 只更新 `LESSONS.md`；若用户另外明确要求提升某条候选，再交给对应 owner 执行独立、可验证的写入。
-8. 报告新增、更新、未采纳和待提升条目，以及每条 Fact/Policy 的证据或确认来源。
+7. 只更新 `LESSONS.md`；若用户另外明确要求将某条候选写入正式文档，再交给对应 owner 执行独立、可验证的写入。
+8. 报告新增、更新、未采纳和待写入正式文档的条目，以及每条 Fact/Policy 的证据或确认来源。
 
 ## 质量门
 
@@ -99,4 +99,4 @@ ID 使用 `R` 加三位数字，例如 `R001`，已有 ID 不重用。对语义�
 - 无法确定复盘范围；
 - 候选 Policy 尚未得到用户确认；
 - Fact 的证据已因仓库漂移失效；
-- 提升操作超出用户本次授权。
+- 写入正式文档的操作超出用户本次授权。

@@ -1,35 +1,39 @@
-# {Project Name} Capability Catalog
+# {项目名称} 产品功能清单
 
-> Responsibility: this document is the writable owner for the product's current observable capabilities. It does not own future plans, release history, architecture detail, or task status.
+> 用途：本文件是“当前已支持功能”的权威维护文档，不负责记录未来规划、发布历史、架构细节或任务进度。
+>
+> 语言：中文仓库使用自然中文；英文仓库可改用自然英文，例如 `Functional area`、`Function`、`Support status`、`Applies to`、`Version` 和 `Verification method`。
+>
+> 术语：产品功能使用“功能”“支持情况”等表达；“可观测性”只用于日志、指标和链路追踪，不用于描述产品功能。
 
-## Summary
+## 汇总
 
-Recompute these counts from the leaf rows whenever the catalog changes. Keep current-repository support separate from the latest released baseline.
+每次修改清单后，都要根据功能明细重新统计。当前开发版本与最新发布版本分别统计，不得混为一谈。
 
-| Baseline | Supported | Partial | Experimental | Deprecated |
+| 版本范围 | 已支持 | 部分支持 | 试验性 | 已弃用 |
 |---|---:|---:|---:|---:|
-| Current repository | {count} | {count} | {count} | {count} |
-| Latest released baseline or N/A | {count} | {count} | {count} | {count} |
+| 当前开发版本 | {数量} | {数量} | {数量} | {数量} |
+| 最新发布版本或不适用 | {数量} | {数量} | {数量} | {数量} |
 
-## Current capabilities
+## 当前已支持功能
 
-| ID | Capability domain | Observable capability | Product status | Availability scope | Delivery baseline | Verification level | Evidence | Details |
+| ID | 功能分类 | 功能说明 | 支持状态 | 适用范围 | 版本归属 | 验证方式 | 证据 | 详情 |
 |---|---|---|---|---|---|---|---|---|
-| {stable-id} | {domain} | {user- or integrator-observable behavior} | {Supported / Partial / Experimental / Deprecated} | {roles, platforms, providers, versions, deployment modes, or all} | {released version / current repository / not released / N/A} | {Code evidence / Automated test / Runtime validation / Target-environment validation} | {repository path, test, or validation link} | {authoritative detail link} |
+| {稳定-ID} | {功能分类} | {用户或集成方可直接验证的行为} | {已支持 / 部分支持 / 试验性 / 已弃用} | {角色、平台、供应方、版本、部署方式或全部} | {已发布：vX.Y / 当前开发版本（尚未发布） / 不适用} | {代码证据 / 自动化测试 / 运行验证 / 目标环境验证} | {仓库路径、测试或验证记录链接} | {详细规则的权威文档链接} |
 
-## Pending confirmation / 待确认
+## 待确认
 
-Items in this section are not current facts and are excluded from supported totals.
+本节内容尚不是当前功能事实，不计入已支持功能统计。
 
-| ID | Capability domain | Candidate capability | Availability scope | Missing evidence | Candidate sources |
+| ID | 功能分类 | 待确认功能 | 已知适用范围 | 缺少的证据 | 线索来源 |
 |---|---|---|---|---|---|
-| {candidate-id} | {domain} | {claim requiring confirmation} | {known scope or Unknown} | {probe, test, runtime, release, or target-environment evidence required} | {non-authoritative source links} |
+| {候选-ID} | {功能分类} | {需要确认的功能描述} | {已知范围或未知} | {仍需补充的代码、测试、运行、发布或目标环境证据} | {非权威来源链接} |
 
-## Maintenance rules
+## 维护规则
 
-- Count one stable leaf capability ID once; domains, pages, routes, APIs, modules, tasks, and tests are not capabilities by themselves.
-- Record platform, role, provider, firmware, vehicle, or deployment differences in `Availability scope` instead of duplicating the same capability.
-- Keep `Product status`, `Delivery baseline`, and `Verification level` independent.
-- Preserve IDs when status, scope, delivery, or evidence changes; do not renumber unchanged capabilities.
-- Link to detailed requirements, architecture, integration, validation, or usage documents instead of copying their content.
-- Keep future work in planning documents and released deltas in CHANGELOG.
+- 每个可独立验证的功能项只分配一个稳定 ID；功能分类、页面、路由、API、模块、任务和测试本身不单独计数。
+- 平台、角色、供应方、固件、车型或部署方式的差异写入“适用范围”，不要重复登记同一功能。
+- “支持状态”“适用范围”“版本归属”和“验证方式”必须分别记录，不能互相替代。
+- 状态、范围、版本或证据发生变化时保留原 ID；未变化的功能不得重新编号。
+- 链接到需求、架构、集成、验证或使用说明的权威文档，不在本清单复制详细内容。
+- 未来工作写入规划文档，已发布变更写入 CHANGELOG。

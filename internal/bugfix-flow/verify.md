@@ -1,12 +1,12 @@
-# 阶段：验证闭环 (verify)
+# 阶段：验证结果确认 (verify)
 
-把「我觉得差不多了」收敛成「有证据证明通过」的完成闭环。由 `dev-harness-auto-fix` 在 Step 6 内联调用，**不是独立 skill**。
+把「我觉得差不多了」转化为「有证据证明通过」的客观结论。由 `dev-harness-auto-fix` 在 Step 6 内联调用，**不是独立 skill**。
 
 ## 输入要求
 
 至少需要以下输入：
 
-- 已定义的回归测试落点（或本次 bugfix 的最小验证目标）
+- 已确定的回归测试位置（或本次 bugfix 的最小验证目标）
 - 可执行命令或人工验证步骤
 - 成功标准与失败标准
 
@@ -19,7 +19,7 @@
 - **BugfixCheck**：本次问题专属验证命令
 - **FullCheck**：完整回归命令
 - **PassCriteria**：通过标准
-- **FailureReport**：失败时最少要记录的信息
+- **FailureReport**：失败时至少需要记录的信息
 - **FreshVerificationEvidence**：绑定当前 diff hash 的命令、时间、退出码和关键输出
 - **TestSkipReason**：若 TestCheck 被跳过，必须记录跳过原因
 - **ManualReviewBoundary**：UI、资源、原生层、打包层中哪些必须人工确认
