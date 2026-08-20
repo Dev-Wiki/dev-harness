@@ -2,7 +2,7 @@
 
 > 状态：已在 dev-harness v1.8.0 实施，现作为设计依据与取舍记录保留。
 >
-> 当前范围与封板标准以 [`V1_V2_BOUNDARIES.md`](V1_V2_BOUNDARIES.md) 为唯一事实源；未来候选以 [`V2_BACKLOG.md`](V2_BACKLOG.md) 为唯一事实源；使用与维护入口见 [`docs/README.md`](README.md)。本文的 Stage、执行指令和未来时态保留为实施期历史，不再构成活动任务或授权。
+> 当前已支持功能以 [`CAPABILITIES.md`](CAPABILITIES.md) 为唯一事实源；版本边界与封板标准以 [`V1_V2_BOUNDARIES.md`](V1_V2_BOUNDARIES.md) 为唯一事实源；未来候选以 [`V2_BACKLOG.md`](V2_BACKLOG.md) 为唯一事实源；使用与维护入口见 [`docs/README.md`](README.md)。本文的 Stage、执行指令和未来时态保留为实施期历史，不再构成活动任务或授权。
 >
 > 历史用途：交给编码 Agent，在当前 dev-harness 仓库中实施优化。本文描述目标设计与实施约束，不要求机械照搬具体文件名或代码结构；当设计与可靠实现冲突时，以兼容性和经过测试的当前实现为准。
 
@@ -12,7 +12,8 @@ v1.8.0 已落地本文的稳定设计结论：以 Consistency / Evidence / Conti
 
 为避免同一状态在多处漂移，本文只解释“为什么这样设计”：
 
-- 当前已包含/不包含的能力、封板标准：`V1_V2_BOUNDARIES.md`；
+- 当前已支持功能、适用范围与验证证据：`CAPABILITIES.md`；
+- V1 / VNext 与 V2 边界、非目标和封板标准：`V1_V2_BOUNDARIES.md`；
 - 超出当前边界的候选与启动条件：`V2_BACKLOG.md`；
 - 用户入口与能力概览：根 `README.md` 与 `docs/README_EN.md`；
 - 精确 CLI、模板和行为：对应 Skill、runtime 与 tests；

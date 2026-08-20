@@ -1,11 +1,11 @@
 # V1 / VNext 与 V2 边界
 
-> 文档角色：本文件是当前已支持功能范围、非目标和封板标准的唯一事实源。
-> [`dev-harness VNext 优化与 Codebase Audit 设计方案`](dev-harness%20VNext%20%E4%BC%98%E5%8C%96%E4%B8%8E%20Codebase%20Audit%20%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md) 记录 v1.8.0 的设计依据；[`V2_BACKLOG.md`](V2_BACKLOG.md) 只记录未来候选，不覆盖本文件。
+> 文档角色：本文件是 V1 / VNext 与 V2 版本边界、非目标和封板标准的唯一事实源。
+> 当前已支持功能、适用范围、版本归属和验证证据以 [`CAPABILITIES.md`](CAPABILITIES.md) 为准；[`dev-harness VNext 优化与 Codebase Audit 设计方案`](dev-harness%20VNext%20%E4%BC%98%E5%8C%96%E4%B8%8E%20Codebase%20Audit%20%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md) 记录 v1.8.0 的设计依据；[`V2_BACKLOG.md`](V2_BACKLOG.md) 只记录未来候选。
 
 ## 版本命名
 
-设计方案中的 **VNext** 指从既有 V1 向 v1.8.0 Project Contract 与 Codebase Audit 功能的兼容演进，仍属于本文件定义的 V1 范围；v1.9.0 在同一边界内补充 Capability Catalog 与 Audit 文档入口可达性，v1.9.1 进一步统一中文术语和模板表达，v1.10.0 明确 Engineering Audit 职责、输出语言约定、最小行为验证和 Finding identity gate，均不改变 V2 边界。VNext 不是 V2 的别名。当前实现与后续排期分别以本文件和 `V2_BACKLOG.md` 为准，设计记录中的实施阶段不作为活动任务清单。
+设计方案中的 **VNext** 指从既有 V1 向 v1.8.0 Project Contract 与 Codebase Audit 功能的兼容演进，仍属于本文件定义的 V1 范围；v1.9.0 在同一边界内补充 Capability Catalog 与 Audit 文档入口可达性，v1.9.1 进一步统一中文术语和模板表达，v1.10.0 明确 Engineering Audit 职责、输出语言约定、最小行为验证和 Finding identity gate，均不改变 V2 边界。VNext 不是 V2 的别名。当前功能、版本边界和后续候选分别以 `CAPABILITIES.md`、本文件和 `V2_BACKLOG.md` 为准，设计记录中的实施阶段不作为活动任务清单。
 
 ## V1 定位
 
@@ -31,7 +31,9 @@ V1 解决的问题：
 - “已验证”和“已审查”没有绑定到最终代码 diff
 - 大型代码库无法在一次会话中完整载入上下文，跨会话扫描进度、证据和 Finding 容易丢失
 
-## V1 已包含
+## V1 边界包含
+
+以下内容描述 V1 的职责范围，不承担逐项功能统计；可独立验证的当前功能项及证据见 [`CAPABILITIES.md`](CAPABILITIES.md)。
 
 ### 1. 项目上下文初始化
 

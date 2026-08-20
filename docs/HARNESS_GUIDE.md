@@ -61,7 +61,7 @@ AGENTS 中只保留轻量的项目规范索引。Context 会识别已有 Git 工
 
 ### 2.1 Bug 修复流程（推荐）
 
-使用 `dev-harness-auto-fix` 一键串联完整修复流水线：
+使用 `dev-harness-auto-fix` 按显式授权模式串联分析或修复流水线：
 
 ```
 # 方式 1：提供 issue URL
@@ -74,7 +74,9 @@ AGENTS 中只保留轻量的项目规范索引。Context 会识别已有 Git 工
 auto fix
 ```
 
-**流程顺序**：Bug 上下文 → 确认最小复现条件 → 根因定位 → 修复 → 审查 → 最终验证 → 分支提交
+**写模式流程顺序**：Bug 上下文 → 确认最小复现条件 → 根因定位 → RED → 最小修复 → GREEN → 审查 → 最终验证 → 可选提交。
+
+`analyze` 只读分析；`fix` 修改和验证但不得提交；只有用户明确选择 `commit` 或 `unattended` 时才允许在最终验证后精确提交。commit 不包含 push、PR、tag、release 或 deploy 授权。
 
 ### 2.2 配套 Skills
 
@@ -161,7 +163,7 @@ dev-harness 要求修改底层 native bridge、ABI、C++/CLI、Win32 API 等区�
 
 **Q: 多仓库项目（如前端 + 后端）**
 
-auto-fix 支持多仓库，完成报告会输出每个仓库的分支/commit 信息表格。
+当前 Auto Fix 状态与 WorkspaceSnapshot 以单个 Git 仓库为边界。多仓库问题应为每个仓库建立独立 Run，并由上层计划或人工流程维护跨仓库顺序；在缺少跨仓库 runtime 和测试证据前，不把它描述为原生多仓库编排能力。
 
 ---
 

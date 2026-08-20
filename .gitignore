@@ -5,3 +5,4 @@ temp-target/
 verify-repo/
 skills/.deepseek/
 .deepseek/
+*:Zone.Identifier

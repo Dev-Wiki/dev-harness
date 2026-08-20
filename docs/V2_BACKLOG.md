@@ -1,7 +1,7 @@
 # V2_BACKLOG
 
 > 文档角色：本文件是超出当前 V1 / VNext 边界的未来候选池，不是已承诺 Roadmap。
-> 当前能力与封板标准以 [`V1_V2_BOUNDARIES.md`](V1_V2_BOUNDARIES.md) 为准；v1.8.0 的设计依据见 [`dev-harness VNext 优化与 Codebase Audit 设计方案`](dev-harness%20VNext%20%E4%BC%98%E5%8C%96%E4%B8%8E%20Codebase%20Audit%20%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md)。
+> 当前已支持功能以 [`CAPABILITIES.md`](CAPABILITIES.md) 为准；版本边界与封板标准以 [`V1_V2_BOUNDARIES.md`](V1_V2_BOUNDARIES.md) 为准；v1.8.0 的设计依据见 [`dev-harness VNext 优化与 Codebase Audit 设计方案`](dev-harness%20VNext%20%E4%BC%98%E5%8C%96%E4%B8%8E%20Codebase%20Audit%20%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md)。
 
 ## 说明
 

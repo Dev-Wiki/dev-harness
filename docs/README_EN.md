@@ -2,6 +2,8 @@
 
 A platform-agnostic project engineering contract layer for AI coding assistants. It standardizes context, documentation, planning, verification commands, and Git policy, and provides durable evidence workflows for known bugs and unknown codebase risks.
 
+> This page is the English entry point. The Chinese root [`README.md`](../README.md), the [capability catalog](CAPABILITIES.md), and the linked specialist documents remain authoritative for changing project facts.
+
 Its design goals are Consistency across agents, Evidence for important claims, and Continuity across long tasks and sessions. It is not a test framework, generic SDLC skill library, static analyzer, or auto-fix CLI.
 
 Supports Cursor, Codex CLI, OpenCode, and Antigravity.
@@ -21,7 +23,7 @@ Supports Cursor, Codex CLI, OpenCode, and Antigravity.
 | `dev-harness-planning` | Generates Dashboard and TaskDetails under the repository's existing documentation root |
 | `dev-harness-commands` | Standardizes `build / test / quick / bugfix / full` command entry points |
 | `dev-harness-git-workflow` | Validates branch naming, generates commit messages, blocks debug artifacts |
-| `dev-harness-auto-fix` | Full pipeline: bug description / issue URL → root cause → fix → review → commit |
+| `dev-harness-auto-fix` | Explicit `analyze / fix / commit / unattended` modes with reproducible diagnosis, RED/GREEN, diff-bound review, final verification, and authorized commit only |
 | `dev-harness-codebase-audit` | Audits engineering quality, behavioral correctness, and cross-module consistency in user-owned or explicitly authorized repositories; dynamically partitions the codebase and persists evidence-backed findings without changing product source |
 | `dev-harness-retro` | Explicit retrospective — classifies FACT / POLICY / LESSON and proposes contract promotions |
 
@@ -200,7 +202,7 @@ V1 / VNext is the current project-contract layer for existing projects. It cover
 
 V1 explicitly excludes: UI automation, screenshot-driven verification, log/metric/trace platforms, multi-worktree runtime, auto PR/review loop, native-layer auto-repair.
 
-See the [current V1 / VNext and V2 boundary](V1_V2_BOUNDARIES.md), the [implemented VNext design record](dev-harness%20VNext%20%E4%BC%98%E5%8C%96%E4%B8%8E%20Codebase%20Audit%20%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md), and the [V2 backlog](V2_BACKLOG.md). The boundary document owns current scope; the backlog owns future candidates.
+See the [current capability catalog](CAPABILITIES.md), the [V1 / VNext and V2 boundary](V1_V2_BOUNDARIES.md), the [implemented VNext design record](dev-harness%20VNext%20%E4%BC%98%E5%8C%96%E4%B8%8E%20Codebase%20Audit%20%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md), and the [V2 backlog](V2_BACKLOG.md). The catalog owns current supported functions, the boundary document owns version scope and non-goals, and the backlog owns future candidates.
 
 ---
 
