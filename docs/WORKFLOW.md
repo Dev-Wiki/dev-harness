@@ -1,246 +1,188 @@
 # dev-harness 端到端工作流
 
-> 文档职责：说明现有八个 Skills 如何组合成一条完整工程工作流；各 Skill 的精确行为、授权和状态仍以对应 `SKILL.md` 与 runtime 为准。
+> 本文说明现有八个 Skills 如何组合完成新功能交付或代码库审计；各 Skill 的精确行为、授权和状态仍以对应 `SKILL.md` 与 runtime 为准。
 >
 > 当前已支持功能以 [产品功能清单](CAPABILITIES.md) 为权威文档，版本边界与非目标见 [V1 / VNext 与 V2 边界](V1_V2_BOUNDARIES.md)。跨 Skill 自动编排属于独立的 [`dev-harness-dsh`](https://github.com/Dev-Wiki/dev-harness-dsh) 项目，不在本文维护其需求或任务状态。
 
-## 1. 目标与原则
+## 1. 共同原则
 
-不安装额外编排 Plugin 时，现有 Skills 也可以按以下顺序协作：
+1. 外层流程只负责阶段顺序和 handoff，不复制 Skill 内部状态机。
+2. 需求、任务状态、当前功能、Finding、验证证据和提交边界分别由其 SSOT 维护。
+3. “代码写完”不等于任务完成；只有验收与验证通过后才能标记 `✅ 已完成`。
+4. commit、push、PR、tag、release 和 deploy 是彼此独立的授权。
+5. QA 是可选工作流阶段；无法执行的部分必须明确列为人工验证项，不能写成已通过。
 
-```text
-准备 Project Contract
-→ Codebase Audit
-→ Finding 路由
-→ 逐项 Auto Fix
-→ 可选精确提交
-→ harness:full
-→ QA / Dogfood
-→ QA Failure Loop
-→ Final Audit Reconciliation
-→ 最终报告
-```
+## 2. 选择入口
 
-组合工作流遵守四条原则：
-
-1. 外层流程只负责顺序和 handoff，不复制 Skill 内部状态机。
-2. Finding、验证证据、提交边界和任务状态由各自 SSOT 维护。
-3. commit、push、PR、tag、release 和 deploy 是彼此独立的授权。
-4. QA 是可选工作流阶段，不是 dev-harness Core Skill；无法执行的部分必须明确交给人工验证。
-
-## 2. 工作流总览
+先准备 Project Contract，再根据输入选择工作流：
 
 ```text
-Context / Docs / Commands / Git Policy
-                    │
-                    ▼
-              Codebase Audit
-                    │
-                    ▼
-             Confirmed Findings
-                    │
-                    ▼
-               Finding Router
-        ┌───────────┼───────────┬──────────────┐
-        ▼           ▼           ▼              ▼
-     Defect     Tech debt    Docs gap    Verification gap
-        │           │           │              │
-        ▼           ▼           ▼              ▼
-    Auto Fix     Planning      Docs          Commands
-        │
-        ▼
- Reproduce → Hypothesis → RED → Minimal Fix → GREEN
-        │
-        ▼
- Review → Final Verify → Optional Commit
-        │
-        ▼
-   Next Finding → harness:full → QA / Dogfood
-                                      │
-                              ┌───────┴───────┐
-                              ▼               ▼
-                         QA Failure          PASS
-                              │               │
-                              ▼               ▼
-                          Auto Fix     Final Reconciliation
+                         Project Contract
+                                 │
+                  ┌──────────────┴──────────────┐
+                  ▼                             ▼
+           已知需求 / 新功能              未知问题 / 存量治理
+                  │                             │
+                  ▼                             ▼
+              Planning                   Codebase Audit
+                  │                             │
+                  ▼                             ▼
+        开发 → 测试 → 验收 → 提交       Findings → 分类处理 → 复核
 ```
 
-## 3. Step 1：准备 Project Contract
+- 有明确需求、原型或验收目标时，进入[新功能交付](#4-新功能交付工作流)。
+- 需要系统发现未知工程问题时，进入[代码库审计与修复](#5-代码库审计与修复工作流)。
+- 已知且边界明确的 Bug 可以直接使用 `dev-harness-auto-fix`，不必先运行 Audit。
 
-第一次接入项目时，按需使用：
+## 3. 共享前置：准备 Project Contract
+
+第一次接入项目时按需使用：
 
 - [`dev-harness-context`](../context/SKILL.md)：初始化或刷新项目上下文；
 - [`dev-harness-docs`](../dev-harness-docs/SKILL.md)：确认文档根、导航和 SSOT；
 - [`dev-harness-commands`](../commands/SKILL.md)：把真实命令映射为稳定语义入口；
 - [`dev-harness-git-workflow`](../git-workflow/SKILL.md)：识别项目 Git、提交和发布规范。
 
-项目至少应能可靠回答：
+开始写入前至少应确认：
 
-- 项目是什么、从哪里开始阅读；
-- 哪些区域高风险或禁止直接修改；
-- `build / test / quick / bugfix / full` 分别执行什么；
-- 文档、当前功能、计划、Git 规范和发布变化由谁维护。
+- 项目目标、修改范围、高风险区域和禁止事项；
+- 需求来源与可直接验证的验收标准；
+- `build / test / quick / bugfix / full` 的已确认命令；
+- 文档、当前功能、活动计划、Git 规范和发布变化的权威维护位置；
+- 当前分支、HEAD、工作区和暂存区状态。
 
-缺少真实命令或证据时保持 `Unknown`，不得根据技术栈经验编造入口。
+缺少真实命令或证据时保持 `Unknown`、`Missing` 或阻塞，不得根据技术栈经验编造入口。
 
-## 4. Step 2：执行 Codebase Audit
+## 4. 新功能交付工作流
 
-[`dev-harness-codebase-audit`](../codebase-audit/SKILL.md) 面向用户拥有或明确授权的代码库，负责：
+### 4.1 总览
 
 ```text
-动态分区
-→ 分阶段扫描
-→ Candidate
-→ Verification
-→ Confirmed / Rejected
-→ Cross-module Reconciliation
-→ Report
+需求与验收标准
+→ 看板拆分（Dashboard + TaskDetails）
+→ 选择一个无阻塞任务并标记 🚧 开发中
+→ 开发
+→ 定向测试 + 任务验收
+→ 必要的 harness:full / QA
+→ 更新事实文档 + 标记 ✅ 已完成
+→ 精确提交
+→ 下一任务或里程碑收口
 ```
 
-Audit 发现、验证和路由问题，但不修改业务源码、测试或配置。只有权威 Finding Registry 中的 confirmed Finding 才能进入后续处理。
+普通开发 Agent 负责实现功能；dev-harness 不额外提供一个替代通用编码能力的“功能开发 Skill”。Planning 管理工作边界，Commands 提供验证入口，Docs 管理已验证事实，Git Workflow 管理提交边界。
+
+### 4.2 明确需求与验收标准
+
+开始拆分前确认需求来源、目标用户、首版边界、非目标、依赖和可执行的验收标准。协议、SDK、凭据、设备、合规要求等未知项应登记为阻塞或前置调研，不能靠推断补齐。
+
+需求文档维护“要交付什么”；它不维护开发中的任务状态，也不证明功能已经支持。
+
+### 4.3 拆分看板与任务详情
+
+使用 [`dev-harness-planning`](../planning/SKILL.md) 在项目已有文档根目录维护：
+
+- `<docs-root>/plan/Dashboard.md`：索引层，只保存任务 ID、优先级、状态、覆盖范围、阻塞和详情链接；
+- `<docs-root>/plan/TaskDetails.md`：执行层，保存背景、目标、影响文件、步骤、验收、风险和验证命令。
+
+拆分规则：
+
+1. 先列前置调研和阻塞，再拆 P0 核心、P1 支撑和 P2 远期任务。
+2. 每个 Dashboard 任务必须链接到唯一的 TaskDetails 标题。
+3. 每项任务应能独立实现、验证和提交；跨任务依赖必须显式记录。
+4. 使用稳定状态：`📋 规划中`、`🚧 开发中`、`✅ 已完成`、`📋 远期`。
+5. 未经实现和验证证据，不得从计划或聊天推断任务已经完成。
+
+### 4.4 领取并开发一个任务
+
+按依赖和优先级选择一个无阻塞任务，将 Dashboard 与 TaskDetails 中的状态同步为 `🚧 开发中`，然后只加载该任务需要的上下文和文件。
+
+开发过程遵循项目 `AGENTS.md`、架构约束和现有代码风格。实现中发现需求缺口时先回到需求或 TaskDetails 澄清；不要把新增范围静默塞进当前任务。已知缺陷可交给 Auto Fix，较大的架构调整应回到 Planning 重新拆分。
+
+### 4.5 测试与验收
+
+验证范围由任务风险和项目 `HARNESS.md` 决定，推荐顺序为：
+
+```text
+harness:quick / 相关 build
+→ 定向 harness:test 或任务专属测试
+→ TaskDetails 验收标准
+→ 必要时 harness:full
+→ 可执行时 QA / Dogfood
+```
+
+- `quick` 负责快速反馈，不能替代任务验收。
+- 定向测试应覆盖本次功能的正常、异常和关键边界路径。
+- `full` 用于高风险任务、共享基础设施变更、提交/合并门禁或里程碑收口；不得用任意局部命令冒充。
+- 环境无法执行的设备或 UI 验收必须列为剩余人工项。
+
+任何失败都回到当前任务修复并重新验证；失败证据不能用旧的成功结果覆盖。
+
+### 4.6 同步事实、状态并提交
+
+验证通过后按以下顺序收口：
+
+1. 检查当前 diff、任务验收结果和 fresh validation evidence。
+2. 使用 Docs 将代码或成功验证已经证明、且未来会重复使用的事实同步到现有权威文档；计划内容不得直接写入当前功能清单。
+3. 将 TaskDetails 和 Dashboard 中的当前任务同步为 `✅ 已完成`，保留验证入口或结果引用。
+4. 使用 Git Workflow 精确暂存当前任务文件，检查敏感内容、调试残留和无关变更后提交。
+5. push、PR、tag、release 和 deploy 仅在分别获得授权后执行。
+
+推荐一个可独立验证的任务对应一个提交。提交失败不改变验证事实，但必须报告未提交状态，不能继续声称交付闭环已经完成。
+
+### 4.7 下一任务与里程碑收口
+
+提交后重新读取 Dashboard，选择下一个无阻塞任务并重复开发闭环。一个里程碑的计划内任务全部完成后，再执行 fresh `harness:full` 和可用的 QA，汇总：
+
+- 已完成、剩余和阻塞任务；
+- 验收与完整验证证据；
+- 实际提交 SHA，以及另行授权后产生的 push / PR 结果；
+- 已更新的当前功能或其他权威文档；
+- 剩余风险和人工验证项。
+
+## 5. 代码库审计与修复工作流
+
+### 5.1 Audit 与 Finding 路由
+
+[`dev-harness-codebase-audit`](../codebase-audit/SKILL.md) 面向用户拥有或明确授权的代码库：
+
+```text
+动态分区 → 分阶段扫描 → Candidate → Verification
+→ Confirmed / Rejected → Cross-module Reconciliation → Report
+```
+
+Audit 发现、验证和路由问题，但不修改业务源码、测试或配置。只有权威 Finding Registry 中的 confirmed Finding 才进入后续处理。
 
 | Finding 类型 | 后续 Owner |
 |---|---|
 | defect / crash / lifecycle bug | `dev-harness-auto-fix` |
-| architecture / refactor / tech debt | `dev-harness-planning` |
+| architecture / refactor / tech debt | `dev-harness-planning`，经用户接受后进入 Roadmap |
 | docs drift | `dev-harness-docs` |
 | verification gap | `dev-harness-commands` |
 | Git / release / changelog gap | `dev-harness-git-workflow` |
 
-## 5. Step 3：逐项处理 Defect
+### 5.2 逐项处理 Defect
 
-confirmed defect 交给 [`dev-harness-auto-fix`](../auto-fix/SKILL.md)。写模式完整路径为：
-
-```text
-preflight
-→ context
-→ reproduce
-→ hypothesize
-→ regress-red
-→ implement
-→ verify / GREEN
-→ review
-→ final-verify
-→ optional commit
-→ report
-```
-
-RED、GREEN、ReviewDiffHash 和最终验证均由 Auto Fix 维护。外层工作流不得重新实现另一套红绿灯或根据聊天文本判断修复完成。
-
-推荐每个 confirmed defect 使用一个独立 Auto Fix Run，以便单独验证、Review、回滚和保留清晰证据。架构重构和较大技术债不强行进入 Bugfix 写流程，应转 Planning。
-
-## 6. Step 4：选择提交方式
-
-### 方式 A：Auto Fix `commit` / `unattended`
-
-用户已经明确授权提交时，由 Auto Fix 在最终验证后加载 Git Workflow，只精确提交本轮 `AutoFixChangedFiles`。
-
-### 方式 B：Auto Fix `fix` 后单独提交
-
-用户只授权修复时，Auto Fix 在工作区修复和验证后结束，不得提交。用户随后可以单独授权 Git Workflow 检查当前修改并提交。
-
-两种方式不能叠加。Auto Fix 已产生提交后，外层流程不得再次为同一修改创建第二个提交。
-
-无论采用哪种方式，以下动作都不随 commit 自动授权：
-
-- push；
-- 创建 PR；
-- tag；
-- release；
-- deploy；
-- Issue 回写。
-
-## 7. Step 5：处理全部计划内 Finding
-
-推荐顺序执行需要写代码的 Finding：
+confirmed defect 交给 [`dev-harness-auto-fix`](../auto-fix/SKILL.md)：
 
 ```text
-AUD-001 → Auto Fix Run 001 → 可选 commit A
-AUD-002 → Auto Fix Run 002 → 可选 commit B
-AUD-003 → Auto Fix Run 003 → 可选 commit C
+preflight → context → reproduce → hypothesize → RED
+→ minimal fix → GREEN → review → final verify → optional commit
 ```
 
-只有下游 Skill 报告允许继续的完成状态时，外层流程才能推进；`BLOCKED` 或 `NEEDS_CONTEXT` 必须停止并请求处理，不能静默跳过。
+推荐每个 confirmed defect 使用独立 Auto Fix Run，以便单独验证、审查、回滚和保存证据。Auto Fix 已提交的修改不得由外层流程重复提交；`fix` 模式结束后则需要另行授权 Git Workflow 提交。
 
-Docs、Commands、Planning 或 Git Workflow handoff 分别交给对应 Owner，不把详细状态复制回 Audit 报告或临时总表。
+`BLOCKED` 或 `NEEDS_CONTEXT` 必须停止处理，不能静默跳过。Docs、Commands、Planning 和 Git Workflow handoff 由各自 Owner 维护，详细状态不复制回 Audit 报告。
 
-## 8. Step 6：整体 Full Verification
+### 5.3 整体验证、QA 与最终复核
 
-所有计划内代码修改完成后，执行项目 `HARNESS.md` 中已确认的：
+所有计划内代码修改完成后执行已确认的 `harness:full`。单个 Auto Fix 的 GREEN 只证明目标问题得到修复，fresh `full` 才证明多个修改组合后仍满足项目完整验证要求。
 
-```text
-harness:full
-```
+完整验证后可按环境执行 QA / Dogfood。QA 发现的新问题默认作为已知 Bug 进入 Auto Fix；只有需要长期登记和跨模块复核时，才由 Codebase Audit 创建正式 Finding，其他流程不得伪造 `AUD-*` ID。
 
-单个 Auto Fix 的 GREEN 证明目标问题在当前变更下被修复；最终 `harness:full` 证明多个修改组合后仍满足项目完整验证要求。
+代码变化会使原 Audit Snapshot 的部分证据失效。长期治理流程应在最终工作区创建 fresh Audit Snapshot，并由 Codebase Audit 将原 Findings 复核为 `resolved / remaining / stale`。Finding 状态只能由 Codebase Audit 更新。
 
-外层流程不得重新猜测项目命令，也不得把任意局部命令成功冒充 `harness:full`。
+最终报告至少包含：原 Audit Run、Finding 处理结果、Auto Fix 状态、实际提交 SHA、fresh `harness:full`、QA 与人工项、最终复核结果和剩余阻塞。
 
-## 9. Step 7：QA / Dogfood
+## 6. 手工编排边界
 
-完整验证通过后，可根据项目类型和当前环境执行真实使用场景：
-
-- Web：浏览器、网络请求、Console、正常/异常/边界路径；
-- CLI / Backend：真实命令或 API、错误输入、状态变化、重启和持久化；
-- Android / Desktop / Device：当前环境已具备的设备、模拟器、ADB、UI 自动化或人工检查。
-
-可以组合用户显式指定或当前环境已验证可用的外部 QA 能力，但 dev-harness Core 不依赖具体第三方工具。
-
-环境无法完成真实 UI QA 时，应执行仍可自动验证的部分并列出剩余人工检查项；不得把“无法执行”描述为“QA PASS”。
-
-## 10. Step 8：QA Failure Loop
-
-QA 发现的新问题默认作为当前开发流程的 Bug Input：
-
-```text
-QA Finding
-→ Auto Fix
-→ RED
-→ Minimal Fix
-→ GREEN
-→ Review / Final Verify
-→ 可选 Commit
-→ harness:full
-→ QA Retry
-```
-
-只有需要长期登记和跨模块复核时，才重新交给 Codebase Audit 创建正式 Finding。普通 Agent 或外层流程不得自行伪造 `AUD-*` ID。
-
-## 11. Step 9：Final Audit Reconciliation
-
-代码、完整验证和 QA 完成后，原 Audit Snapshot 可能已因 HEAD、源码或 Context 变化而失效。长期治理流程应在最终工作区上创建 fresh Audit Snapshot，并由 Codebase Audit 复核原始 Findings：
-
-```text
-Fresh Audit Snapshot
-→ Reverify original Findings
-→ resolved / remaining / stale
-```
-
-Finding 状态始终由 Codebase Audit 更新。外层流程只能读取和汇总，不能直接修改 Registry。
-
-## 12. 最终报告
-
-最终报告至少列出：
-
-- 原 Audit Run 和 Finding 处理结果；
-- 每个 Auto Fix Run 的 CompletionStatus 与剩余风险；
-- 是否实际产生提交及对应 SHA；
-- `harness:full` 的 fresh evidence；
-- QA 已执行场景、失败重试和剩余人工项；
-- Final Reconciliation 的 resolved / remaining 结果；
-- Overall 状态和阻塞。
-
-报告应链接或引用权威证据，不复制下游完整正文。
-
-## 13. 手工编排边界
-
-完全使用 Skills 时，用户或 Agent 仍需维护：
-
-- 当前阶段；
-- 当前 Finding；
-- 下游 Run 引用；
-- 失败重试与恢复顺序；
-- 运行级授权；
-- 最终汇总。
-
-这些外层编排问题由独立的 [`dev-harness-dsh`](https://github.com/Dev-Wiki/dev-harness-dsh) 项目规划解决；`dev-harness` 继续保持跨 Agent 的纯 Skill Bundle。
+完全使用 Skills 时，用户或 Agent 仍需维护当前路径、任务或 Finding、下游 Run 引用、失败重试、授权和最终汇总。独立的 [`dev-harness-dsh`](https://github.com/Dev-Wiki/dev-harness-dsh) 项目规划自动化这些外层编排；`dev-harness` 继续保持跨 Agent 的纯 Skills Bundle。

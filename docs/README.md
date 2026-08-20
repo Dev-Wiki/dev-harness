@@ -4,7 +4,7 @@
 
 ## 使用 dev-harness
 
-1. [端到端工作流](WORKFLOW.md)：组合 Context、Audit、Auto Fix、Git、完整验证、QA 与最终复核。
+1. [端到端工作流](WORKFLOW.md)：从共享 Project Contract 进入新功能交付或代码库审计 / 修复闭环。
 2. [客户端项目接入](CLIENT_PROJECT_ONBOARDING.md)：在真实项目中安装、初始化 Context 并确认契约。
 3. [HARNESS 使用指南](HARNESS_GUIDE.md)：维护和使用 build / test / quick / bugfix / full 验证接口。
 4. [Bugfix 指南](BUGFIX_GUIDE.md)：使用证据驱动的已知问题分析与修复流程。

@@ -1,258 +1,143 @@
 # dev-harness
 
-**AI 编码助手的项目工程约束层** — 统一项目上下文、文档、规划、验证命令和 Git 流程，并为 Bug 修复与大型代码库审计提供可持久化、可验证的工作流。
+**AI 编码助手的项目工程约束层**：统一项目上下文、文档、规划、验证命令和 Git 流程，并为新功能交付、Bug 修复与大型代码库审计提供可持久化、可验证的工作流。
 
----
-
-## 为什么需要 dev-harness？
-
-模型可以理解、设计、编码和 Review，但同一项目换开发者、换 Agent 或跨会话后，项目事实、命令、计划格式和完成证据很容易漂移。dev-harness 聚焦三件事：
+dev-harness 关注三个跨 Agent、跨会话都需要稳定的问题：
 
 - **Consistency（一致性）**：项目契约不随开发者或 Agent 改变；
-- **Evidence（证据）**：关键结论绑定仓库、命令、diff、测试、调用链或快照；
-- **Continuity（连续性）**：长任务、上下文压缩和会话切换后可从项目产物与 Git 私有状态恢复。
+- **Evidence（证据）**：完成结论绑定代码、命令、diff、测试或运行证据；
+- **Continuity（连续性）**：长任务可以从项目文档和 Git 私有状态恢复。
 
-这些组成部分共同构成逻辑上的 **Project Contract**，不额外复制成一个中心配置文件：
+## 工作方式
+
+dev-harness 不创建一个包办所有信息的中心配置，而是连接项目已有的权威来源：
 
 ```text
 Project Contract
-├── Context: README / ARCHITECTURE / AGENTS
-├── Verification Interface: HARNESS.md
-├── Documentation Governance: 现有 doc/ 或 docs/
-├── Current Capabilities: 已有功能范围说明文档，必要时建立 Capability Catalog
-├── Planning Contract: <docs-root>/plan/
-├── Git Policy: 项目自己的 Git / release / changelog 文档
-├── Retrospective Knowledge: LESSONS.md 与待纳入正式规范的候选结论
-└── Codebase Audit: <docs-root>/audit/ + Git 私有状态
+├── Context：README / ARCHITECTURE / AGENTS
+├── Verification：HARNESS.md
+├── Documentation：现有 doc/ 或 docs/
+├── Current Capabilities：Capability Catalog 或已有同类文档
+├── Planning：<docs-root>/plan/Dashboard.md + TaskDetails.md
+├── Git Policy：项目自己的 Git / release / changelog 规范
+├── Retrospective：LESSONS.md
+└── Codebase Audit：<docs-root>/audit/ + Git 私有状态
 ```
 
-Auto Fix 仍是最成熟的证据工作流：`复现 → 可证伪的根因假设 → RED → 最小修复 → GREEN → 审查 → 最终验证`。Codebase Audit 则解决大型存量仓库无法在一次会话中完整载入上下文时，如何分阶段扫描未知问题并持久化证据。
+准备好 Project Contract 后，根据任务选择两条主路径之一：
 
----
+```text
+新功能交付
+需求与验收 → 看板拆分 → 开发 → 测试与验收 → 更新文档和状态 → 提交
 
-## 30 秒看懂
-
-安装后，在 AI 助手里直接说人话：
-
+代码库审计与修复
+Audit → Confirmed Findings → 分类路由 → Auto Fix / Planning / Docs
+      → 完整验证 → QA → 最终复核
 ```
-# 初始化一个新仓库（让 AI 理解你的项目结构）
-扫描这个仓库并生成上下文文件
 
-# 开发一段时间后刷新自动识别区块和规范索引
-刷新这个仓库的项目上下文
+完整的阶段、证据和授权边界见 [端到端工作流](docs/WORKFLOW.md)。
 
-# 整理项目文档（保留已有 doc/ 或 docs/ 根目录）
-审计并整理这个仓库的文档结构、导航和 SSOT
+## 30 秒开始
 
-# 更新文档（只写入代码/验证已证明的事实）
-按本次改动同步仓库文档中的命令、路径和事实
+安装后，在 AI 助手中直接描述目标：
 
-# 盘点当前已支持的功能（已有同类功能说明文档时复用）
-盘点这个仓库当前已支持的功能，必要时按支持状态、适用范围、交付版本和验证方式建立或刷新 Capability Catalog
+```text
+# 首次接入
+扫描这个仓库并生成项目上下文，再确认验证命令和 Git 规范
 
-# 审计自己拥有或明确授权的大型存量代码库（默认生成中文文档，不修改业务代码）
-基于项目 Context 初始化 codebase audit，并按模块边界分阶段执行；若文档中心尚未链接 audit/Report.md，先补齐该导航
+# 新功能交付
+根据需求拆分 Dashboard 和 TaskDetails，逐项开发、验证并提交
 
-# 需要全英文审计产物时必须显式说明
-基于项目 Context 初始化 codebase audit，所有审计文档使用全英文
+# 整理或同步文档
+整理文档结构和 SSOT，只同步代码或成功验证已经证明的事实
 
-# 只分析，不改代码
-分析这个 bug：登录后点击设置崩溃，使用 analyze 模式
+# 审计大型存量代码库
+基于项目 Context 初始化 codebase audit，并按模块边界分阶段执行
 
-# 修 bug，但不提交
+# 修复已知问题
 自动修这个 bug：登录后点击设置崩溃，使用 fix 模式
 
-# AI 会按流程走：
-#   1. 固定工作区快照 → 2. 确认复现 → 3. 用探测证伪根因
-#   → 4. 回归先失败 → 5. 最小修复 → 6. 回归通过
-#   → 7. 按当前 diff 审查并最终验证
-
-# 提交代码（自动检查分支命名、拦截调试残留）
-帮我提交当前修改
-
-# 显式复盘（分类为 FACT / POLICY / LESSON，稳定结论再写入正式规范）
+# 显式复盘
 retro：总结这次任务，并整理可纳入正式规范的候选结论
 ```
 
-AI 会在每一步输出进度和证据，而不是闷头改完告诉你"修好了"。
-
----
+需要 commit、push、PR、tag、release 或 deploy 时必须分别明确授权。
 
 ## 安装
 
 支持 **Cursor、Codex CLI、OpenCode、Antigravity**。
 
-**macOS / Linux：**
+macOS / Linux：
 
 ```bash
-./install.sh --ide cursor       # 安装到 Cursor
-./install.sh --ide codex        # 安装到 Codex CLI
-./install.sh --ide opencode     # 安装到 OpenCode
-./install.sh --ide antigravity  # 安装到 Antigravity
+./install.sh --ide codex
 ```
 
-**Windows：**
+Windows：
 
 ```powershell
-.\install.bat --ide cursor
 .\install.bat --ide codex
-.\install.bat --ide opencode
-.\install.bat --ide antigravity
 ```
 
-**其他用法：**
+将 `codex` 替换为 `cursor`、`opencode` 或 `antigravity` 即可安装到其他宿主。还可以只安装一个 Skill 或导出便携包：
 
 ```bash
-./install.sh --target /custom/path    # 安装到自定义目录
-./install.sh --export dist            # 导出便携目录 dist/bundle/
-./install.sh --ide cursor --skill dev-harness-context   # 只装一个 skill
+./install.sh --ide codex --skill dev-harness-context
+./install.sh --target /custom/path
+./install.sh --export dist
 ```
 
-版本 zip 由维护者运行 `python release.py` 生成。
-
----
+维护者使用 `python release.py` 生成版本 zip。
 
 ## Skills 一览（8 个可发现 Skill）
 
 ### Project Contract / Governance
 
-| Skill | 干什么用 |
-|-------|---------|
-| `dev-harness-context` | 初始化上下文文件，并安全刷新自动识别区块与项目规范索引 |
-| `dev-harness-docs` | 识别现有 `doc/` 或 `docs/` 根目录，整理索引、渐进式导航、SSOT、Capability Catalog、归档和链接，并把已验证事实同步进现有文档 |
-| `dev-harness-planning` | 根据需求文档、原型或参考格式，在现有文档根目录生成 `plan/Dashboard.md` 和 `TaskDetails.md` |
-| `dev-harness-commands` | 把项目中的真实命令统一映射为 `build / test / quick / bugfix / full` 五个语义入口 |
-| `dev-harness-git-workflow` | 优先遵循项目 Git 规范；缺失时确认并初始化提交、tag、changelog 和发布约定 |
-| `dev-harness-retro` | 仅在用户显式触发时复盘，分类 FACT / POLICY / LESSON，并输出待纳入正式规范的候选结论 |
+| Skill | 职责 |
+|---|---|
+| `dev-harness-context` | 初始化或刷新项目上下文和规范索引 |
+| `dev-harness-docs` | 整理文档根、导航、SSOT、Capability Catalog、归档和已验证事实 |
+| `dev-harness-planning` | 从需求或原型生成、刷新 Dashboard 与 TaskDetails |
+| `dev-harness-commands` | 将真实命令映射为 `build / test / quick / bugfix / full` |
+| `dev-harness-git-workflow` | 遵循或初始化 Git、提交、tag、changelog 和发布约定 |
+| `dev-harness-retro` | 仅在显式触发时沉淀 FACT / POLICY / LESSON 候选结论 |
 
 ### Evidence-driven Long-running Workflows
 
-| Skill | 干什么用 |
-|-------|---------|
-| `dev-harness-auto-fix` | 可选择 analyze / fix / commit / unattended；用运行时约束复现、可证伪的根因假设、RED/GREEN、diff 绑定审查与精确提交 |
-| `dev-harness-codebase-audit` | 对用户拥有或明确授权的代码库执行工程质量、行为正确性和跨模块一致性审计，动态分区并跨会话持久化任务、证据与 Finding，在仓库漂移时 fail-closed |
+| Skill | 职责 |
+|---|---|
+| `dev-harness-auto-fix` | 以复现、根因假设、RED/GREEN、diff 审查和最终验证修复已知问题 |
+| `dev-harness-codebase-audit` | 分阶段审计大型代码库，持久化证据并执行跨模块复核 |
 
-> 每个 skill 的模板、references 和脚本跟随该 skill 自己安装，保持资源自包含。
+每个 Skill 的模板、references 和脚本均自包含。跨 Skill 自动编排由独立的 [`dev-harness-dsh`](https://github.com/Dev-Wiki/dev-harness-dsh) 项目规划；本仓库保持纯 Skills Bundle。
 
-> 复现 / 定位 / 回归 / 验证四阶段已内联为 auto-fix 的参考文件 `references/bugfix-flow/*.md`，不再作为独立 skill 安装。
+## 权威边界
 
-### Auto-fix 的 dirty worktree 策略
+| 变化中的事实 | 权威维护位置 |
+|---|---|
+| 项目上下文与根文档托管区块 | Context |
+| 已确认验证命令 | `HARNESS.md` |
+| 文档根、导航、SSOT 与归档 | Docs |
+| 当前已支持功能 | Capability Catalog 或已有同类文档 |
+| 活动任务状态与实施细节 | `<docs-root>/plan/` |
+| Git、tag、release 与 changelog | 项目 Git 规范与 `CHANGELOG.md` |
+| Audit Finding 与证据 | `<docs-root>/audit/` 和对应 Git 私有状态 |
 
-开始任务时，auto-fix 会把已有修改记录进 `WorkspaceSnapshot`。这些修改可以原样保留，不要求 stash 或清空；AI 只维护本轮对话产生的 `AutoFixChangedFiles`。
+计划不代表当前已经支持，提交历史也不替代功能清单；其他文档应链接到权威来源，而不是复制状态。
 
-- 已有脏文件不被修改、暂存或提交。
-- 如果目标文件在任务开始时已经脏，流程停止，由用户决定如何处理或合并已有修改。
-- commit 模式只逐文件暂存本轮集合；暂存区含其他内容时报告冲突，不替用户取消暂存。
-- HEAD、分支、已有修改或未声明文件发生漂移时停止，避免把别的工作误算成本轮结果。
+## 文档入口
 
-`auto-fix/runtime.py` 只负责快照、状态机和 diff 证据，不是替代 AI Agent 的一键修复器。
-
-### Codebase Audit 的边界
-
-Codebase Audit 面向用户拥有或明确授权的代码仓库，回答“仓库中还有哪些未知工程问题”。它聚焦工程质量、行为正确性和跨模块一致性，先按 subsystem、runtime/platform boundary、shared core、native bridge、数据与外部集成动态分区，再沿调用链和数据流渐进读取。它不是 penetration testing 或 offensive security workflow，不内置巨型语言 checklist，也不修改业务源码。
-
-- 审计状态位于 `.git/dev-harness/codebase-audit/<run-id>/state.json`；
-- 版本化产物位于已有 `<docs-root>/audit/`，包含 Dashboard、稳定 Finding Registry、任务、结果和总报告；
-- 默认生成符合中文阅读习惯的审计文档；只有用户显式要求全英文时才切换为英文，内部状态枚举不随显示语言变化；
-- Confirmed Finding 必须有代码或运行证据、反证检查与 Snapshot；
-- Candidate 默认独立保留；只有根因、职责归属、修复边界和单一修复效果均一致时才合并；
-- 运行时验证围绕项目声明行为，优先使用本地、确定性、最小复现；
-- HEAD、分支、Context 或业务源码漂移后，旧证据会被标记 stale；
-- Audit 固定入口为 `<docs-root>/audit/Report.md`；文档中心缺少入口时显式交给 Docs Refresh，Audit 本身不越界修改 hub；
-- 缺陷交给 Auto Fix，架构/技术债交给 Planning，验证命令或治理缺口交给相应维护文档。
-
----
-
-## 通用项目识别与增强 Profile
-
-`dev-harness-context` 默认由 AI 基于仓库证据识别语言、框架、架构和验证入口，不要求先为新技术栈增加扫描器分支。确定性代码负责证据收集、结论校验，并按固定 Markdown 标题安全更新章节，不向文档注入管理标记。
-
-当前内置以下增强 Profile，用于离线规则回退和专业风险补充：
-
-| 类型 | 覆盖 |
-|------|------|
-| **WPF** | C# + 可选 C++/CLI native bridge |
-| **Harmony** | ArkTS / HarmonyOS |
-| **Win32** | C++ / MSBuild |
-| **Qt** | Windows + Linux，含 Shared C++ Core 检测 |
-| **Go** | 后端服务，识别 CGO 边界与核心并发逻辑 |
-| **Flutter** | 跨端客户端，识别 Platform Channels 与原生代码边界 |
-| **Node.js** | 前端工具链与插件（识别跨 Workspace 与生命周期钩子） |
-| **FastAPI** | Python 后端服务，识别 ASGI 入口、router/service 调用链与 pytest 验证命令 |
-
-其他项目类型通过 `evidence → AI semantic analysis → validator → safe writer` 主路径识别。只有证据不足的单项标记为 `Unknown`；低置信度结论进入“需人工确认”。
-
-```bash
-dev-harness-context evidence /path/to/repo
-dev-harness-context scan /path/to/repo --analysis /tmp/context-analysis.json
-dev-harness-context refresh /path/to/repo --analysis /tmp/context-analysis.json
-```
-
-每个 AI 结论都必须引用仓库内证据并绑定扫描快照指纹；无证据命令、越界路径、无效行号或仓库漂移会在写入前被拒绝。证据明细保留在分析 JSON 中，不复制到 AGENTS/HARNESS；README 的核心模块优先采用 AI 基于源码给出的真实职责。
-
-安装、构建、运行和验证命令按真实语义区分。依赖安装不会冒充 build；Python 服务没有独立编译或打包步骤时，build 明确标记为 `N/A`。
-
-### 项目规范如何组织
-
-`AGENTS.md` 保持为轻量索引：构建与验证指向 `HARNESS.md`，Git、代码风格、发布和 changelog 指向各自的专业文档。详细规则不全部塞入 AGENTS。
-
-| 资源 / 事实 | 维护位置 | 其他 Skill 的行为 |
-|-------------|------------|-------------------|
-| Canonical Context 与根文档固定章节 | Context | 只读取，不复制另一套 Context |
-| HARNESS 自动候选 / 人工确认命令 | Context / Commands | Auto Fix 和普通 Agent 只执行已确认入口 |
-| docs root、索引、SSOT、归档 | Docs | Planning / Audit 复用同一个 root |
-| 当前已支持功能与统计口径 | 已有功能范围说明文档 / Capability Catalog | Docs 维护权威文档与入口；Planning / CHANGELOG 不复制当前状态 |
-| `<docs-root>/plan/*` | Planning | Docs 只做导航和归档治理 |
-| Git / tag / release / changelog policy | Git Workflow | 其他 Skill 只读取，相关操作需单独授权 |
-| `.git/dev-harness/auto-fix/*` | Auto Fix | Git 私有状态 |
-| `<docs-root>/audit/*` 与对应 Git 私有状态 | Codebase Audit | Docs 只做导航；后续处理通过 handoff |
-| `LESSONS.md` 与 Promotion Candidates | Retro | 不自动升级为正式 Fact / Policy |
-
-- `dev-harness-context` 只识别这些文档并在 `refresh` 时更新索引，不自动创建 Git、代码或发布规范，也不自动创建 `CHANGELOG.md`。
-- `dev-harness-docs` 维护项目已有 `doc/` 或 `docs/` 的信息架构、入口、SSOT 和归档规则；功能信息分散或无法统计时按需建立 Capability Catalog，已有承担相同职责的文档则复用，不改名或创建第二套文档根目录。
-- `dev-harness-planning` 复用同一个文档根目录，将 Dashboard 作为索引层、TaskDetails 作为执行与专题层。
-- `dev-harness-codebase-audit` 独占 `<docs-root>/audit/` 的审计内容；Docs 只负责导航、链接和归档治理。缺少外部入口时 Audit 记录 `docs-refresh-required`，不自行修改文档中心。
-- `dev-harness-git-workflow` 先读取项目或团队已有规范；没有规范时才分析历史、展示候选，并在用户确认后初始化默认规范。
-- `dev-harness-retro` 只在显式触发时维护复盘历史；Lesson 默认不是硬规则，稳定的 Fact/Policy 写入相应正式文档。
-- 代码规范文档只做识别，不根据 lint/formatter 配置自动生成。
-- `CHANGELOG.md` 在用户确认初始化或开始首次发布时创建；默认发布分类为 Breaking Changes、Added、Changed、Deprecated、Fixed、Removed、Security，空分类不进入 tag message 或 release notes。
-
----
-
-## 文档导航
-
-- [文档中心](docs/README.md)：按使用、维护、范围与设计记录组织全部项目文档。
-- [端到端工作流](docs/WORKFLOW.md)：组合 Audit、Auto Fix、Git、完整验证、QA 与最终复核的推荐顺序。
-- [产品功能清单](docs/CAPABILITIES.md)：当前已支持功能、适用范围、版本归属、验证方式和证据的唯一事实源。
-- [V1 / VNext 与 V2 边界](docs/V1_V2_BOUNDARIES.md)：版本边界、非目标和封板标准的唯一事实源。
-- [VNext 优化与 Codebase Audit 设计方案](docs/dev-harness%20VNext%20%E4%BC%98%E5%8C%96%E4%B8%8E%20Codebase%20Audit%20%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md)：v1.8.0 的设计依据与取舍记录，不作为后续排期表。
-- [V2 Backlog](docs/V2_BACKLOG.md)：超出当前边界的候选功能与启动条件。
-
-功能清单说明“现在支持什么”，边界文档说明“当前版本承诺到哪里”，设计记录解释“为什么这样设计”，Backlog 记录“未来可能做什么”；四者不重复维护状态。
-
----
+- [文档中心](docs/README.md)：按使用、维护、范围与设计记录组织文档。
+- [端到端工作流](docs/WORKFLOW.md)：新功能交付与代码审计 / 修复的推荐顺序。
+- [产品功能清单](docs/CAPABILITIES.md)：当前已支持功能及其验证证据。
+- [客户端项目接入](docs/CLIENT_PROJECT_ONBOARDING.md)：初始化项目契约。
+- [测试说明](docs/TESTING.md)：本仓库验证入口与证据要求。
+- [Git 工作流](docs/GIT_WORKFLOW.md)：本仓库提交与发布规则。
+- [版本边界](docs/V1_V2_BOUNDARIES.md) 与 [V2 Backlog](docs/V2_BACKLOG.md)：当前承诺和未来候选。
 
 ## 设计边界
 
-**dev-harness 做了什么：**
-- 固定跨 Agent 的 Project Contract 格式、维护职责和交接边界
-- 用 Git 私有状态、工作区快照和 diff hash 把关键边界变成可测试契约
-- 让 bugfix 与大型代码库审计可恢复、可追溯、可验证
-- 让项目上下文、当前已支持功能、深度文档和计划共享清晰入口与 SSOT，避免重复文档根目录
-- 跨平台、跨 IDE，纯 skills bundle，不需要改你的项目工具链
-
-**dev-harness 不做什么：**
-- 不以覆盖完整 SDLC 或堆叠通用 AI Skills 为目标
-- 不重复提供 frontend/backend/database/security/performance 等模型已经具备的通用方法教程
-- 不提供 UI 自动化测试
-- 不做截图驱动验证
-- 不搭建日志/指标/Trace 平台
-- 不替代完整的 Diataxis 内容生成或发布前文档覆盖率审计工具
-- 不是一键修 bug、静态分析或自动 PR 的黑盒工具
-
-详见 [V1 / VNext 与 V2 边界文档](docs/V1_V2_BOUNDARIES.md)。
-
----
+dev-harness 不以覆盖完整 SDLC 或堆叠通用开发教程为目标，也不替代项目工具链、UI 自动化平台、可观测平台或发布系统。它负责让上下文、计划、验证、文档、Git 边界和长期证据在不同 Agent 之间保持一致。
 
 ## License
 
