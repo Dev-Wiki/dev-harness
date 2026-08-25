@@ -4,12 +4,12 @@
 
 ## 汇总
 
-仓库 [`VERSION`](../VERSION) 与 [`CHANGELOG.md`](../CHANGELOG.md) 最新版本条目均为 `v1.11.0`。每次修改清单后必须根据下表重新统计；“待确认”不计入总数。
+仓库 [`VERSION`](../VERSION) 与 [`CHANGELOG.md`](../CHANGELOG.md) 最新版本条目均为 `v1.11.1`。每次修改清单后必须根据下表重新统计；“待确认”不计入总数。
 
 | 版本范围 | 已支持 | 部分支持 | 试验性 | 已弃用 |
 |---|---:|---:|---:|---:|
-| 当前开发版本（v1.11.0） | 31 | 0 | 0 | 0 |
-| 最新发布版本（v1.11.0） | 31 | 0 | 0 | 0 |
+| 当前开发版本（v1.11.1） | 31 | 0 | 0 | 0 |
+| 最新发布版本（v1.11.1） | 31 | 0 | 0 | 0 |
 
 ## 当前已支持功能
 
@@ -44,9 +44,9 @@
 
 | ID | 功能说明 | 支持状态 | 适用范围 | 版本归属 | 验证方式 | 证据 | 详情 |
 |---|---|---|---|---|---|---|---|
-| PLN-001 | 从需求、PRD、原型或参考格式生成同一文档根下的 Dashboard、活跃索引和单任务详情 | 已支持 | 项目、版本或里程碑级规划 | 已发布：v1.11.0 | 契约测试 + 资源安装测试 | `tests/test_docs_contract.py`；`tests/test_install.py` | [Planning 契约](../planning/SKILL.md) |
-| PLN-002 | 刷新计划时按 Task ID 合并，保留有效 ID、本地约定和有证据的完成状态 | 已支持 | 已有计划，包括单体 TaskDetails 迁移 | 已发布：v1.11.0 | 契约测试 | `tests/test_vnext_contract.py`；`planning/SKILL.md` | [Planning 契约](../planning/SKILL.md) |
-| PLN-003 | 活跃任务按 Task ID 分片，超过容量护栏时迁移单体详情；完成任务进入里程碑归档且退出默认读取路径 | 已支持 | 长期演进或大型计划 | 已发布：v1.11.0 | 契约测试 + 模板安装测试 | `tests/test_planning_contract.py`；`tests/test_install.py` | [Planning 契约](../planning/SKILL.md) |
+| PLN-001 | 从需求、PRD、原型或参考格式生成同一文档根下唯一活跃 Dashboard 和单任务详情 | 已支持 | 项目、版本或里程碑级规划 | 已发布：v1.11.1 | 契约测试 + 资源安装测试 | `tests/test_docs_contract.py`；`tests/test_install.py` | [Planning 契约](../planning/SKILL.md) |
+| PLN-002 | 刷新计划时按 Task ID 合并，保留有效 ID、本地约定和有证据的完成状态，并通过临时快照识别读取漂移 | 已支持 | 已有计划，包括单体 TaskDetails 迁移 | 已发布：v1.11.1 | 契约测试 | `tests/test_planning_contract.py`；`planning/SKILL.md` | [Planning 契约](../planning/SKILL.md) |
+| PLN-003 | 活跃任务按 Task ID 分片，跨任务可变字段只在 Dashboard 维护；完成任务进入里程碑归档并退出默认读取路径 | 已支持 | 长期演进或大型计划 | 已发布：v1.11.1 | 契约测试 + 模板安装测试 | `tests/test_planning_contract.py`；`tests/test_install.py` | [Planning 契约](../planning/SKILL.md) |
 
 ### 验证命令
 

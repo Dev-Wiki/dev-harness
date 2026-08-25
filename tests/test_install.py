@@ -80,6 +80,11 @@ class InstallBundleTests(unittest.TestCase):
                     (skill_root / "references" / reference_name).exists(),
                     reference_name,
                 )
+            compatibility_redirect = (
+                skill_root / "templates" / "TaskDetails.template.md"
+            ).read_text(encoding="utf-8")
+            self.assertIn("[Dashboard.md](Dashboard.md)", compatibility_redirect)
+            self.assertNotIn("tasks/{任务编号}.md", compatibility_redirect)
 
     def test_installed_docs_skill_is_self_contained(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

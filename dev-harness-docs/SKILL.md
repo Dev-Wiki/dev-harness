@@ -209,9 +209,9 @@ For a paired new Audit run, perform the Docs navigation update after read-only A
 Resolve the same `<docs-root>` before invoking or following `dev-harness-planning`:
 
 - Write the active dashboard to `<docs-root>/plan/Dashboard.md`.
-- Keep the compact active-task gateway at `<docs-root>/plan/TaskDetails.md`.
 - Keep authoritative active execution packets under `<docs-root>/plan/tasks/` and completed task snapshots under `<docs-root>/plan/archive/<milestone>/`.
-- Keep Dashboard and TaskDetails as bounded indexes; do not copy archived task bodies or detailed status back into them.
+- Keep Dashboard as the sole bounded active planning gateway; do not copy archived task bodies or implementation detail back into it.
+- Treat an existing `<docs-root>/plan/TaskDetails.md` only as a legacy migration source or a compatibility redirect to Dashboard, never as a second mutable index.
 - Planning owns task lifecycle and archive content. Docs validates placement, navigation, and links without rewriting task state or evidence.
 
 ## Verify

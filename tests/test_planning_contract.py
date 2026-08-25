@@ -16,7 +16,6 @@ class PlanningLifecycleContractTests(unittest.TestCase):
 
         for path in (
             "<docs-root>/plan/Dashboard.md",
-            "<docs-root>/plan/TaskDetails.md",
             "tasks/<Task-ID>.md",
             "archive/<milestone>/README.md",
         ):
@@ -25,25 +24,30 @@ class PlanningLifecycleContractTests(unittest.TestCase):
         self.assertIn("Do not load every completed task body", skill)
         for guardrail in ("1,000 lines", "100 KB", "20 task bodies"):
             self.assertIn(guardrail, skill)
-        self.assertIn("A below-threshold legacy monolith may continue linking", skill)
+        self.assertIn("Do not preserve a second mutable active index", skill)
         self.assertIn("move its detail file to `archive/<milestone>/`", skill)
         self.assertIn("at most five recent completed summaries", skill)
         self.assertIn("These rules bound the active read path", skill)
 
-    def test_entry_templates_link_to_task_files_not_monolithic_anchors(self) -> None:
+    def test_dashboard_is_the_only_active_entry(self) -> None:
         dashboard = self.read("templates/Dashboard.template.md")
-        task_index = self.read("templates/TaskDetails.template.md")
+        compatibility_redirect = self.read("templates/TaskDetails.template.md")
 
-        for template in (dashboard, task_index):
-            self.assertIn("tasks/{任务编号}.md", template)
-            self.assertIsNone(
-                re.search(r"TaskDetails\.md#[^)]+", template),
-                template,
-            )
+        self.assertIn("唯一活跃计划入口", dashboard)
+        self.assertIn("tasks/{任务编号}.md", dashboard)
+        self.assertIsNone(re.search(r"TaskDetails\.md#[^)]+", dashboard), dashboard)
+        self.assertIn("当前工作顺序", dashboard)
+        self.assertIn("共享验证基线", dashboard)
+        self.assertIn("依赖", dashboard)
+        self.assertIn("下一步 / 阻塞", dashboard)
 
         self.assertIn("最多保留五项摘要", dashboard)
         self.assertIn("[{任务编号}]({任务详情路径})", dashboard)
-        self.assertIn("不在本文件追加逐次命令输出", task_index)
+        self.assertIn("不在本文件追加逐次命令输出", dashboard)
+
+        self.assertIn("[Dashboard.md](Dashboard.md)", compatibility_redirect)
+        for duplicated_content in ("tasks/{任务编号}.md", "📋 规划中", "## 共享验证基线", "## 当前工作顺序"):
+            self.assertNotIn(duplicated_content, compatibility_redirect)
 
     def test_task_and_archive_templates_have_distinct_ownership(self) -> None:
         task = self.read("templates/Task.template.md")
@@ -65,7 +69,7 @@ class PlanningLifecycleContractTests(unittest.TestCase):
     def test_generated_planning_text_defaults_to_natural_chinese(self) -> None:
         skill = self.read("SKILL.md")
         task = self.read("templates/Task.template.md")
-        task_index = self.read("templates/TaskDetails.template.md")
+        compatibility_redirect = self.read("templates/TaskDetails.template.md")
         archive = self.read("templates/ArchiveIndex.template.md")
 
         for rule in (
@@ -78,9 +82,26 @@ class PlanningLifecycleContractTests(unittest.TestCase):
 
         self.assertTrue(task.startswith("# 任务 {任务编号}：{任务名称}"))
         self.assertIn("- 新建：`{路径}`", task)
-        self.assertIn("| 任务编号 |", task_index)
-        self.assertIn("负责人 / 解除条件", task_index)
+        self.assertIn("唯一权威来源", task)
+        self.assertIn("活跃任务入口已合并", compatibility_redirect)
         self.assertIn("| 任务编号 |", archive)
+
+    def test_mutable_state_has_one_authority_and_drift_gate(self) -> None:
+        skill = self.read("SKILL.md")
+        dashboard = self.read("templates/Dashboard.template.md")
+        task = self.read("templates/Task.template.md")
+
+        for field in ("status", "priority", "dependency", "work order", "blocker"):
+            self.assertIn(field, skill)
+        for command in ("git rev-parse HEAD", "sha256sum", "git status --short"):
+            self.assertIn(command, skill)
+        self.assertIn("Planning Snapshot and Drift Gate", skill)
+        self.assertIn("Do not generate `TaskDetails.md`", skill)
+        self.assertIn("唯一活跃计划入口", dashboard)
+
+        for mutable_label in ("**优先级**", "**状态**", "**依赖**", "**阻塞**"):
+            self.assertNotIn(mutable_label, task)
+        self.assertIn("以 [Dashboard.md](../Dashboard.md) 为唯一权威来源", task)
 
     def test_legacy_migration_contract_is_lossless_and_link_aware(self) -> None:
         migration = self.read("references/legacy-migration.md")
@@ -106,6 +127,9 @@ class PlanningLifecycleContractTests(unittest.TestCase):
         self.assertIn("只从快照恢复移动映射涉及的路径", migration)
         self.assertIn("源任务数量等于活跃任务文件数", migration)
         self.assertIn("不得修改正式计划", migration)
+        self.assertIn("Dashboard 是唯一活跃计划入口", migration)
+        self.assertIn("只包含指向 Dashboard 的兼容跳转", migration)
+        self.assertIn("临时规划快照", migration)
 
 
 if __name__ == "__main__":

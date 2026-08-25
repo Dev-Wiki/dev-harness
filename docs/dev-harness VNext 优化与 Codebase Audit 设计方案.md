@@ -206,7 +206,7 @@ Project Contract
 优化要求：
 
 1. 主要用于项目级、版本级、里程碑级规划，不要因为普通单文件修改自动触发。
-2. 保持 `Dashboard.md` + `TaskDetails.md` 固定入口；完整执行详情按 Task ID 分片，完成后进入里程碑归档，避免固定入口随历史无界增长。
+2. 当时采用 `Dashboard.md` + `TaskDetails.md` 固定入口；后续实践发现双入口会造成可变状态读取漂移，现行 Planning 契约已改为 Dashboard 唯一活跃入口，完整执行详情仍按 Task ID 分片，完成后进入里程碑归档。
 3. 保持 existing `doc/` / `docs/` 根目录优先。
 4. 支持 refresh / merge：已有 Task ID 和已完成状态尽量稳定，不要每次重新生成导致 Git diff 巨大。
 5. 已完成任务不能仅凭 AI 推测改成完成；应基于实现 / 验证证据或用户明确状态。

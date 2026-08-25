@@ -26,14 +26,14 @@ class NaturalChineseContractTests(unittest.TestCase):
 
     def test_planning_templates_use_chinese_reader_labels(self) -> None:
         task = (ROOT / "planning/templates/Task.template.md").read_text(encoding="utf-8")
-        task_index = (ROOT / "planning/templates/TaskDetails.template.md").read_text(encoding="utf-8")
+        compatibility_redirect = (ROOT / "planning/templates/TaskDetails.template.md").read_text(encoding="utf-8")
         archive = (ROOT / "planning/templates/ArchiveIndex.template.md").read_text(encoding="utf-8")
 
         self.assertTrue(task.startswith("# 任务 {任务编号}：{任务名称}"))
         for old_label in ("Create:", "Modify:", "Test:"):
             self.assertNotIn(old_label, task)
-        self.assertIn("| 任务编号 |", task_index)
-        self.assertIn("负责人 / 解除条件", task_index)
+        self.assertIn("活跃任务入口已合并", compatibility_redirect)
+        self.assertIn("[Dashboard.md](Dashboard.md)", compatibility_redirect)
         self.assertIn("| 任务编号 |", archive)
 
     def test_git_default_keeps_conventional_type_and_uses_chinese_description(self) -> None:

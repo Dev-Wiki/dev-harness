@@ -84,7 +84,7 @@ auto fix
 |-------|------|
 | `dev-harness-context` | 初始化上下文文件，并按固定 Markdown 标题安全刷新自动识别章节 |
 | `dev-harness-docs` | 整理文档根目录、索引、渐进式导航、SSOT、Capability Catalog、归档和链接，并同步已验证事实 |
-| `dev-harness-planning` | 在项目现有文档根目录生成有界 Dashboard、活跃任务索引、单任务详情与里程碑归档 |
+| `dev-harness-planning` | 在项目现有文档根目录生成唯一活跃 Dashboard、单任务详情与里程碑归档，并检查计划漂移 |
 | `dev-harness-commands` | 补齐 build / test / quick / bugfix / full 的真实命令映射 |
 | `dev-harness-auto-fix` | 执行内置的复现、定位、修复、审查与验证流程 |
 | `dev-harness-codebase-audit` | 对用户拥有或明确授权的代码库执行工程质量、行为正确性和跨模块一致性审计，持久化证据与 Finding；默认生成中文文档，显式要求全英文时才切换语言 |

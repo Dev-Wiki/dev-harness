@@ -1,6 +1,6 @@
 ---
 name: dev-harness-planning
-description: Create or refresh bounded project, release, or milestone plans under an existing doc/ or docs/ root, using a concise dashboard, an active-task index, task-scoped detail files, and completed-task archives.
+description: Create or refresh bounded project, release, or milestone plans under an existing doc/ or docs/ root, using one authoritative active Dashboard, task-scoped detail files, completed-task archives, and drift checks.
 ---
 
 # dev-harness-planning
@@ -12,7 +12,8 @@ Maintain reusable project plans without forcing an AI agent to load the full tas
 Use this skill when asked to:
 
 - create or refresh `<docs-root>/plan/Dashboard.md`
-- create or refresh `<docs-root>/plan/TaskDetails.md` or task-scoped detail files
+- create or refresh task-scoped detail files under `<docs-root>/plan/tasks/`
+- merge duplicate Dashboard / TaskDetails active indexes into one authoritative Dashboard
 - turn requirements, PRDs, prototypes, screenshots, or rough notes into a project, release, or milestone backlog
 - split an oversized planning document or archive completed planning work
 - reuse another project's planning format without copying its business content
@@ -36,7 +37,7 @@ test ! -d "$PLAN_ROOT" || rg -n '^#{2,4} .*Task|^\|.*(📋|🚧|✅)' "$PLAN_ROO
 
 Missing files are acceptable during initialization. Do not fail the whole inventory because one file does not exist.
 
-Read `Dashboard.md`, the active index in `TaskDetails.md`, and only the current or affected task files. Search archive indexes by Task ID before opening archived detail. Do not load every completed task body merely to select, start, or refresh one active task. A legacy monolith migration is the exception: read [references/legacy-migration.md](references/legacy-migration.md) and process every source task body in bounded sections so the migration is lossless without loading the whole history at once.
+Read `Dashboard.md` as the sole active index, then read only the current or affected task files. Do not read `TaskDetails.md` as a second active source; when present after migration, it is either a legacy monolith that still needs migration or a compatibility redirect to Dashboard. Search archive indexes by Task ID before opening archived detail. Do not load every completed task body merely to select, start, or refresh one active task. A legacy monolith migration is the exception: read [references/legacy-migration.md](references/legacy-migration.md) and process every source task body in bounded sections so the migration is lossless without loading the whole history at once.
 
 If a source is missing, record the gap instead of inventing product details, protocols, APIs, credentials, devices, or compliance requirements.
 
@@ -65,7 +66,6 @@ Default planning layout:
 ```text
 <docs-root>/plan/
 ├── Dashboard.md
-├── TaskDetails.md
 ├── tasks/
 │   └── <Task-ID>.md
 └── archive/
@@ -74,42 +74,62 @@ Default planning layout:
         └── <Task-ID>.md
 ```
 
-- `Dashboard.md` is the current-state index: milestone status, priority, coverage, blockers, acceptance scope, and links. It must not repeat task implementation detail.
-- `TaskDetails.md` is a compact active-task gateway: work order, dependencies, shared verification baseline, and links to active task files. It must not contain full task bodies or an append-only execution log.
-- `tasks/<Task-ID>.md` is the authoritative execution packet for one active task: background, goal, scope, files, steps, acceptance, verification evidence, and risks.
+- `Dashboard.md` is the only active planning authority: milestone status, work order, Task ID, priority, status, dependency, blocker, shared verification baseline, coverage, recent completions, and links. It must not repeat task implementation detail.
+- `tasks/<Task-ID>.md` is the authoritative execution packet for one active task: background, goal, scope, files, steps, acceptance, verification evidence, and risks. It must not duplicate mutable cross-task fields such as status, priority, dependency, work order, or blocker.
 - `archive/<milestone>/README.md` indexes completed tasks for one closed or active milestone. Archived task files preserve useful final rationale and evidence without remaining in the active read path.
+- An existing `TaskDetails.md` may remain only as a short compatibility redirect to `Dashboard.md`. It must not contain task rows, status, priority, dependency, work order, blockers, validation baselines, or task bodies.
+
+This ownership prevents read drift: mutable cross-task state has one source, task execution detail has one source, and closed work has one immutable source. Do not copy a field merely to make a file self-contained; link to its authority instead.
 
 Use the bundled templates:
 
 - `templates/Dashboard.template.md`
-- `templates/TaskDetails.template.md`
 - `templates/Task.template.md`
 - `templates/ArchiveIndex.template.md`
+- `templates/TaskDetails.template.md` only when an existing inbound link requires a compatibility redirect
 
 Honor an existing equivalent partitioned convention instead of renaming it to match these defaults.
 
 ## Workflow
 
 1. Resolve `<docs-root>` and inventory the existing plan without loading all historical detail.
-2. Read requirements, prototypes, the current indexes, and only affected task files.
+2. Read requirements, prototypes, Dashboard, and only affected task files. If a previous run selected a task, revalidate its planning snapshot before trusting that selection.
 3. Extract the product goal, actors, workflows, constraints, integration points, and acceptance criteria.
 4. Split work into prerequisite, P0 core, P1 supporting, and P2 future tasks using stable project-local IDs.
-5. For a new plan, generate the two entry files and one `tasks/<Task-ID>.md` file per active task from the bundled templates.
-6. For an existing partitioned plan, merge by Task ID: preserve existing task IDs, unchanged local labels, priorities, links, and evidence-backed completed states; update only affected indexes and task files.
-7. A legacy monolithic `TaskDetails.md` may retain its existing anchor links while it remains below every default guardrail: 1,000 lines, 100 KB, and 20 task bodies. Before any content write after a guardrail is exceeded, or whenever the user requests splitting or archival, read and follow [references/legacy-migration.md](references/legacy-migration.md). A stricter project-owned limit wins.
+5. For a new plan, generate one `Dashboard.md` entry file and one `tasks/<Task-ID>.md` file per active task from the bundled templates. Do not generate `TaskDetails.md`.
+6. For an existing partitioned plan, merge by Task ID: preserve existing task IDs, unchanged local labels, priorities, links, and evidence-backed completed states; update only Dashboard and affected task files. Move mutable cross-task fields out of task files instead of keeping synchronized copies.
+7. An untouched legacy monolithic `TaskDetails.md` may retain its existing anchors temporarily while it remains below every default guardrail: 1,000 lines, 100 KB, and 20 task bodies. Before the next refresh that would change overlapping active state, before any content write after a guardrail is exceeded, or whenever the user requests splitting or archival, read and follow [references/legacy-migration.md](references/legacy-migration.md). A stricter project-owned limit wins.
 8. Build a move map before migration or archival. Move each complete task body to its own stable path, update repository-wide inbound links and every relative link inside the moved body, and avoid copying the same body into both active and archived locations.
-9. In a partitioned plan, check every active Dashboard row and `TaskDetails.md` entry links to one authoritative active task file. Check every archived summary links to one archived task snapshot. A below-threshold legacy monolith may continue linking to its existing `TaskDetails.md` anchors.
-10. Report reused, added, moved, archived, and status-changed Task IDs plus verification evidence.
+9. In a partitioned plan, check every active Dashboard row links to one authoritative active task file and every archived summary links to one archived task snapshot. Do not preserve a second mutable active index after migration.
+10. If repository-owned links still target the non-anchor `TaskDetails.md`, either rewrite them to Dashboard or keep the compatibility redirect. Never keep duplicate active rows for compatibility.
+11. Report reused, added, moved, archived, status-changed, and drifted Task IDs plus verification evidence.
+
+## Planning Snapshot and Drift Gate
+
+Before selecting or resuming an active task, record an ephemeral planning snapshot; do not write it into project documents:
+
+```bash
+git rev-parse HEAD
+sha256sum "$PLAN_ROOT/Dashboard.md" "$PLAN_ROOT/tasks/<Task-ID>.md"
+git status --short
+```
+
+The snapshot binds `HEAD`, Dashboard hash, selected Task ID and path, task-file hash, and pre-existing worktree changes. Before trusting a previous selection, changing planning state, archiving, or reporting completion, recompute it.
+
+- If HEAD, Dashboard, selected task path, or pre-existing content changed outside the current work, stop and reload Dashboard before continuing.
+- If the selected task is no longer active, its link changed, or another file now claims the same active Task ID, stop and reconcile ownership.
+- Changes made by the current work are expected only inside its declared file set. An undeclared Dashboard or task-file change is drift, not a reason to overwrite the newer state.
+- Apply a lifecycle transition as one reviewed change: update final task evidence, move the task to its archive, update Dashboard, update inbound links, then validate the whole set. Do not leave intermediate duplicate authorities.
 
 ## Task Lifecycle
 
-- `📋 规划中`, `🚧 开发中`, and `📋 远期` tasks stay in `tasks/` and the active indexes.
+- `📋 规划中`, `🚧 开发中`, and `📋 远期` tasks stay in `tasks/` and Dashboard.
 - Never mark a task completed from AI inference alone. Require implementation and verification evidence or an explicit user status.
 - When a task becomes `✅ 已完成`, first record its final acceptance result and durable evidence links, then move its detail file to `archive/<milestone>/` in the same planning refresh. Do not treat an ambiguous local state such as “implemented, pending acceptance” as completed without the project's explicit status semantics.
-- Remove the completed task from active work order and full-detail indexes. Dashboard may keep at most five recent completed summaries; older completions belong only in the milestone archive index.
-- When all milestone tasks are closed, retain only a milestone summary and archive link in the active entry files.
+- Remove the completed task from Dashboard's active work order and task table. Dashboard may keep at most five recent completed summaries; older completions belong only in the milestone archive index.
+- When all milestone tasks are closed, retain only a milestone summary and archive link in Dashboard.
 - Git history carries editing chronology. Do not accumulate repeated progress notes, command transcripts, or superseded implementation drafts in the final task body.
-- If a completed task becomes active again, keep its immutable closure snapshot in the milestone archive and create `tasks/<Task-ID>.md` as the sole active authority. Link the active file to the prior closure and record why it reopened.
+- If a completed task becomes active again, keep its immutable closure snapshot in the milestone archive and create `tasks/<Task-ID>.md` as the sole active execution authority. Link the active file to the prior closure, record why it reopened, and add its mutable state only to Dashboard.
 
 These rules bound the active read path; the archive can still grow when the project chooses to retain historical evidence.
 
@@ -118,6 +138,7 @@ These rules bound the active read path; the archive can still grow when the proj
 - Prefer phase-and-scope IDs such as `V0`, `K1`, `K2`, or the project-local convention.
 - Default priorities are `🔴 P0`, `🟡 P1`, and `🟢 P2`; default statuses are `📋 规划中`, `🚧 开发中`, `✅ 已完成`, and `📋 远期`.
 - Keep one task independently implementable, verifiable, and linkable. Split a task file that itself becomes a broad multi-feature plan.
+- Keep status, priority, dependency, work order, and blockers only in Dashboard. Active task files must link back to Dashboard instead of copying those values.
 - Reference authoritative requirements, code, test output, commits, or audit results instead of duplicating their full contents.
 - Preserve user-confirmed completed states during migration and refresh.
 - A Codebase Audit finding may be proposed as planning input, but do not add it to the roadmap until the user accepts its scope and priority.
@@ -130,11 +151,12 @@ Before claiming completion, adapt and run:
 ```bash
 PLAN_ROOT="<resolved-docs-root>/plan"
 test -f "$PLAN_ROOT/Dashboard.md"
-test -f "$PLAN_ROOT/TaskDetails.md"
-active_plan_paths=("$PLAN_ROOT/Dashboard.md" "$PLAN_ROOT/TaskDetails.md")
+active_plan_paths=("$PLAN_ROOT/Dashboard.md")
 test ! -d "$PLAN_ROOT/tasks" || active_plan_paths+=("$PLAN_ROOT/tasks")
 rg -n 'TBD|TODO|FIXME|待补|占位' "${active_plan_paths[@]}"
-wc -l -c "$PLAN_ROOT/Dashboard.md" "$PLAN_ROOT/TaskDetails.md"
+wc -l -c "$PLAN_ROOT/Dashboard.md"
+test ! -d "$PLAN_ROOT/tasks" || ! rg -n '^\*\*(状态|优先级|依赖|阻塞|执行顺序)\*\*[：:]' "$PLAN_ROOT/tasks"
+test ! -f "$PLAN_ROOT/TaskDetails.md" || rg -n 'Dashboard\.md' "$PLAN_ROOT/TaskDetails.md"
 ```
 
-The placeholder scan should exit 1; report intentional registers instead of rewriting them. For a migrated plan, also search the repository for obsolete `TaskDetails.md#...` inbound links and verify all changed relative links. Confirm that each Task ID has at most one active authoritative detail file; immutable archived closure snapshots are history, not active authorities.
+The placeholder and duplicated-mutable-field scans should exit 1; report intentional registers instead of rewriting them. If `TaskDetails.md` exists as a compatibility redirect, verify it has no task rows, mutable state, validation baseline, or task body. For a migrated plan, also search the repository for obsolete `TaskDetails.md#...` inbound links and verify all changed relative links. Confirm that each active Task ID appears once in Dashboard and has exactly one active task file; immutable archived closure snapshots are history, not active authorities. Recompute the planning snapshot before claiming completion.

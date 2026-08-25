@@ -5,7 +5,7 @@
 
 ## 版本命名
 
-设计方案中的 **VNext** 指从既有 V1 向 v1.8.0 Project Contract 与 Codebase Audit 功能的兼容演进，仍属于本文件定义的 V1 范围；v1.9.0 在同一边界内补充 Capability Catalog 与 Audit 文档入口可达性，v1.9.1 进一步统一中文术语和模板表达，v1.10.0 明确 Engineering Audit 职责、输出语言约定、最小行为验证和 Finding identity gate，v1.11.0 增加有界计划分片、旧版单体计划迁移和全 Skill 自然中文输出契约，均不改变 V2 边界。VNext 不是 V2 的别名。当前功能、版本边界和后续候选分别以 `CAPABILITIES.md`、本文件和 `V2_BACKLOG.md` 为准，设计记录中的实施阶段不作为活动任务清单。
+设计方案中的 **VNext** 指从既有 V1 向 v1.8.0 Project Contract 与 Codebase Audit 功能的兼容演进，仍属于本文件定义的 V1 范围；v1.9.0 在同一边界内补充 Capability Catalog 与 Audit 文档入口可达性，v1.9.1 进一步统一中文术语和模板表达，v1.10.0 明确 Engineering Audit 职责、输出语言约定、最小行为验证和 Finding identity gate，v1.11.0 增加有界计划分片、旧版单体计划迁移和全 Skill 自然中文输出契约，v1.11.1 再将 Dashboard 收敛为唯一活跃计划入口并增加规划漂移门禁，均不改变 V2 边界。VNext 不是 V2 的别名。当前功能、版本边界和后续候选分别以 `CAPABILITIES.md`、本文件和 `V2_BACKLOG.md` 为准，设计记录中的实施阶段不作为活动任务清单。
 
 ## V1 定位
 
@@ -48,7 +48,7 @@ V1 解决的问题：
 - 建立文档中心入口、渐进式导航、SSOT、文档归属和归档规则
 - 当前功能信息分散、支持范围有角色/平台/版本差异或无法可靠统计时，按需建立 Capability Catalog；已有同类功能说明文档时复用
 - Capability Catalog 分别记录支持状态、适用范围、交付版本和验证方式，只统计有稳定 ID 与证据、可独立验证的功能项
-- 在同一文档根目录生成有界 `plan/Dashboard.md`、活跃 `TaskDetails.md` 索引、`tasks/` 单任务详情和里程碑归档
+- 在同一文档根目录生成唯一活跃入口 `plan/Dashboard.md`、`tasks/` 单任务详情和里程碑归档；既有 `TaskDetails.md` 迁移后仅作兼容跳转
 - 在同一文档根目录维护 `audit/` 的任务、结果、Finding Registry 与报告
 - 不内建从代码生成全量 Diataxis 文档或基于分支 diff 的全仓文档陈旧检测
 

@@ -5,7 +5,7 @@
 dev-harness 的资源约定是 **skill 自包含**：
 
 - `context/templates/`：上下文初始化模板
-- `planning/templates/`：计划看板、活跃索引、单任务详情与里程碑归档模板
+- `planning/templates/`：唯一活跃计划看板、单任务详情、里程碑归档与旧路径兼容跳转模板
 - `auto-fix/references/`：自动修复流程参考资料
 - `codebase-audit/templates/` 与 `codebase-audit/references/`：代码库审计产物与按需工作流参考
 

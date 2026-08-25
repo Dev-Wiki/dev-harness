@@ -18,7 +18,7 @@ Project Contract
 ├── Verification：HARNESS.md
 ├── Documentation：现有 doc/ 或 docs/
 ├── Current Capabilities：Capability Catalog 或已有同类文档
-├── Planning：Dashboard + 活跃任务索引 + tasks/ 分片 + milestone archive
+├── Planning：唯一活跃 Dashboard + tasks/ 分片 + milestone archive
 ├── Git Policy：项目自己的 Git / release / changelog 规范
 ├── Retrospective：LESSONS.md
 └── Codebase Audit：<docs-root>/audit/ + Git 私有状态
@@ -46,7 +46,7 @@ Audit → Confirmed Findings → 分类路由 → Auto Fix / Planning / Docs
 扫描这个仓库并生成项目上下文，再确认验证命令和 Git 规范
 
 # 新功能交付
-根据需求生成 Dashboard、活跃任务索引和单任务文件，逐项开发、验证并归档
+根据需求生成唯一活跃 Dashboard 和单任务文件，逐项开发、验证并归档
 
 # 整理或同步文档
 整理文档结构和 SSOT，只同步代码或成功验证已经证明的事实
@@ -97,7 +97,7 @@ Windows：
 |---|---|
 | `dev-harness-context` | 初始化或刷新项目上下文和规范索引 |
 | `dev-harness-docs` | 整理文档根、导航、SSOT、Capability Catalog、归档和已验证事实 |
-| `dev-harness-planning` | 生成有界 Dashboard、活跃任务索引、单任务详情和里程碑归档 |
+| `dev-harness-planning` | 生成单一权威 Dashboard、单任务详情和里程碑归档，并检查计划漂移 |
 | `dev-harness-commands` | 将真实命令映射为 `build / test / quick / bugfix / full` |
 | `dev-harness-git-workflow` | 遵循或初始化 Git、提交、tag、changelog 和发布约定 |
 | `dev-harness-retro` | 仅在显式触发时沉淀 FACT / POLICY / LESSON 候选结论 |
@@ -119,7 +119,7 @@ Windows：
 | 已确认验证命令 | `HARNESS.md` |
 | 文档根、导航、SSOT 与全局归档治理 | Docs；`plan/` 内任务生命周期与归档内容由 Planning 负责 |
 | 当前已支持功能 | Capability Catalog 或已有同类文档 |
-| 活动任务状态与实施细节 | `<docs-root>/plan/Dashboard.md`、`TaskDetails.md` 与 `tasks/` |
+| 活动任务状态与实施细节 | 状态只在 `<docs-root>/plan/Dashboard.md`；实施细节在 `tasks/` |
 | Git、tag、release 与 changelog | 项目 Git 规范与 `CHANGELOG.md` |
 | Audit Finding 与证据 | `<docs-root>/audit/` 和对应 Git 私有状态 |
 

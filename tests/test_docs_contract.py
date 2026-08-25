@@ -175,7 +175,8 @@ class DocsSkillContractTests(unittest.TestCase):
         skill = (ROOT / "planning" / "SKILL.md").read_text(encoding="utf-8")
 
         self.assertIn("<docs-root>/plan/Dashboard.md", skill)
-        self.assertIn("<docs-root>/plan/TaskDetails.md", skill)
+        self.assertIn("one authoritative active Dashboard", skill)
+        self.assertIn("compatibility redirect", skill)
         self.assertIn("If only `doc/` exists, use `doc/`", skill)
         self.assertIn("If both exist and ownership is ambiguous", skill)
         self.assertNotIn("Default output paths:\n\n- `docs/plan/Dashboard.md`", skill)
