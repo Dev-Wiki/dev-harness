@@ -15,6 +15,6 @@
 - ...
 
 ## 使用说明
-- 安装: {步骤或 Unknown}
-- 构建: {步骤或 Unknown}
-- 运行: {步骤或 Unknown}
+- 安装：{步骤或 Unknown}
+- 构建：{步骤或 Unknown}
+- 运行：{步骤或 Unknown}

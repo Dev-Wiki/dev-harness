@@ -24,6 +24,8 @@ CONTEXT_REFERENCE_DIR = CONTEXT_SOURCE_DIR / "references"
 CONTEXT_REFERENCE_FILES = ("platform-enhancements.md",)
 PLANNING_SOURCE_DIR = SCRIPT_DIR / "planning"
 PLANNING_SKILL_SOURCE = SCRIPT_DIR / "planning" / "SKILL.md"
+PLANNING_REFERENCE_DIR = PLANNING_SOURCE_DIR / "references"
+PLANNING_REFERENCE_FILES = ("legacy-migration.md",)
 DOCS_SOURCE_DIR = SCRIPT_DIR / "dev-harness-docs"
 DOCS_SKILL_SOURCE = DOCS_SOURCE_DIR / "SKILL.md"
 INTERNAL_BUGFIX_FLOW_DIR = SCRIPT_DIR / "internal" / "bugfix-flow"
@@ -77,7 +79,9 @@ CONTEXT_TEMPLATE_FILES = [
 ]
 PLANNING_TEMPLATE_DIR = PLANNING_SOURCE_DIR / "templates"
 PLANNING_TEMPLATE_FILES = [
+    "ArchiveIndex.template.md",
     "Dashboard.template.md",
+    "Task.template.md",
     "TaskDetails.template.md",
 ]
 DOCS_REFERENCE_DIR = DOCS_SOURCE_DIR / "references"
@@ -141,6 +145,10 @@ def validate_sources() -> None:
         source = PLANNING_TEMPLATE_DIR / file_name
         if not source.exists():
             raise FileNotFoundError(f"Missing dev-harness-planning template source: {source}")
+    for file_name in PLANNING_REFERENCE_FILES:
+        source = PLANNING_REFERENCE_DIR / file_name
+        if not source.exists():
+            raise FileNotFoundError(f"Missing dev-harness-planning reference source: {source}")
     for file_name in DOCS_REFERENCE_FILES:
         source = DOCS_REFERENCE_DIR / file_name
         if not source.exists():
@@ -376,9 +384,13 @@ def build_dev_harness_commands(_skill_name: str, destination: Path) -> None:
 def build_dev_harness_planning(_skill_name: str, destination: Path) -> None:
     build_skill("dev-harness-planning", destination)
     templates_dir = destination / "templates"
+    references_dir = destination / "references"
     templates_dir.mkdir(parents=True, exist_ok=True)
+    references_dir.mkdir(parents=True, exist_ok=True)
     for file_name in PLANNING_TEMPLATE_FILES:
         shutil.copy2(PLANNING_TEMPLATE_DIR / file_name, templates_dir / file_name)
+    for file_name in PLANNING_REFERENCE_FILES:
+        shutil.copy2(PLANNING_REFERENCE_DIR / file_name, references_dir / file_name)
 
 
 def build_dev_harness_docs(_skill_name: str, destination: Path) -> None:

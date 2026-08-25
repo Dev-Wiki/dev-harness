@@ -7,7 +7,7 @@ description: Use when a user-owned or explicitly authorized repository needs a s
 
 对无法在一次会话中完整载入上下文的存量代码库做渐进式审计。让 AI 负责语义理解，让 `runtime.py` 负责快照、状态、漂移和写入边界；不要把本 Skill 变成语言规则库或静态分析器。
 
-## Scope
+## 审计范围
 
 本 Skill 面向用户拥有或已获准审计的代码仓库，执行工程质量、行为正确性和跨模块一致性审计。主要关注：
 
@@ -28,9 +28,10 @@ description: Use when a user-owned or explicitly authorized repository needs a s
 ## 输出语言
 
 - 把 `output_language` 作为 Audit 运行级文档约定，取值为 `zh-CN` 或 `en`。它不是 `AuditSnapshot` 或 Evidence fingerprint 的组成部分，语言变化本身不得让 Finding 变为 `stale`。
-- 只有用户显式要求“全英文”“English only”或等价表达时才使用 `en`；其他情况默认 `zh-CN`。不得因为源码、Context、README 或技术栈主要使用英文而自动切换。
-- 在 `Dashboard.md` 记录本轮输出语言；恢复运行时沿用已记录值。旧产物未记录语言时，按本规则选择并在下一检查点前统一当前 Audit 文档。用户显式要求中途切换时，也必须统一更新所有当前 Audit 文档，不得只翻译单个 Report。
-- `zh-CN` 产物的标题、表头、说明、摘要和状态显示使用自然中文；保留 Finding/Task ID、P0–P3、内部状态枚举、路径、代码符号、CLI 参数、命令、SHA/fingerprint、原始日志和必要通用技术名。首次说明状态机时给出中文显示名与内部枚举的映射，之后正文优先使用中文。
+- 用户明确要求“全英文”“English only”或等价表达时使用 `en`。否则，中文项目或新建且未指定语言的审计文档默认使用简体中文（`zh-CN`）；不得只因源码或技术栈主要使用英文就自动切换。
+- 刷新既有审计文档时，跟随其主体语言。在 `Dashboard.md` 记录本轮输出语言；恢复运行时沿用已记录值。旧产物未记录语言时，根据当前文档主体语言补记。
+- 只对本次新建或更新的文字应用语言规则，不因局部刷新顺带翻译整份旧文档。用户明确要求转换整套当前审计文档时除外。
+- `zh-CN` 产物的标题、表头、说明、摘要和状态显示使用中国人习惯的自然中文，不生硬逐字翻译；保留 Finding/Task ID、P0–P3、内部状态枚举、路径、代码符号、API/协议/产品名、CLI 参数、命令、SHA/fingerprint、原始日志和必要缩写。首次说明状态机或内部术语时给出中文显示名与内部值的映射，之后正文优先使用中文。
 - `en` 产物把模板中的自然语言完整转换为英文，不残留中文模板说明；必须原样引用的非英文源码或日志可保留，并附英文观察摘要。
 
 内部状态值保持稳定，中文产物按下表显示：
@@ -69,7 +70,7 @@ Task 与运行状态同样只翻译显示层：`pending` 为“待开始”、`i
 1. 确定仓库根、当前分支、HEAD、Git 私有目录和已有 dirty files。
 2. 读取 canonical Context、项目规范索引与 `HARNESS.md`。Context 缺失、证据被截断、与仓库明显不符或无法得到可记录的 Context fingerprint 时，停止并交给 `dev-harness-context` 刷新；不得自行补一套上下文。
 3. 解析唯一 `<docs-root>`：尊重用户指定的既有路径；否则复用已有索引、治理文件、活跃 `plan/` 或 `audit/` 所在根；仅有 `doc/` 或 `docs/` 时使用已有者。二者均为项目所有且归属不明，或二者皆不存在时停止并先交给文档治理流程建立 canonical root；Audit 不自行创建第二套文档体系。
-4. 确定 `output_language`：显式全英文请求使用 `en`，否则使用 `zh-CN`；恢复运行时优先沿用 Dashboard 已记录值。
+4. 确定 `output_language`：显式全英文请求使用 `en`；刷新既有文档时跟随主体语言；其他新建且未指定语言的情况使用 `zh-CN`。恢复运行时优先沿用 Dashboard 已记录值。
 5. 只读检查 `<docs-root>/README.md` 或一个既有 route index 是否链接固定入口 `<docs-root>/audit/Report.md`，将状态记为 `linked` 或 `docs-refresh-required`。缺入口不是 `AUD-*` Finding。
 6. 若用户同时授权 Docs Refresh，在 Audit 只读 preflight 已解析稳定路径后、`runtime.py init` 建立 Snapshot 前，由 `dev-harness-docs` 幂等补入口；Audit 自己不得越界写入。若只授权 Audit，继续运行但必须把精确 handoff 写入 Dashboard、Report 和最终回复。
 7. 校验所有预期输出都位于 `<docs-root>/audit/**`，所有运行状态都位于 Git 私有目录。
@@ -122,7 +123,7 @@ HEAD、分支、preexisting dirty 内容/暂存状态、Context fingerprint 或�
 
 Context 不可用、docs root 冲突、输出越界、运行状态损坏、Evidence 无法绑定快照或 Cross-module 阶段未完成时同样 fail closed。
 
-## Finding 与交接
+## 问题与交接
 
 Finding 必须遵循 `candidate → verification → confirmed/rejected`，并可在仓库演进后变为 `stale`，修复且重新验证后变为 `resolved`。`confirmed` 至少需要代码或运行证据、相关调用链/数据流、反证检查、风险、置信度和 Snapshot；静态搜索不到引用不等于 dead code。
 

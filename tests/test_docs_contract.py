@@ -51,9 +51,10 @@ class DocsSkillContractTests(unittest.TestCase):
         self.assertIn("Planning owns future work and task status", skill)
         self.assertIn("CHANGELOG owns released deltas", skill)
         self.assertIn(
-            "stable ID for each independently verifiable function item", reference
+            "为每个用户或集成方能够操作并确认的可独立验证功能项分配一个稳定 ID",
+            reference,
         )
-        self.assertIn("exclude `Pending confirmation / 待确认` rows", reference)
+        self.assertIn("“待确认（Pending confirmation）”中的项目不计入", reference)
         for column in (
             "ID",
             "功能分类",
@@ -148,7 +149,27 @@ class DocsSkillContractTests(unittest.TestCase):
         self.assertIn("Make the update idempotent", skill)
         self.assertIn("root `README.md` shortcut is optional", skill)
         self.assertIn("Audit initializes its snapshot", skill)
-        self.assertIn("Documentation governance owns only the stable link", reference)
+        self.assertIn("文档治理只负责", reference)
+
+    def test_docs_output_language_defaults_to_natural_simplified_chinese(self) -> None:
+        skill = (ROOT / "dev-harness-docs" / "SKILL.md").read_text(encoding="utf-8")
+        docs_index = (
+            ROOT / "dev-harness-docs" / "assets" / "docs-index.template.md"
+        ).read_text(encoding="utf-8")
+        nav = (
+            ROOT / "dev-harness-docs" / "assets" / "nav.template.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("If the user explicitly requests English", skill)
+        self.assertIn("use Simplified Chinese", skill)
+        self.assertIn("follow its primary language", skill)
+        self.assertIn("Translate by meaning, not word by word", skill)
+        self.assertIn("internal English enum", skill)
+        self.assertIn("# {项目名称}文档中心", docs_index)
+        self.assertIn("## 阅读路径", docs_index)
+        self.assertIn("# 阅读路径：{路径名称}", nav)
+        self.assertNotIn("## Reader routes", docs_index)
+        self.assertNotIn("## Task routing", nav)
 
     def test_planning_uses_resolved_docs_root(self) -> None:
         skill = (ROOT / "planning" / "SKILL.md").read_text(encoding="utf-8")

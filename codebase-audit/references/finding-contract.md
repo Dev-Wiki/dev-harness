@@ -1,6 +1,6 @@
-# Finding Contract
+# 问题登记契约
 
-Finding 是可追踪、可证伪并绑定仓库快照的工程缺陷主张，不是代码气味清单或泛化建议。
+Finding 在本流程中指“审计问题”。它是可追踪、可证伪并绑定仓库快照的工程缺陷主张，不是代码气味清单或泛化建议。
 
 ## 状态机
 
@@ -20,29 +20,29 @@ confirmed → resolved
 
 不得从搜索命中直接跳到 `confirmed`。Task-local candidate 可使用 `Axx-Cnn`；进入全局 Registry 时分配稳定 `AUD-nnn`。只有通过 Finding identity gate 后，才能为已证明同一根因的现象保留最早 ID 并记录别名；门禁未完成时保持独立。
 
-## Required Fields
+## 必备字段
 
 每个 Registry Finding 包含：
 
 | 字段 | 要求 |
 |---|---|
-| ID / Status | 稳定 `AUD-nnn` 与状态机中的状态 |
-| Severity | P0/P1/P2/P3；按影响和紧迫度，不按置信度 |
-| Category | 自由分类，不受技术栈枚举限制 |
-| Summary | 一句话描述可观察问题 |
-| Claim | 可被反证的机制陈述 |
-| Evidence | 仓库内 path:line、运行输出或可复查 artifact |
-| Call Chain / Data Flow | 相关入口、边界、owner/lifecycle |
-| Counter-evidence checked | 搜过什么反例、保护、旁路和其他实现 |
-| Risk / Impact | 触发条件、影响对象和后果 |
-| Confidence | high/medium/low，并说明证据缺口 |
-| Suggested Next Action | 验证或 handoff，不自动执行 |
-| Snapshot | run ID、base SHA、Context fingerprint、last verified |
-| Source Tasks | Task/Result 链接及去重 alias |
+| ID / 状态 | 稳定 `AUD-nnn` 与状态机中的状态 |
+| 严重度 | P0/P1/P2/P3；按影响和紧迫度，不按置信度 |
+| 分类 | 自由分类，不受技术栈枚举限制 |
+| 摘要 | 一句话描述可观察问题 |
+| 主张 | 可被反证的机制陈述 |
+| 证据 | 仓库内 `path:line`、运行输出或可复查产物 |
+| 调用链 / 数据流 | 相关入口、边界、职责归属和生命周期 |
+| 已检查反证 | 搜过什么反例、保护、旁路和其他实现 |
+| 风险 / 影响 | 触发条件、影响对象和后果 |
+| 置信度 | 高/中/低，并说明证据缺口 |
+| 建议后续动作 | 验证或交接，不自动执行 |
+| 审计快照 | 运行 ID、基线 SHA、Context 指纹、最近验证位置 |
+| 来源任务 | 任务/结果链接及去重别名 |
 
 `confirmed` 不允许低置信度。Severity 高不代表证据充分；影响很大但证据不足仍是 `needs-verification`。
 
-## Verification Gate
+## 验证门禁
 
 按顺序验证 candidate：
 
@@ -56,7 +56,7 @@ confirmed → resolved
 
 缺少代码或运行证据不得 confirmed；无法完成关键步骤时保持 `needs-verification`。静态搜索不到引用不能单独证明 dead code，单处没有保护也不能证明完整调用链没有保护。
 
-## Evidence Quality
+## 证据质量
 
 优先使用可复查的最小证据：
 
@@ -69,7 +69,7 @@ confirmed → resolved
 
 不要复制大段源码或只写“经检查”。生成代码、依赖目录、缓存和不稳定临时日志不能作为唯一证据。Evidence 含非公开配置值、个人数据或机器私有路径时先脱敏。
 
-## Deduplication
+## 去重规则
 
 用根因与修复边界去重，而不是用模块归属、机制名称或错误表象。Candidate 先独立保留，只有证据同时证明以下四点后才能合并：
 
@@ -89,7 +89,7 @@ confirmed → resolved
 
 例如，“缺失 base 后仍返回 partial workspace”与“循环 base 导致无限递归”应先作为两个 Candidate。只有跨模块复核证明二者根因、职责归属、修复边界和单一修复效果均一致时，才合并为同一 `AUD-nnn`。
 
-## Stale / Resolved
+## 失效与解决
 
 发现 HEAD、branch、dirty fingerprint、Context 或 scope 漂移时，将受影响 Finding 标 `stale` 并保留旧 Snapshot；不得原样复制到当前报告的 confirmed 区。外部修复完成后，只有在新 Snapshot 下重跑相关验证和 reconciliation 才能标 `resolved`。
 

@@ -1,14 +1,14 @@
-# Context platform enhancement guidance
+# Context 平台增强指南
 
-Profiles enhance evidence collection and risk prompts; they never decide whether an unfamiliar stack can be understood.
+Profile 只用于补强证据收集和风险提示，不能决定陌生技术栈是否可被理解。
 
-Read only the relevant section after generic repository evidence has identified a likely platform.
+通用仓库证据识别出可能的平台后，只读取与该平台相关的条目。
 
-- Qt / WPF / Win32 with shared native code: trace UI or controller → wrapper/interop → shared C++ core; surface ABI, ownership, handles, callbacks, message loops, conditional compilation, and thread boundaries for manual review.
-- Harmony: identify ArkUI/ArkTS entry points, product/target variants, NAPI/native bridges, lifecycle, packaging, signing, and device requirements.
-- Go: identify `cmd` entry points, `internal`/`pkg` dependencies, persistence, concurrency, CGO, and package-cycle risks.
-- Flutter: identify state ownership, Platform Channels, native platform implementations, lifecycle, and device-only verification.
-- Node.js / TypeScript: identify workspace dependencies, package entry points, plugin manifests, lifecycle hooks, and supply-chain scripts.
-- FastAPI: identify ASGI entry, router registration, service/core flow, dependency injection, auth, migrations, external integrations, and pytest/uvicorn evidence. Use `N/A` when no independent build exists.
+- 包含共享原生代码的 Qt / WPF / Win32：沿 UI 或控制器 → wrapper/interop → 共享 C++ 核心追踪调用链，并将 ABI、所有权、句柄、回调、消息循环、条件编译和线程边界列入人工确认项。
+- Harmony：识别 ArkUI/ArkTS 入口、product/target 构建变体、NAPI/原生桥接、生命周期、打包、签名和设备要求。
+- Go：识别 `cmd` 入口、`internal` / `pkg` 依赖、持久化、并发、CGO 和包循环依赖风险。
+- Flutter：识别状态归属、Platform Channels、原生平台实现、生命周期和仅设备可执行的验证。
+- Node.js / TypeScript：识别 workspace 依赖、包入口、插件清单、生命周期钩子和供应链脚本。
+- FastAPI：识别 ASGI 入口、路由注册、service/core 调用链、依赖注入、认证、迁移、外部集成以及 pytest/uvicorn 证据。没有独立构建步骤时使用 `N/A`。
 
-For any other stack, follow the same Evidence Collector → AI Semantic Analyzer → Deterministic Validator / Writer path. Mark only the unsupported claim `Unknown`; do not stop because a profile is absent.
+其他技术栈也沿用“证据收集器（Evidence Collector）→ AI 语义分析器（AI Semantic Analyzer）→ 确定性校验与写入器（Deterministic Validator / Writer）”路径。仅将证据不足的单项标记为 `Unknown`，不得因缺少 profile 而停止。

@@ -7,7 +7,12 @@ import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
-from install import SKILL_SOURCES, install_bundle_to_root
+from install import (
+    PLANNING_REFERENCE_FILES,
+    PLANNING_TEMPLATE_FILES,
+    SKILL_SOURCES,
+    install_bundle_to_root,
+)
 import release
 
 
@@ -65,8 +70,16 @@ class InstallBundleTests(unittest.TestCase):
             skill_root = bundle_root / "skills" / "dev-harness-planning"
 
             self.assertTrue((skill_root / "SKILL.md").exists())
-            self.assertTrue((skill_root / "templates" / "Dashboard.template.md").exists())
-            self.assertTrue((skill_root / "templates" / "TaskDetails.template.md").exists())
+            for template_name in PLANNING_TEMPLATE_FILES:
+                self.assertTrue(
+                    (skill_root / "templates" / template_name).exists(),
+                    template_name,
+                )
+            for reference_name in PLANNING_REFERENCE_FILES:
+                self.assertTrue(
+                    (skill_root / "references" / reference_name).exists(),
+                    reference_name,
+                )
 
     def test_installed_docs_skill_is_self_contained(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -260,6 +273,15 @@ class InstallBundleTests(unittest.TestCase):
                 self.assertIn("skills/dev-harness-codebase-audit/runtime.py", names)
                 self.assertIn("dev-harness-docs/SKILL.md", names)
                 self.assertIn("dev-harness-docs/assets/capabilities.template.md", names)
+                self.assertIn("planning/templates/Task.template.md", names)
+                self.assertIn("planning/templates/ArchiveIndex.template.md", names)
+                self.assertIn("planning/references/legacy-migration.md", names)
+                self.assertIn(
+                    "skills/dev-harness-planning/templates/Task.template.md", names
+                )
+                self.assertIn(
+                    "skills/dev-harness-planning/references/legacy-migration.md", names
+                )
                 self.assertIn(
                     "skills/dev-harness-docs/assets/capabilities.template.md", names
                 )

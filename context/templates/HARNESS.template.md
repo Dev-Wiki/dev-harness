@@ -25,7 +25,7 @@
 - **bugfix**: `Unknown`
 - **full**: `Unknown`
 
-复杂项目可为同一 Purpose 维护多条已确认记录。每条记录使用 `Purpose / Command / WorkingDirectory / Platform / Variant / Preconditions / DeviceRequirement / Shell / Environment / Evidence / Status`；简单项目继续使用上面的单值字段。
+复杂项目可为同一用途（Purpose）维护多条已确认记录。每条记录使用以下内部字段：`Purpose / Command / WorkingDirectory / Platform / Variant / Preconditions / DeviceRequirement / Shell / Environment / Evidence / Status`。面向读者时依次理解为用途、命令、工作目录、平台、构建变体、前置条件、设备要求、终端、环境、证据和状态；简单项目继续使用上面的单值字段。
 
 ## 高风险目录
 - {目录1: 风险说明}

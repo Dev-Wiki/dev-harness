@@ -7,12 +7,20 @@ description: Use when a project needs its documentation structure initialized, o
 
 Organize project documentation without inventing a second documentation root or duplicating facts. Preserve project-owned conventions and separate documentation structure from documentation content generation.
 
+## Output Language
+
+- If the user explicitly requests English, write new documents and task-facing reports in natural English.
+- Otherwise, use Simplified Chinese for a Chinese repository and for newly initialized documentation whose language is not specified. When refreshing an existing document, follow its primary language and established terminology.
+- In Chinese output, write titles, table headings, acceptance or verification statements, navigation text, and final reports in natural Chinese. Preserve paths, commands, code symbols, API or protocol names, product names, necessary abbreviations, and internal enum values.
+- When an internal English enum or schema field must be exposed to readers, introduce it with a natural Chinese meaning first, such as `支持状态（SupportStatus）`; use the Chinese meaning in later prose unless exact field matching is required.
+- Translate by meaning, not word by word. Edit only text created or updated for the current task; do not opportunistically translate an existing document in full.
+
 ## Boundaries
 
 Keep these responsibilities separate:
 
 - Let `dev-harness-context` own root `README.md`, `AGENTS.md`, `ARCHITECTURE.md`, and `HARNESS.md` managed sections.
-- Let `dev-harness-planning` own the active `plan/Dashboard.md` and `plan/TaskDetails.md` content.
+- Let `dev-harness-planning` own content under `<docs-root>/plan/`, including the active Dashboard, task index, task-scoped details, and milestone task archives. Docs owns only their placement, navigation, link, and repository-wide archive governance.
 - Let `dev-harness-git-workflow` own release, CHANGELOG, tag, and commit conventions.
 - Let `dev-harness-retro` own explicit retrospective history and promotion candidates in `LESSONS.md`.
 - Let `dev-harness-codebase-audit` own content under `<docs-root>/audit/`; Docs owns only its navigation, links, placement, and archive governance.
@@ -201,9 +209,10 @@ For a paired new Audit run, perform the Docs navigation update after read-only A
 Resolve the same `<docs-root>` before invoking or following `dev-harness-planning`:
 
 - Write the active dashboard to `<docs-root>/plan/Dashboard.md`.
-- Write task details to `<docs-root>/plan/TaskDetails.md`.
-- Keep Dashboard as the index layer and TaskDetails as the execution/topic layer.
-- Archive completed implementation plans without copying their detailed status back into Dashboard.
+- Keep the compact active-task gateway at `<docs-root>/plan/TaskDetails.md`.
+- Keep authoritative active execution packets under `<docs-root>/plan/tasks/` and completed task snapshots under `<docs-root>/plan/archive/<milestone>/`.
+- Keep Dashboard and TaskDetails as bounded indexes; do not copy archived task bodies or detailed status back into them.
+- Planning owns task lifecycle and archive content. Docs validates placement, navigation, and links without rewriting task state or evidence.
 
 ## Verify
 
@@ -234,11 +243,11 @@ Treat intentional TODO registers as an explicit exception to the placeholder sca
 
 ## Report
 
-Report:
+Use natural labels that follow the output-language rules above. For Simplified Chinese output, report:
 
-- operation and resolved documentation root;
-- evidence and conventions read;
-- files created, updated, moved, or left unchanged;
-- SSOT and navigation decisions;
-- validation commands and results;
-- unresolved ambiguity, intentionally deferred moves, unverified items moved to `待确认`, or optional content-authoring gaps.
+- 执行操作和确定的文档根目录；
+- 已读取的证据和项目约定；
+- 新建、更新、移动或保持不变的文件；
+- 权威事实来源和导航决策；
+- 验证命令和结果；
+- 尚未解决的歧义、主动推迟的移动、移入`待确认`的未验证内容，或可选的内容编写缺口。

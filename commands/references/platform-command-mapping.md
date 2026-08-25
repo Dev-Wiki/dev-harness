@@ -1,28 +1,28 @@
-# Platform command mapping guidance
+# 平台命令映射指南
 
-Use this reference only after repository evidence identifies a relevant platform. These are mapping heuristics, never command evidence.
+仅在仓库证据已经识别出相关平台后读取本指南。以下内容只是映射启发，不是命令存在或可执行的证据。
 
-## Desktop and native
+## 桌面端与原生项目
 
-- WPF: prefer a project `dotnet build` for build/quick, an existing `dotnet test` or `vstest` entry for test, and a solution build for full.
-- Win32: prefer project MSBuild for build/quick, existing `ctest` or `vstest` for test, and solution MSBuild for full. Packaging, signing, and installers stay `package/release-only`.
-- Qt: prefer the repository's CMake preset/build entry, with `ctest` only when the test graph is present. Preserve the configured Qt Kit and generator.
+- WPF：`build` / `quick` 优先映射到项目级 `dotnet build`，`test` 使用已有的 `dotnet test` 或 `vstest` 入口，`full` 使用解决方案级构建。
+- Win32：`build` / `quick` 优先映射到项目级 MSBuild，`test` 使用已有的 `ctest` 或 `vstest`，`full` 使用解决方案级 MSBuild。打包、签名和安装程序归入 `package/release-only`，不能占用本地验证入口。
+- Qt：优先使用仓库已有的 CMake preset 或构建入口；只有测试图确实存在时才使用 `ctest`。保留项目配置的 Qt Kit 和生成器。
 
-## Mobile and device-dependent
+## 移动端与设备依赖场景
 
-- Harmony: map local Hvigor module/project commands by product and buildMode. Device tests are `device-required`; packaging scripts do not occupy local full.
-- Android/iOS: record device/simulator, host OS, signing, and variant requirements explicitly. Do not mark a device flow as automatically runnable.
-- Flutter: Dart unit/widget tests may be automatic; `integration_test` and native bridge validation may be `device-required`.
+- Harmony：按 product 和 buildMode 映射本地 Hvigor 模块级或项目级命令。设备测试标记为 `device-required`；打包脚本不能占用本地 `full`。
+- Android/iOS：明确记录设备或模拟器、宿主操作系统、签名和构建变体要求。依赖设备的流程不得标记为可自动执行。
+- Flutter：Dart 单元测试和组件测试可按证据映射为自动执行；`integration_test` 与原生桥接验证通常应标记为 `device-required`。
 
-## Services and toolchains
+## 服务端与工具链
 
-- Go: use repository-backed `go build` / `go test` entries and preserve package scope.
-- Node.js / TypeScript: use actual package-manager scripts and workspace scope; lifecycle and install scripts are preconditions, not validation evidence.
-- Python services: use the repository's pytest/tox/nox entry. A dependency install command is not a build command; projects without a build may use `N/A`.
+- Go：使用仓库已有的 `go build` / `go test` 入口，并保留包作用域。
+- Node.js / TypeScript：使用真实存在的包管理器脚本和 workspace 作用域；生命周期脚本与安装脚本属于前置条件，不是验证证据。
+- Python 服务：使用仓库已有的 pytest、tox 或 nox 入口。依赖安装命令不是构建命令；没有独立构建步骤的项目可使用 `N/A`。
 
-## Platform / Variant records
+## 平台 / 构建变体记录
 
-When one semantic command has multiple realizations, write separate records rather than joining incompatible commands:
+同一语义命令存在多种实现时，应分别记录，不要把互不兼容的命令拼在一起：
 
 ```text
 Purpose: build
@@ -37,4 +37,4 @@ Evidence: <path or successful run>
 Status: candidate | confirmed | missing
 ```
 
-Simple repositories may keep the legacy single `BuildCommand` / `TestCommand` / `QuickCommand` / `BugfixCommand` / `FullCommand` fields.
+简单仓库可继续使用旧版单值字段 `BuildCommand` / `TestCommand` / `QuickCommand` / `BugfixCommand` / `FullCommand`。这些字段名和枚举是内部契约，不翻译；面向读者的说明使用自然中文。

@@ -1,15 +1,15 @@
 # 代码库审计看板
 
-> **职责**：本文件只维护当前 Audit 的快照、输出语言、任务状态、Finding 计数、当前焦点和阻塞。问题正文维护在 [Findings.md](Findings.md)，总体结论维护在 [Report.md](Report.md)。
+> **职责**：本文件只维护当前审计的快照、输出语言、任务状态、问题（Finding）计数、当前焦点和阻塞。问题正文维护在 [Findings.md](Findings.md)，总体结论维护在 [Report.md](Report.md)。
 
 ## 导航
 
-- [问题登记表（Finding Registry）](Findings.md)
+- [问题登记表](Findings.md)
 - [当前报告](Report.md)
 - [审计任务](tasks/)
 - [任务结果](results/)
 
-## 审计快照（Snapshot）
+## 审计快照（内部字段：`Snapshot`）
 
 | 字段 | 值 |
 |---|---|
@@ -30,7 +30,7 @@
 | 文档语言 | `{zh-CN/en}` |
 | 语言来源 | `{默认 zh-CN/用户显式要求全英文/既有运行记录}` |
 
-> `output_language` 是文档约定，不属于 Audit Snapshot fingerprint；语言变化本身不使 Evidence 或 Finding 失效。
+> `output_language` 是文档约定，不属于审计快照指纹；语言变化本身不使证据或问题失效。
 
 ## 文档可发现性
 
@@ -39,9 +39,9 @@
 | 文档中心 | `{docs-root}/README.md 或既有导航索引` |
 | 固定审计入口 | `{docs-root}/audit/Report.md` |
 | 状态 | `{已链接（linked）/需刷新文档（docs-refresh-required）}` |
-| Docs 交接 | `{无/在文档中心增加一个指向 audit/Report.md 的简短入口}` |
+| 文档交接 | `{无/在文档中心增加一个指向 audit/Report.md 的简短入口}` |
 
-> Audit 只记录该状态，不修改文档中心。缺少入口属于 Docs Refresh 交接，不是 `AUD-*` Finding。
+> 审计流程只记录该状态，不修改文档中心。缺少入口属于文档刷新交接，不是 `AUD-*` 问题。
 
 ## 任务状态
 
@@ -49,7 +49,7 @@
 |---|---|---|---|---|---|
 | [A01 — `{范围}`](tasks/A01-{slug}.md) | `{行为域}` | `{待开始/进行中/受阻/已失效/已完成}` | [结果](results/A01-{slug}.md) | `{任务 ID/无}` | `{快照/检查点}` |
 
-## 问题计数（Finding）
+## 问题计数
 
 | P0 | P1 | P2 | P3 | 待验证 | 已排除 | 已失效 | 已解决 |
 |---:|---:|---:|---:|---:|---:|---:|---:|
@@ -69,12 +69,12 @@
 
 - **验证位置**：`{时间戳/检查点}`
 - **漂移状态**：`{有效/检测到 WorkspaceDrift/已失效}`
-- **跨模块复核（Cross-module Reconciliation）**：`{待开始/已完成/已失效}`
+- **跨模块复核**：`{待开始/已完成/已失效}`
 
-## 证据（Evidence）
+## 证据（内部字段：`Evidence`）
 
 - Canonical Context：`{README/AGENTS/ARCHITECTURE/HARNESS links}`
 - 审计快照记录：`{私有状态引用；不要把私有状态复制到文档}`
 - 最近漂移校验：`{命令/结果摘要}`
 
-> 任务范围和局部证据只写入对应 [Task](tasks/) / [Result](results/)；不要在本文件复制 Finding 详情。
+> 任务范围和局部证据只写入对应的[任务](tasks/) / [结果](results/)；不要在本文件复制问题详情。

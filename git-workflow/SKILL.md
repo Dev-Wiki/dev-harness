@@ -7,6 +7,14 @@ description: Use when you need to discover, initialize, or follow a repository-o
 
 负责识别并遵循目标仓库自己的 Git、提交、tag 和发布规范。**仓库已有规范优先**；本 skill 的模板只在项目没有规范且用户显式确认后使用。
 
+## 输出语言
+
+- 仓库已有提交、CHANGELOG、tag 注释或发布说明规范时，始终优先遵循仓库规范。
+- 用户明确要求英文时使用自然英文。否则，中文项目及语言未指定的新项目默认使用简体中文；更新现有文档时沿用其主体语言和既有术语。
+- 中文输出中的标题、表格、提交说明、tag 注释、发布说明、验证结果和最终报告使用自然中文。路径、命令、代码符号、API、协议、产品名、必要缩写、Conventional Commits 的`type`以及内部枚举值保持原样。
+- 内部英文枚举或字段必须面向读者展示时，首次用“中文含义（原值）”说明，后续正文优先使用中文含义。按语义表达，不逐字硬译，也不顺便翻译本次没有修改的历史内容。
+- 项目没有提交语言规范且用户已确认默认契约时，默认提交格式为`<type>(<scope>): <中文描述>`；`scope`可省略。用户明确要求英文时，描述改用自然英文。
+
 ## 适用场景
 
 - 识别项目已有的分支、提交、tag、changelog 和发布规范
@@ -59,7 +67,7 @@ git tag --list --sort=-version:refname
 提出以下 GitHub 友好默认值：
 
 - 分支模式由用户在 `single-branch` 与 `feature-branch` 中选择
-- Conventional Commits：`type(scope): description`
+- Conventional Commits：`<type>(<scope>): <中文描述>`；用户明确要求英文时使用英文描述
 - annotated tag：`vMAJOR.MINOR.PATCH`，预发布可用 `vMAJOR.MINOR.PATCH-PRERELEASE`
 - 发布规范默认写在 `docs/GIT_WORKFLOW.md`，也可由用户拆分到 `docs/RELEASE.md`
 - `CHANGELOG.md` 仅在用户确认初始化或开始首次发布时创建
@@ -72,9 +80,10 @@ git tag --list --sort=-version:refname
 
 1. 仅当目标文件不存在时，从 `templates/GIT_WORKFLOW.template.md` 初始化 `docs/GIT_WORKFLOW.md`。
 2. 把用户确认的分支模式和项目选择写入模板占位处。
-3. 只有用户同时确认 changelog 初始化或正在开始首次发布时，才从 `templates/CHANGELOG.template.md` 创建 `CHANGELOG.md`。
-4. 任何现有规范或 changelog 均不得覆盖。
-5. 完成后运行或建议运行：
+3. 按“输出语言”规则调整模板文案；英文项目不得机械保留中文占位说明。
+4. 只有用户同时确认 changelog 初始化或正在开始首次发布时，才从 `templates/CHANGELOG.template.md` 创建 `CHANGELOG.md`。
+5. 任何现有规范或 changelog 均不得覆盖。
+6. 完成后运行或建议运行：
 
 ```bash
 dev-harness-context refresh <repo-path>
@@ -104,13 +113,13 @@ Tag annotation 与 release notes 必须来自 `CHANGELOG.md` 的匹配版本；�
 
 审计或初始化输出：
 
-- `WorkflowSource`: 已有规范路径 / confirmed-default / missing
-- `BranchMode`: 项目规则 / inferred-candidate / unknown
-- `CommitRule`: 项目规则 / inferred-candidate / unknown
-- `TagRule`: 项目规则 / inferred-candidate / unknown
-- `ReleaseRule`: 项目规则 / inferred-candidate / unknown
-- `Changelog`: 路径 / not-initialized
-- `NextAction`: refresh / confirm / none
+- 规范来源（`WorkflowSource`）：已有规范路径 / 已确认默认值（`confirmed-default`）/ 缺失（`missing`）
+- 分支模式（`BranchMode`）：项目规则 / 推断候选（`inferred-candidate`）/ 未知（`unknown`）
+- 提交规则（`CommitRule`）：项目规则 / 推断候选（`inferred-candidate`）/ 未知（`unknown`）
+- tag 规则（`TagRule`）：项目规则 / 推断候选（`inferred-candidate`）/ 未知（`unknown`）
+- 发布规则（`ReleaseRule`）：项目规则 / 推断候选（`inferred-candidate`）/ 未知（`unknown`）
+- 变更日志（`Changelog`）：路径 / 尚未初始化（`not-initialized`）
+- 下一步（`NextAction`）：刷新（`refresh`）/ 确认（`confirm`）/ 无（`none`）
 
 执行 commit、tag 或发布动作时，额外报告实际命令结果和完整 SHA/tag；失败时报告原因，不得输出虚假的成功状态。
 

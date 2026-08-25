@@ -1,15 +1,15 @@
 # 审计任务 {Axx} — `{行为域}`
 
-> **职责**：本文件定义本轮要扫描什么，不保存最终 Finding 正文。执行证据写入 [对应 Result](../results/{Axx}-{slug}.md)，全局 Finding 写入 [Findings.md](../Findings.md)，运行状态写入 [Dashboard.md](../Dashboard.md)。
+> **职责**：本文件定义本轮要扫描什么，不保存最终问题（Finding）正文。执行证据写入 [对应结果](../results/{Axx}-{slug}.md)，全局问题写入 [Findings.md](../Findings.md)，运行状态写入 [Dashboard.md](../Dashboard.md)。
 
 ## 导航
 
 - [审计看板](../Dashboard.md)
-- [问题登记表（Finding Registry）](../Findings.md)
+- [问题登记表](../Findings.md)
 - [当前报告](../Report.md)
 - [任务结果](../results/{Axx}-{slug}.md)
 
-## 审计快照（Snapshot）
+## 审计快照（内部字段：`Snapshot`）
 
 | 字段 | 值 |
 |---|---|
@@ -43,7 +43,7 @@
 
 - `{明确排除的范围及负责该范围的任务/原因}`
 
-## 证据（Evidence）
+## 证据（内部字段：`Evidence`）
 
 ### 分区证据
 
@@ -56,7 +56,7 @@
 3. `{owner/lifecycle/boundary 检查}`
 4. `{聚焦代码阅读、命令或本地最小复现/行为验证}`
 
-### 必查反证（Counter-evidence）
+### 必查反证
 
 - `{要检查的前置条件、清理路径、替代实现、平台分支、异常路径或测试}`
 
@@ -69,7 +69,7 @@
 ## 完成门禁
 
 - [ ] 计划范围和排除项均有交代。
-- [ ] 任务结果（Result）记录了实际覆盖、Evidence 和缺口。
-- [ ] 候选项（Candidate）遵循 Finding 状态契约，并在 identity gate 前保持独立。
-- [ ] 边界输入已可用于跨模块复核（Cross-module Reconciliation）。
-- [ ] 检查点处 Snapshot 仍然有效。
+- [ ] 任务结果记录了实际覆盖、证据和缺口。
+- [ ] 候选项遵循 Finding 状态契约，并在同一性门禁前保持独立。
+- [ ] 边界输入已可用于跨模块复核。
+- [ ] 检查点处的审计快照仍然有效。

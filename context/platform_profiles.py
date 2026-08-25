@@ -96,7 +96,7 @@ def get_qt_quick_command(repo_root: Path) -> str:
 
 
 def find_fastapi_entry(repo_root: Path) -> Path | None:
-    """Return an ASGI module that constructs a FastAPI application."""
+    """返回负责创建 FastAPI 应用的 ASGI 模块。"""
     candidates = sample_matching_files(repo_root, 200, "*.py")
     candidates.sort(
         key=lambda path: (
@@ -220,12 +220,12 @@ def detect_validation_commands(repo_root: Path, project_type: str, build_step: s
 def detect_high_risk_directories(repo_root: Path, project_type: str) -> list[str]:
     risks: list[str] = []
     for candidate, description in [
-        ("resources", "resource assets or localization files"),
-        ("res", "resource assets or localization files"),
-        ("native", "native layer or platform bridge"),
-        ("packaging", "packaging or installer assets"),
-        ("installer", "installer or deployment assets"),
-        ("third_party", "third-party vendored code"),
+        ("resources", "资源文件或本地化文件"),
+        ("res", "资源文件或本地化文件"),
+        ("native", "原生层或平台桥接层"),
+        ("packaging", "打包或安装程序资源"),
+        ("installer", "安装或部署资源"),
+        ("third_party", "仓库内维护的第三方代码"),
     ]:
         path = repo_root / candidate
         if path.exists():
@@ -233,39 +233,39 @@ def detect_high_risk_directories(repo_root: Path, project_type: str) -> list[str
 
     if project_type == "WPF":
         if (repo_root / "App.xaml").exists():
-            risks.append("App.xaml: application bootstrap and UI resource merge points")
+            risks.append("App.xaml：应用启动与 UI 资源合并入口")
         if list(repo_root.glob("*.csproj")):
-            risks.append("*.csproj: packaging, references, and build configuration")
+            risks.append("*.csproj：打包、引用与构建配置")
     elif project_type == "Qt":
         if (repo_root / "CMakeLists.txt").exists():
-            risks.append("CMakeLists.txt: build graph and Qt module linking")
+            risks.append("CMakeLists.txt：构建图与 Qt 模块链接配置")
         if list(repo_root.glob("*.ui")):
-            risks.append("*.ui: generated UI layout definitions")
+            risks.append("*.ui：UI 布局定义")
         if (repo_root / "shared_cpp").exists():
-            risks.append("shared_cpp: shared native core used by Windows client UI layers")
+            risks.append("shared_cpp：供 Windows 客户端 UI 层复用的共享原生核心")
         if first_matching_file(repo_root, "*.h", "*.hpp"):
-            risks.append("*.h/*.hpp: exported C++ headers and ABI boundary")
+            risks.append("*.h/*.hpp：导出的 C++ 头文件与 ABI 边界")
     elif project_type == "Harmony":
         if (repo_root / "module.json5").exists():
-            risks.append("module.json5: app packaging and module declaration")
+            risks.append("module.json5：应用打包与模块声明")
         if (repo_root / "build-profile.json5").exists():
-            risks.append("build-profile.json5: build targets and signing profile")
+            risks.append("build-profile.json5：构建目标与签名配置")
     elif project_type == "Win32":
         if repo_contains_vcxproj(repo_root):
-            risks.append("*.vcxproj: Visual C++ build graph, toolchain, and linker settings")
+            risks.append("*.vcxproj：Visual C++ 构建图、工具链与链接器设置")
         if repo_contains_pattern(repo_root, "*.rc"):
-            risks.append("*.rc: Win32 resource script and packaging metadata")
+            risks.append("*.rc：Win32 资源脚本与打包元数据")
     elif project_type == "FastAPI":
         for candidate, description in [
-            ("app/routers", "HTTP route definitions and public API surface"),
-            ("app/core", "application configuration, security, and shared infrastructure"),
-            ("app/services", "business logic and external integration boundary"),
-            ("migrations", "database schema migrations"),
+            ("app/routers", "HTTP 路由定义与对外 API 边界"),
+            ("app/core", "应用配置、安全与共享基础设施"),
+            ("app/services", "业务逻辑与外部集成边界"),
+            ("migrations", "数据库结构迁移"),
         ]:
             if (repo_root / candidate).exists():
                 risks.append(f"{candidate}: {description}")
         entry = find_fastapi_entry(repo_root)
         if entry:
-            risks.append(f"{_relative_display(entry, repo_root)}: ASGI application bootstrap and middleware wiring")
+            risks.append(f"{_relative_display(entry, repo_root)}：ASGI 应用启动与中间件装配入口")
 
     return risks or ["Unknown"]

@@ -45,6 +45,20 @@ class GitWorkflowContractTests(unittest.TestCase):
         self.assertIn("feature-branch", template)
         self.assertIn("由项目确认", template)
 
+    def test_default_commit_and_release_copy_use_natural_chinese(self) -> None:
+        skill = self.read("git-workflow/SKILL.md")
+        contract = self.read("git-workflow/references/default-contract.md")
+        workflow = self.read("git-workflow/templates/GIT_WORKFLOW.template.md")
+        changelog = self.read("git-workflow/templates/CHANGELOG.template.md")
+
+        self.assertIn("<type>(<scope>): <中文描述>", skill)
+        self.assertIn("仓库自己的分支、提交格式和语言规范始终高于", contract)
+        self.assertIn("描述应准确说明变更目的，并使用自然中文", workflow)
+        self.assertIn("发布 vMAJOR.MINOR.PATCH", workflow)
+        self.assertIn("# 变更日志", changelog)
+        self.assertIn("## 未发布", changelog)
+        self.assertNotIn("# Changelog", changelog)
+
     def test_tag_and_release_messages_omit_empty_categories(self) -> None:
         surfaces = self.read("git-workflow/SKILL.md") + self.read("docs/GIT_WORKFLOW.md")
 

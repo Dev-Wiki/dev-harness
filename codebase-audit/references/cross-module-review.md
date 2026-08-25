@@ -1,45 +1,45 @@
-# Cross-module Reconciliation
+# 跨模块复核
 
-这是每次 Audit 的强制全局阶段。Task Result 是局部证据，不是可以直接拼接成 Report 的最终结论。
+这是每次审计的强制全局阶段。任务结果是局部证据，不能直接拼接成最终报告。
 
 最终收敛必须完整经过：
 
 ```text
-Task findings
+任务内问题
     ↓
-Boundary Ledger
+边界台账
     ↓
-Finding identity reconciliation
+问题同一性复核
     ↓
-Contradiction resolution
+矛盾处理
     ↓
-End-to-end trace
+端到端链路追踪
     ↓
-Severity / Confidence re-ranking
+重新评定严重度和置信度
     ↓
-Final Report
+最终报告
 ```
 
-## Inputs
+## 输入
 
 - 当前有效 `AuditSnapshot`；
 - 所有 Task 及 Result，包括 blocked、无 finding 和 stale 的任务；
 - Findings Registry 中的 candidate、needs-verification、confirmed 和 rejected 项；
 - Context 中的 subsystem、boundary、shared core、platform 和 integration 关系。
 
-开始前运行 drift 校验。失败时停止 reconciliation，将受影响结论标 stale。
+开始前运行漂移校验。失败时停止复核，将受影响结论标为 `stale`。
 
-## 1. Build the Boundary Ledger
+## 1. 建立边界台账
 
 为每条重要接缝记录两端和证据：
 
-| Boundary | Producer / Caller / Owner | Consumer / Callee / Borrower | Tasks | Evidence | Status |
+| 边界 | 生产方 / 调用方 / 负责方 | 消费方 / 被调用方 / 借用方 | 任务 | 证据 | 状态 |
 |---|---|---|---|---|---|
 | `{boundary}` | `{side-a}` | `{side-b}` | `{Axx, Ayy}` | `{result links}` | `{covered/gap}` |
 
 至少覆盖 Context 中存在的 runtime、platform、shared core、data/persistence、external integration 和 build/package 边界。不适用的轴无需硬造。
 
-## 2. Reconcile Identity
+## 2. 复核问题同一性
 
 先逐项判断 candidate identity，再按根因、owner 和修复边界聚类。只有证据同时证明根因一致、owner / responsibility boundary 一致、修复边界基本一致，并且一个修复可以合理同时解决多个现象时，才允许合并：
 
@@ -49,17 +49,17 @@ Final Report
 - 若位于同一模块或宽泛机制但任一 identity 条件未闭合，继续保留独立 Finding；
 - 把只重复描述最佳实践而无具体机制的 candidate 拒绝或退回验证。
 
-## 3. Resolve Contradictions
+## 3. 处理矛盾
 
 显式列出冲突，而不是选择更自信的 Task：
 
-| Claim | Supporting Result | Contradicting Result | Missing Verification | Decision |
+| 主张 | 支持证据 | 反驳证据 | 缺失的验证 | 结论 |
 |---|---|---|---|---|
 | `{claim}` | `{link}` | `{link}` | `{reproduction or behavior evidence}` | `{resolved/needs-verification}` |
 
 检查条件编译、平台 variant、启动/清理顺序、异常路径、并发时序和其他实现。无法用证据解决的冲突必须降为 `needs-verification`。
 
-## 4. Trace End-to-end Behavior
+## 4. 追踪端到端行为
 
 对可能跨层的 Finding 贯通完整链路，例如：
 
@@ -84,7 +84,7 @@ entry/UI lifecycle → state/manager → wrapper/adapter
 
 只检查链路中一层不能完成此阶段。
 
-## 5. Re-rank and Gate
+## 5. 重新评定并执行门禁
 
 对合并后的每个 Finding 重新评估：
 
@@ -96,7 +96,7 @@ entry/UI lifecycle → state/manager → wrapper/adapter
 
 只有证据闭合且无未解决矛盾的项才能留在当前 `confirmed` 集合。其他项标 `needs-verification`、`rejected` 或 `stale`。
 
-## Required Result
+## 必备结果
 
 在 Report 和相关 Result 中记录：
 

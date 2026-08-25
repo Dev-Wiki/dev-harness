@@ -1,9 +1,9 @@
-# Windows shell and evidence guidance
+# Windows 终端与证据指南
 
-Read this only for Windows-hosted commands or when terminal/encoding problems affect evidence.
+仅在命令需要 Windows 宿主，或终端与编码问题影响证据判断时读取本指南。
 
-- Prefer the shell required by the repository or toolchain. For Visual Studio/MSBuild projects this is commonly PowerShell or cmd with the expected developer environment loaded.
-- Treat Git Bash, MSYS2, Cygwin, and WSL as distinct execution environments. Do not launch a long native Windows build there until repository evidence says the path, quoting, process, and SDK behavior is supported.
-- Record the shell, working directory, toolchain discovery command, and relevant environment setup with the command record.
-- Native Windows tools may emit using a legacy code page such as 936/GBK. Preserve the original bytes or record the active code page; do not interpret garbled output as a product failure.
-- A terminal mismatch is a precondition gap, not proof that the build command is invalid.
+- 优先使用仓库或工具链要求的终端。Visual Studio/MSBuild 项目通常需要已加载相应开发环境的 PowerShell 或 cmd。
+- 将 Git Bash、MSYS2、Cygwin 和 WSL 视为不同的执行环境。仓库证据尚未确认路径、引号、进程和 SDK 行为兼容前，不要在这些环境中启动耗时的 Windows 原生构建。
+- 在命令记录中写明终端、工作目录、工具链探测命令和必要的环境初始化方式。
+- Windows 原生工具可能使用 936/GBK 等旧代码页输出。应保留原始字节或记录当前代码页，不得把乱码直接判断为产品故障。
+- 终端不匹配属于前置条件缺口，不能证明构建命令本身无效。

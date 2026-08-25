@@ -33,19 +33,21 @@ description: Use when you need to standardize build, test, quick, bugfix, and fu
 
 ## 输出契约
 
+除非用户明确要求英文，否则新建且未指定语言的文档默认使用简体中文；更新既有文档时沿用其主体语言。标题、表格、说明、验证结论和最终报告应使用中国开发团队常用的自然中文，不做生硬逐字翻译。路径、命令、代码符号、API、协议、产品名、必要缩写和以下内部字段或枚举保持原样；首次出现且容易误解时，可补充简短中文解释。此规则只约束本次新建或更新的内容，不借机翻译无关正文。
+
 简单项目可以继续使用单值字段；多平台、多设备或多 Variant 项目使用命令记录列表。同一个语义入口允许有多条已确认记录，但必须能由 Platform / Variant 唯一选择。
 
 每条命令记录至少包含：
 
-- **Purpose**：`build / test / quick / bugfix / full`
-- **Command**：真实可执行入口，缺失时为 `Missing`，不适用时为 `N/A`
-- **WorkingDirectory**：仓库相对工作目录
-- **Platform / Variant**：适用平台和构建 Variant；简单项目可省略
-- **Preconditions**：工具链、依赖、凭据等前置条件
-- **DeviceRequirement**：`none / device-required / manual-only`
-- **Shell / Environment**：仅在确有要求时记录
-- **Evidence**：真实文件、配置或成功执行证据
-- **Status**：`candidate / confirmed / missing`
+- **用途（Purpose）**：`build / test / quick / bugfix / full`
+- **命令（Command）**：真实可执行入口，缺失时为 `Missing`，不适用时为 `N/A`
+- **工作目录（WorkingDirectory）**：仓库相对工作目录
+- **平台 / 构建变体（Platform / Variant）**：适用平台和构建 Variant；简单项目可省略
+- **前置条件（Preconditions）**：工具链、依赖、凭据等前置条件
+- **设备要求（DeviceRequirement）**：`none / device-required / manual-only`
+- **终端 / 环境（Shell / Environment）**：仅在确有要求时记录
+- **证据（Evidence）**：真实文件、配置或成功执行证据
+- **状态（Status）**：`candidate / confirmed / missing`
 
 兼容的单值字段仍为 **BuildCommand**、**TestCommand**、**QuickCommand**、**BugfixCommand** 和 **FullCommand**；同时报告 **MissingCommands**。
 
@@ -59,7 +61,7 @@ description: Use when you need to standardize build, test, quick, bugfix, and fu
 2. 判断哪些命令可以安全映射为 `build / test / quick / bugfix / full`
 3. 把映射结果写入 `HARNESS.md` 的 `## 已确认命令（人工维护）`；不得写入 `harness.detected-commands` 托管候选块
 4. 报告缺失项和不可自动推断项
-5. 若命令不存在，只能标记 `Unknown` 或 `Missing`，不得编造
+5. 若命令不存在，只能标记 `Unknown`（未知）或 `Missing`（缺失），不得编造
 
 ## 停止条件
 

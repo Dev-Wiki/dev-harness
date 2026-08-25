@@ -141,13 +141,13 @@ class ProjectContractTests(unittest.TestCase):
         self.assertIn("缺失 base 后仍返回 partial workspace", finding_contract)
         self.assertIn("循环 base 导致无限递归", finding_contract)
         for stage in (
-            "Task findings",
-            "Boundary Ledger",
-            "Finding identity reconciliation",
-            "Contradiction resolution",
-            "End-to-end trace",
-            "Severity / Confidence re-ranking",
-            "Final Report",
+            "任务内问题",
+            "边界台账",
+            "问题同一性复核",
+            "矛盾处理",
+            "端到端链路追踪",
+            "重新评定严重度和置信度",
+            "最终报告",
         ):
             self.assertIn(stage, cross_module)
 
@@ -156,8 +156,9 @@ class ProjectContractTests(unittest.TestCase):
         dashboard = self.read("codebase-audit/templates/Dashboard.template.md")
         findings = self.read("codebase-audit/templates/Findings.template.md")
 
-        self.assertIn("其他情况默认 `zh-CN`", audit)
-        self.assertIn("显式要求“全英文”", audit)
+        self.assertIn("新建且未指定语言", audit)
+        self.assertIn("刷新既有审计文档时，跟随其主体语言", audit)
+        self.assertIn("明确要求“全英文”", audit)
         self.assertIn("文档语言", dashboard)
         self.assertIn("`{zh-CN/en}`", dashboard)
         for internal, display in (

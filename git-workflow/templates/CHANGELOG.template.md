@@ -1,21 +1,21 @@
-# Changelog
+# 变更日志
 
-All notable changes to this project are documented here.
+本文件记录项目中值得关注的变更。
 
-The headings below are authoring prompts. When finalizing a version, tag annotation, or release notes, remove or omit every empty category while preserving this order.
+以下标题是编写提示。确定版本、tag 注释或发布说明时，按当前顺序保留非空分类，删除或省略空分类。
 
-## Unreleased
+## 未发布
 
-### Breaking Changes
+### 重大变更（Breaking Changes）
 
-### Added
+### 新增（Added）
 
-### Changed
+### 变更（Changed）
 
-### Deprecated
+### 弃用（Deprecated）
 
-### Fixed
+### 修复（Fixed）
 
-### Removed
+### 移除（Removed）
 
-### Security
+### 安全（Security）

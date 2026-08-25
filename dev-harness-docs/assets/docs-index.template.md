@@ -1,30 +1,30 @@
-# {Project Name} Documentation
+# {项目名称}文档中心
 
-> Start here. Choose one route for the current task and open only the linked documents needed for that route.
+> 从这里开始。根据当前任务选择一条阅读路径，只打开完成任务所需的文档。
 
-## Reader routes
+## 阅读路径
 
-| Route | Use it for | Entry |
+| 阅读路径 | 适用场景 | 入口 |
 |---|---|---|
-| {Route name} | {Reader intent or task family} | [{Entry title}]({relative/path.md}) |
+| {路径名称} | {读者目标或任务类型} | [{入口标题}]({relative/path.md}) |
 
-## Active entry points
+## 当前有效入口
 
-| Document | Purpose |
+| 文档 | 用途 |
 |---|---|
-| [{Title}]({relative/path.md}) | {Why a reader opens it} |
+| [{标题}]({relative/path.md}) | {读者为什么需要打开它} |
 
-When a Capability Catalog or another authoritative current-function document is required, include it here or in the relevant reader route. When `audit/Report.md` exists, include one fixed `Codebase Audit` entry here or in a justified route. Omit either entry when its target does not exist; do not leave placeholder or dangling links.
+需要产品功能清单或其他“当前功能”权威文档时，在这里或相应阅读路径中加入入口。`audit/Report.md` 存在时，在这里或合适的阅读路径中加入一个固定的“代码库审计”入口。目标不存在时省略对应入口，不要保留占位内容或失效链接。
 
-## Repository-level documents
+## 仓库级文档
 
-| Document | Responsibility |
+| 文档 | 职责 |
 |---|---|
-| [README](../README.md) | Project overview and getting started |
-| [Architecture](../ARCHITECTURE.md) | Architecture summary and core data flow |
-| [Agent instructions](../AGENTS.md) | AI and contributor constraints |
-| [Harness](../HARNESS.md) | Build, run, and verification commands |
+| [项目说明](../README.md) | 项目概览和上手说明 |
+| [架构说明](../ARCHITECTURE.md) | 架构概要和核心数据流 |
+| [协作规则](../AGENTS.md) | AI 和贡献者约束 |
+| [工程命令](../HARNESS.md) | 构建、运行和验证命令 |
 
-## Documentation maintenance
+## 文档维护
 
-Follow [DOCUMENTATION.md](DOCUMENTATION.md) for placement, SSOT, navigation, and archive rules.
+文档存放、权威事实来源、导航和归档规则见[文档维护规则](DOCUMENTATION.md)。

@@ -1,4 +1,4 @@
-# Codebase Audit Workflow
+# 代码库审计流程
 
 本文件定义长任务的阶段、checkpoint 和 fail-closed 门禁。语义判断由 AI 完成；快照、状态和路径边界由 `runtime.py` 执行。
 
@@ -12,11 +12,11 @@
 - 固定开发者入口为 `<docs-root>/audit/Report.md`；Audit 只读检查外部导航，Docs 负责维护文档中心链接。
 - 本轮 `output_language` 由用户显式要求或默认值 `zh-CN` 决定，记录在 Dashboard 并在跨会话恢复时保持一致；它不属于 Evidence Snapshot。
 
-## Phase 0 — Preflight / Resume
+## 阶段 0 — 前置检查 / 恢复运行
 
 1. 读取仓库级 `AGENTS.md`、`README.md`、`ARCHITECTURE.md`、`HARNESS.md`、`LESSONS.md` 和规范索引（存在时）。
 2. 解析唯一 `<docs-root>`；禁止为 Audit 创建第二个文档根。
-3. 确定 `output_language`：只有显式全英文请求使用 `en`，否则使用 `zh-CN`。恢复时读取 Dashboard 已记录值；不得根据仓库主要语言自行切换。
+3. 确定 `output_language`：显式全英文请求使用 `en`；刷新既有文档时跟随主体语言；其他新建且未指定语言的情况使用 `zh-CN`。恢复时优先读取 Dashboard 已记录值。
 4. 只读检查 `<docs-root>/README.md` 或一个既有 route index 是否链接 `audit/Report.md`。把结果记录为 `linked` 或 `docs-refresh-required`；这不是代码 Finding，不分配 `AUD-*`。
 5. 若同一用户授权同时包含 Docs Refresh，在所有只读 preflight 检查通过后、Audit Snapshot 建立前，由 `dev-harness-docs` 幂等添加固定入口。若只授权 Audit，不修改 hub，继续运行并持久化精确 handoff。
 6. 读取 `runtime.py --help` 并按实际接口使用语义操作：`init` 建立运行，`resume` / `status` 恢复或查看状态，`verify-workspace` 校验快照，`checkpoint` 持久化阶段，`upsert-finding` 维护 Finding，`validate-output` 校验输出边界与契约。不要硬编码未确认参数，也不要手工编辑 `state.json`。
@@ -25,22 +25,22 @@
 
 若 Context 缺失、明显过期、被截断或无法绑定 fingerprint，返回 `ContextRequired`，建议运行 `dev-harness-context` 后重新开始。不要边审计边发明新的仓库模型。
 
-## Phase 1 — Snapshot
+## 阶段 1 — 建立审计快照
 
 建立并持久化 `AuditSnapshot`：
 
 | 字段 | 含义 |
 |---|---|
-| Run ID | 本轮稳定标识 |
-| Base SHA / Branch | 代码基线 |
-| Preexisting dirty fingerprint | 开始前用户修改的路径、内容与暂存状态 |
-| Context fingerprint | 本轮实际使用的 canonical Context 内容指纹 |
-| Scope | include、exclude 和用户限制 |
-| Output paths | 已校验的 audit 文档路径 |
+| 运行 ID | 本轮稳定标识 |
+| 基线 SHA / 分支 | 代码基线 |
+| 审计前工作区指纹 | 开始前用户修改的路径、内容与暂存状态 |
+| Context 指纹 | 本轮实际使用的权威 Context 内容指纹 |
+| 审计范围 | 包含项、排除项和用户限制 |
+| 输出路径 | 已校验的审计文档路径 |
 
 把 Snapshot 摘要写入 Dashboard、Task、Result、Findings 和 Report；完整执行状态只写 Git 私有目录。后续门禁通过 `verify-workspace` 判断 Snapshot 是否仍有效。
 
-## Phase 2 — Dynamic Partition
+## 阶段 2 — 动态分区
 
 读取 [partitioning.md](partitioning.md)，从 Context 事实生成 Task。任务围绕 subsystem、调用链、数据流、所有权或边界，而不是“每 N 个文件”或固定技术栈规则。
 
@@ -49,17 +49,17 @@
 3. 记录每个 Task 的 Context 来源、入口、边界、排除项、证据策略、依赖和状态。面向读者的名称和问题按 `output_language` 表达，不直接复制 Context 中缺少行为说明的风险标签。
 4. checkpoint partition plan；恢复后复用未漂移的 Task，不为凑数量重新切片。
 
-## Phase 3 — Progressive Task Execution
+## 阶段 3 — 渐进执行审计任务
 
 每个 Task 使用以下漏斗：
 
 ```text
-Context / repository map
-  → symbol and text search
-  → entry point
-  → caller / callee
-  → owner / lifecycle / boundary
-  → focused code or local behavior evidence
+Context / 仓库地图
+  → 符号与文本搜索
+  → 入口
+  → 调用方 / 被调用方
+  → 职责归属 / 生命周期 / 边界
+  → 聚焦代码证据或本地行为证据
 ```
 
 执行规则：
@@ -72,7 +72,7 @@ Context / repository map
 
 需要运行证据时，优先在 `/tmp` 或临时目录构造最小、可回收的本地复现，调用项目自身 CLI/API，检查错误输入、边界输入、循环配置、实际状态变化和错误传播。验证目标是项目声明行为的正确性；不得超出 `SKILL.md` Scope 定义的工程验证边界。
 
-## Phase 4 — Finding Verification
+## 阶段 4 — 问题验证
 
 读取 [finding-contract.md](finding-contract.md)。对每个 candidate：
 
@@ -84,24 +84,24 @@ Context / repository map
 
 局部验证通过只代表“可进入 reconciliation”。报告前仍可能被合并、降级、改为 stale 或重新排序。
 
-## Phase 5 — Cross-module Reconciliation
+## 阶段 5 — 跨模块复核
 
 读取并完整执行 [cross-module-review.md](cross-module-review.md)。至少：
 
 ```text
-Task findings
+任务内问题
     ↓
-Boundary Ledger
+边界台账
     ↓
-Finding identity reconciliation
+问题同一性复核
     ↓
-Contradiction resolution
+矛盾处理
     ↓
-End-to-end trace
+端到端链路追踪
     ↓
-Severity / Confidence re-ranking
+重新评定严重度和置信度
     ↓
-Final Report
+最终报告
 ```
 
 - 根据 identity gate 合并已证明属于同一 Finding 的现象，并保持其他 candidate 独立；
@@ -113,7 +113,7 @@ Final Report
 
 即使没有 confirmed Finding，也要记录覆盖矩阵、矛盾检查和“未发现可确认跨模块问题”的证据，不得省略阶段。
 
-## Phase 6 — Final Report
+## 阶段 6 — 最终报告
 
 1. 再次校验 Snapshot；发现 drift 时停止并执行 stale 处理。
 2. 更新 `Findings.md`，让每个状态和 Evidence 指向唯一权威条目。
@@ -123,7 +123,7 @@ Final Report
 6. 使用 `validate-output` 并校验文档互链、Task/Result 一一对应、Finding ID 唯一、所有确认项含 Snapshot/Evidence。
 7. checkpoint completion。不要在 Audit 内执行 handoff 的修改、计划创建、文档中心更新、commit 或 PR。
 
-## Documentation Discoverability
+## 文档可发现性
 
 Audit 与 Docs 的职责分离如下：
 
@@ -133,7 +133,7 @@ Audit 与 Docs 的职责分离如下：
 - 新 Audit 与 Docs Refresh 同时授权时，顺序必须是 `read-only Audit preflight → Docs Refresh → AuditSnapshot/init → Audit execution`。
 - Audit 已有活跃 Snapshot 时不得修改 hub；记录 handoff，避免把导航更新伪装成审计输出或触发未声明 drift。
 
-## Workspace Drift
+## 工作区漂移
 
 在 resume、每个 Task、任何状态变为 `confirmed`、reconciliation 和 report 前校验。以下任一变化均使相关证据 fail closed：
 
@@ -145,7 +145,7 @@ Audit 与 Docs 的职责分离如下：
 
 处理方式：记录 `WorkspaceDrift` Evidence，将受影响结果/Finding 标 `STALE`/`stale`，停止发布当前结论。只有新 Snapshot 下重新执行必要 Task 和验证后才能清除 stale。
 
-## Completion Checklist
+## 完成检查清单
 
 - [ ] 所有 Task 已完成、blocked 或 stale，且原因可追踪。
 - [ ] 所有 Task 都有对应 Result。

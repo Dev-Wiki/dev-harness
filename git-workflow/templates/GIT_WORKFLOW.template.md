@@ -1,25 +1,25 @@
-# Git Workflow Contract
+# Git 工作流契约
 
-This document is the repository-owned contract for branches, commits, tags, changelog entries, and release messages.
+本文件是仓库关于分支、提交、tag、变更日志和发布文案的权威规范。
 
-## Branch Mode
+## 分支模式
 
-**Confirmed mode**: `{single-branch | feature-branch}` — 由项目确认后保留一个值。
+**已确认模式**：`{single-branch | feature-branch}`——由项目确认后只保留一个值。
 
-- `single-branch`: development may continue directly on the configured default branch.
-- `feature-branch`: use `feat/`, `fix/`, `docs/`, `refactor/`, `test/`, `perf/`, or `chore/` prefixes.
+- `single-branch`：可以直接在配置的默认分支上继续开发。
+- `feature-branch`：使用`feat/`、`fix/`、`docs/`、`refactor/`、`test/`、`perf/`或`chore/`前缀。
 
-Do not create or switch branches unless required by the confirmed mode or explicitly requested by the user.
+除非已确认的模式要求或用户明确提出，否则不要创建或切换分支。
 
-## Commit Convention
+## 提交规范
 
-Use Conventional Commits:
+使用 Conventional Commits：
 
 ```text
-<type>(<scope>): <description>
+<type>(<scope>): <中文描述>
 ```
 
-`scope` is optional. Allowed default types:
+`scope`可省略。默认允许的`type`包括：
 
 - `feat`
 - `fix`
@@ -33,47 +33,47 @@ Use Conventional Commits:
 - `chore`
 - `revert`
 
-Descriptions state the concrete purpose of the change. Repository-specific issue references may be added only when the project defines them.
+描述应准确说明变更目的，并使用自然中文；用户明确要求英文时使用自然英文。只有项目已经定义时，才添加项目特有的 issue 引用。
 
-## Tags
+## tag
 
-- Use SemVer annotated tags in `vMAJOR.MINOR.PATCH` form.
-- Pre-releases may use `vMAJOR.MINOR.PATCH-PRERELEASE`.
-- Do not create or replace a tag without an explicit release/tag request.
+- 使用`vMAJOR.MINOR.PATCH`格式的 SemVer annotated tag。
+- 预发布版本可以使用`vMAJOR.MINOR.PATCH-PRERELEASE`。
+- 没有明确的发布或 tag 请求时，不创建或替换 tag。
 
-## Changelog
+## 变更日志
 
-The default changelog is `CHANGELOG.md`. It is initialized only after explicit confirmation or when starting the first release.
+默认变更日志为`CHANGELOG.md`，仅在用户明确确认或开始首次发布时初始化。
 
-Release categories use this order:
+发布分类按以下顺序排列；括号中为兼容工具可能使用的内部英文分类：
 
-1. `Breaking Changes`
-2. `Added`
-3. `Changed`
-4. `Deprecated`
-5. `Fixed`
-6. `Removed`
-7. `Security`
+1. 重大变更（`Breaking Changes`）
+2. 新增（`Added`）
+3. 变更（`Changed`）
+4. 弃用（`Deprecated`）
+5. 修复（`Fixed`）
+6. 移除（`Removed`）
+7. 安全（`Security`）
 
-`Removed` is the removal category. Finalized version entries omit empty categories.
+删除内容归入“移除（`Removed`）”。定稿的版本记录省略空分类。
 
-## Tag Annotation and Release Notes
+## tag 注释和发布说明
 
-Generate both from the matching changelog version:
+两者都根据变更日志中的对应版本生成：
 
 ```text
-Release vMAJOR.MINOR.PATCH
+发布 vMAJOR.MINOR.PATCH
 
-<non-empty categorized changelog entries>
+<按分类整理的非空变更日志内容>
 ```
 
-Preserve the category order above and omit empty categories. If the matching changelog version is missing, stop and request confirmation before creating it; do not fabricate release content from commit subjects.
+保持上述分类顺序并省略空分类。缺少对应的变更日志版本时，先停止并请求确认；不得根据 commit subject 编造发布内容。
 
-## Commit Safety
+## 提交安全检查
 
-Before committing:
+提交前：
 
-- inspect the complete working tree and staged diff;
-- preserve an existing staged-file boundary;
-- stop on suspected secrets, credentials, large accidental files, or unrelated changes;
-- stop on temporary debug output such as `Console.WriteLine`, `Debug.Log`, or bare `print(` unless the project confirms it is intentional.
+- 检查完整工作区和暂存区 diff；
+- 保留已有的暂存文件边界；
+- 发现疑似密钥、凭据、意外的大文件或无关变更时停止；
+- 发现`Console.WriteLine`、`Debug.Log`或裸`print(`等临时调试输出时停止，除非项目确认需要保留。

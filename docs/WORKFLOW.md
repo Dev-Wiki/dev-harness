@@ -39,7 +39,7 @@
 第一次接入项目时按需使用：
 
 - [`dev-harness-context`](../context/SKILL.md)：初始化或刷新项目上下文；
-- [`dev-harness-docs`](../dev-harness-docs/SKILL.md)：确认文档根、导航和 SSOT；
+- [`dev-harness-docs`](../dev-harness-docs/SKILL.md)：确认文档根、导航和 SSOT；Planning 自己维护 `plan/` 内的任务归档内容；
 - [`dev-harness-commands`](../commands/SKILL.md)：把真实命令映射为稳定语义入口；
 - [`dev-harness-git-workflow`](../git-workflow/SKILL.md)：识别项目 Git、提交和发布规范。
 
@@ -59,7 +59,7 @@
 
 ```text
 需求与验收标准
-→ 看板拆分（Dashboard + TaskDetails）
+→ 看板拆分（Dashboard + 活跃索引 + 单任务文件）
 → 选择一个无阻塞任务并标记 🚧 开发中
 → 开发
 → 定向测试 + 任务验收
@@ -81,22 +81,24 @@
 
 使用 [`dev-harness-planning`](../planning/SKILL.md) 在项目已有文档根目录维护：
 
-- `<docs-root>/plan/Dashboard.md`：索引层，只保存任务 ID、优先级、状态、覆盖范围、阻塞和详情链接；
-- `<docs-root>/plan/TaskDetails.md`：执行层，保存背景、目标、影响文件、步骤、验收、风险和验证命令。
+- `<docs-root>/plan/Dashboard.md`：状态层，只保存当前里程碑、任务 ID、优先级、状态、覆盖范围、阻塞和详情链接；
+- `<docs-root>/plan/TaskDetails.md`：活跃任务入口，只保存工作顺序、依赖、共享验证基线和单任务文件链接；
+- `<docs-root>/plan/tasks/<Task-ID>.md`：执行层，每个活跃任务独立保存背景、目标、影响文件、步骤、验收、风险和验证证据；
+- `<docs-root>/plan/archive/<milestone>/`：完成任务的最终摘要与证据入口，不进入普通开发的默认读取范围。
 
 拆分规则：
 
 1. 先列前置调研和阻塞，再拆 P0 核心、P1 支撑和 P2 远期任务。
-2. 每个 Dashboard 任务必须链接到唯一的 TaskDetails 标题。
+2. 每个 Dashboard 和 TaskDetails 活跃任务必须链接到唯一的 `tasks/<Task-ID>.md`。
 3. 每项任务应能独立实现、验证和提交；跨任务依赖必须显式记录。
 4. 使用稳定状态：`📋 规划中`、`🚧 开发中`、`✅ 已完成`、`📋 远期`。
 5. 未经实现和验证证据，不得从计划或聊天推断任务已经完成。
 
 ### 4.4 领取并开发一个任务
 
-按依赖和优先级选择一个无阻塞任务，将 Dashboard 与 TaskDetails 中的状态同步为 `🚧 开发中`，然后只加载该任务需要的上下文和文件。
+按依赖和优先级选择一个无阻塞任务，将 Dashboard、TaskDetails 和对应任务文件中的状态同步为 `🚧 开发中`，然后只加载该任务需要的上下文和文件；不要读取全部已完成任务正文。
 
-开发过程遵循项目 `AGENTS.md`、架构约束和现有代码风格。实现中发现需求缺口时先回到需求或 TaskDetails 澄清；不要把新增范围静默塞进当前任务。已知缺陷可交给 Auto Fix，较大的架构调整应回到 Planning 重新拆分。
+开发过程遵循项目 `AGENTS.md`、架构约束和现有代码风格。实现中发现需求缺口时先回到需求或当前任务文件澄清；不要把新增范围静默塞进当前任务。已知缺陷可交给 Auto Fix，较大的架构调整应回到 Planning 重新拆分。
 
 ### 4.5 测试与验收
 
@@ -105,7 +107,7 @@
 ```text
 harness:quick / 相关 build
 → 定向 harness:test 或任务专属测试
-→ TaskDetails 验收标准
+→ 当前任务文件的验收标准
 → 必要时 harness:full
 → 可执行时 QA / Dogfood
 ```
@@ -123,7 +125,7 @@ harness:quick / 相关 build
 
 1. 检查当前 diff、任务验收结果和 fresh validation evidence。
 2. 使用 Docs 将代码或成功验证已经证明、且未来会重复使用的事实同步到现有权威文档；计划内容不得直接写入当前功能清单。
-3. 将 TaskDetails 和 Dashboard 中的当前任务同步为 `✅ 已完成`，保留验证入口或结果引用。
+3. 将当前任务同步为 `✅ 已完成`，保留最终验证入口或结果引用，再把任务文件迁入 `archive/<milestone>/`，并从活跃索引移除。
 4. 使用 Git Workflow 精确暂存当前任务文件，检查敏感内容、调试残留和无关变更后提交。
 5. push、PR、tag、release 和 deploy 仅在分别获得授权后执行。
 
@@ -131,7 +133,7 @@ harness:quick / 相关 build
 
 ### 4.7 下一任务与里程碑收口
 
-提交后重新读取 Dashboard，选择下一个无阻塞任务并重复开发闭环。一个里程碑的计划内任务全部完成后，再执行 fresh `harness:full` 和可用的 QA，汇总：
+提交后重新读取 Dashboard 和活跃索引，选择下一个无阻塞任务并重复开发闭环。一个里程碑的计划内任务全部完成后，再执行 fresh `harness:full` 和可用的 QA，汇总并收口里程碑归档：
 
 - 已完成、剩余和阻塞任务；
 - 验收与完整验证证据；

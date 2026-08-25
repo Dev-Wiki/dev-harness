@@ -1,181 +1,181 @@
-# Documentation information architecture
+# 文档信息架构
 
-Use this reference when defining navigation, assigning SSOT ownership, or reorganizing an existing documentation tree.
+定义导航、划分权威事实来源或整理现有文档树时使用本参考。
 
-## Contents
+## 目录
 
-1. Repository entry layers
-2. Reader routes
-3. Content placement
-4. Capability Catalog
-5. SSOT layers
-6. Archive lifecycle
-7. Migration protocol
-8. Verified-fact update discipline
-9. Optional content-authoring integration
+1. 仓库入口层级
+2. 阅读路径
+3. 内容存放
+4. 产品功能清单
+5. 权威事实来源层级
+6. 归档生命周期
+7. 迁移流程
+8. 已验证事实更新规则
+9. 可选的内容编写协作
 
-## 1. Repository entry layers
+## 1. 仓库入口层级
 
-Keep information at the shallowest layer that can route the reader correctly:
+将信息放在能够正确引导读者的最浅层级：
 
-| Layer | Typical files | Responsibility |
+| 层级 | 常见文件 | 职责 |
 |---|---|---|
-| Repository entry | `README.md`, `AGENTS.md`, `ARCHITECTURE.md`, `HARNESS.md` | Project overview, agent rules, architecture summary, executable commands |
-| Documentation hub | `<docs-root>/README.md` | Reader routes, active entry points, category index |
-| Route index | `<docs-root>/nav/*.md` | Progressive reading order for one audience or task family |
-| Deep documentation | Product, architecture, how-to, reference, integration, deployment, troubleshooting | Authoritative detail |
-| Archive | Topic-specific archive directories | Historical material that is no longer actively maintained |
+| 仓库入口 | `README.md`、`AGENTS.md`、`ARCHITECTURE.md`、`HARNESS.md` | 项目概览、协作规则、架构摘要和可执行命令 |
+| 文档中心 | `<docs-root>/README.md` | 阅读路径、当前有效入口和分类索引 |
+| 路径索引 | `<docs-root>/nav/*.md` | 面向某类读者或任务的渐进阅读顺序 |
+| 详细文档 | 产品、架构、操作指南、参考资料、集成、部署和故障排查文档 | 权威详细说明 |
+| 归档 | 各主题的归档目录 | 不再主动维护的历史资料 |
 
-Keep deep prose out of repository entry files. Link downward instead.
+仓库入口文件不承载大段详细内容，只向下链接。
 
-## 2. Reader routes
+## 2. 阅读路径
 
-Prefer routes based on real reader intent rather than directory mirroring. Common route families include:
+阅读路径优先反映真实的读者目标，不照搬目录结构。常见路径包括：
 
-| Intent | Possible route |
+| 读者目标 | 可选路径 |
 |---|---|
-| Understand scope or validate a feature | Product |
-| Implement or review code | Development and standards |
-| Plan, deploy, operate, or troubleshoot | Delivery and operations |
+| 了解产品范围或验证功能 | 产品 |
+| 实现或审查代码 | 开发与规范 |
+| 规划、部署、运维或排查问题 | 交付与运维 |
 
-Do not create these three routes automatically. Derive routes from the repository's actual audiences. A library may need `Users`, `API integrators`, and `Maintainers`; a small service may need no `nav/` directory at all.
+不要自动创建上述三条路径，应根据仓库的实际读者确定。代码库可能需要“使用者”“API 集成方”和“维护者”路径；小型服务可能完全不需要`nav/`目录。
 
-For every route, state:
+每条阅读路径应说明：
 
-- when to read it;
-- the minimal ordered entry set;
-- which large collections require an intermediate index;
-- which unrelated collections must not be loaded by default.
+- 何时需要阅读；
+- 最小且有序的入口集合；
+- 哪些大型文档集合需要中间索引；
+- 哪些无关文档不应默认加载。
 
-## 3. Content placement
+## 3. 内容存放
 
-Use purpose as the primary classifier:
+以文档用途作为主要分类依据：
 
-| Reader question | Document type | Common destination |
+| 读者问题 | 文档类型 | 常见存放位置 |
 |---|---|---|
-| What problem or version does this belong to? | Product requirement or overview | `product/` |
-| Why is the system designed this way? | Explanation or architecture rationale | `arch/` |
-| How do I accomplish a concrete task? | How-to | `how-to/` |
-| What are the exact fields, options, or interfaces? | Reference | `reference/` or `integration/<provider>/` |
-| What must contributors consistently follow? | Standard | `standards/` |
-| How is this deployed, restored, or delivered? | Operations guide | `deployment/` |
-| How was a known failure diagnosed and resolved? | Troubleshooting record | `troubleshooting/` |
-| What work is active and what blocks it? | Plan | `plan/` |
-| What problems did the latest codebase audit confirm? | Codebase Audit report | `audit/Report.md` |
+| 这个问题或版本属于什么范围？ | 产品需求或概览 | `product/` |
+| 系统为什么这样设计？ | 设计说明或架构依据 | `arch/` |
+| 如何完成一项具体任务？ | 操作指南 | `how-to/` |
+| 准确的字段、选项或接口是什么？ | 参考资料 | `reference/`或`integration/<provider>/` |
+| 贡献者必须统一遵循什么？ | 项目规范 | `standards/` |
+| 如何部署、恢复或交付？ | 运维指南 | `deployment/` |
+| 已知故障是如何诊断和解决的？ | 故障排查记录 | `troubleshooting/` |
+| 当前有哪些工作、存在哪些阻塞？ | 计划 | `plan/` |
+| 最近一次代码库审计确认了哪些问题？ | 代码库审计报告 | `audit/Report.md` |
 
-Use Diataxis as a content-quality lens, not as a mandatory top-level directory layout. Existing domain directories may contain clearly labeled how-to, reference, and explanation documents without being reorganized solely for theoretical purity.
+可以用 Diátaxis 检查内容质量，但不要把它当作强制的顶层目录结构。现有领域目录可以包含标识清楚的操作指南、参考资料和设计说明，不必只为形式统一而重新整理。
 
-Codebase Audit owns the report, findings, tasks, and evidence under `<docs-root>/audit/`. Documentation governance owns only the stable link from `<docs-root>/README.md` or one justified route index to `audit/Report.md`. Keep that entry concise; a root README shortcut is optional when it already links to the documentation hub.
+Codebase Audit 负责`<docs-root>/audit/`下的报告、发现、任务和证据。文档治理只负责从`<docs-root>/README.md`或一条合理的阅读路径稳定链接到`audit/Report.md`。入口应保持简短；根目录`README.md`已经链接到文档中心时，不强制再增加快捷入口。
 
-## 4. Capability Catalog
+## 4. 产品功能清单
 
-A Capability Catalog is the authoritative document for what the product supports now. Establish one only when current-function facts are scattered, support varies by applicability or released version, or the repository cannot reliably answer what it supports now. Reuse an existing document that already serves the same current-function purpose, regardless of filename.
+产品功能清单是“产品当前支持什么”的权威文档。仅在当前功能事实分散、支持范围因适用条件或发布版本而不同，或仓库无法可靠回答当前支持范围时建立。若已有文档承担同一职责，应复用它，不受文件名限制。
 
-If no such document exists, use `<docs-root>/product/CAPABILITIES.md` when an established product directory already exists; otherwise use `<docs-root>/CAPABILITIES.md`. Do not create `product/` solely to match this convention.
+不存在同类文档时，若已有产品文档目录，则使用`<docs-root>/product/CAPABILITIES.md`；否则使用`<docs-root>/CAPABILITIES.md`。不要只为符合此约定而新建`product/`。
 
-Use one stable ID for each independently verifiable function item that a user or integrator can exercise and confirm. Apply these counting rules:
+为每个用户或集成方能够操作并确认的可独立验证功能项分配一个稳定 ID，计数规则如下：
 
-- functional areas, screens, routes, endpoints, modules, tasks, and tests are not independently countable product functions;
-- record role, platform, provider, vehicle, firmware, release, or deployment differences as applicability instead of duplicating the same function item;
-- keep support status, applicability, version placement, and verification method as separate facts;
-- calculate summary totals from current function rows and state which version the total represents;
-- preserve an ID when support status, applicability, version placement, verification method, or evidence changes;
-- exclude `Pending confirmation / 待确认` rows from supported totals.
+- 功能分类、页面、路由、接口、模块、任务和测试本身不作为可独立计数的产品功能；
+- 角色、平台、供应方、车型、固件、发布版本或部署方式的差异写入“适用范围”，不要重复登记同一功能；
+- “支持状态”“适用范围”“版本归属”和“验证方式”必须分别记录；
+- 根据当前功能明细计算汇总数量，并说明汇总针对哪个版本；
+- 支持状态、适用范围、版本归属、验证方式或证据变化时保留原 ID；
+- “待确认（Pending confirmation）”中的项目不计入已支持功能总数。
 
-Support status answers whether the behavior is supported, partially supported, experimental, or deprecated. Version placement distinguishes released versions from the current development version. Verification method distinguishes code evidence, automated tests, runtime validation, and target-environment validation. Applicability records the roles, platforms, providers, vehicles, firmware, versions, or deployment modes for which the function is available. One field must not silently stand in for another.
+“支持状态”说明功能是已支持、部分支持、试验性还是已弃用；“版本归属”区分已发布版本和当前开发版本；“验证方式”区分代码证据、自动化测试、运行验证和目标环境验证；“适用范围”记录功能适用的角色、平台、供应方、车型、固件、版本或部署方式。任何字段都不能替代另一个字段。
 
-Match the repository's primary language and local writing conventions. For zh-CN documents, use `产品功能清单`, `当前已支持功能`, `可独立验证的功能项`, `功能分类`, `功能说明`, `支持状态`, `适用范围`, `版本归属`, `验证方式`, `当前开发版本`, `权威维护文档`, and `已有同类功能说明文档`. Use `可观测性` only for engineering observability such as logs, metrics, and distributed traces, never as a label for product functions. English repositories may use natural English equivalents.
+遵循仓库的主体语言和写作习惯。中文文档使用`产品功能清单`、`当前已支持功能`、`可独立验证的功能项`、`功能分类`、`功能说明`、`支持状态`、`适用范围`、`版本归属`、`验证方式`、`当前开发版本`、`权威维护文档`和`已有同类功能说明文档`等自然中文表达。“可观测性”只用于日志、指标和链路追踪等工程观测场景，不作为产品功能的名称。英文仓库可使用自然英文。
 
-Do not infer support from implementation inventory alone. Menus and routes can remain for deprecated behavior; tests can cover rejected or disabled paths; plans and requirements can describe work that does not exist. Every current row needs evidence and a link to the authoritative document for its detailed rules.
+不要仅根据实现清单推断功能支持情况。菜单和路由可能保留已弃用行为，测试可能覆盖拒绝或禁用的路径，计划和需求也可能描述尚未实现的工作。每条当前功能都必须有证据，并链接到详细规则的权威文档。
 
-The catalog is authoritative for current support only. Planning owns future work and task state, CHANGELOG owns released deltas, and architecture, reference, integration, validation, and usage documents own local detail.
+产品功能清单只负责当前支持情况。Planning 负责未来工作和任务状态，CHANGELOG 负责已发布变更，架构、参考资料、集成、验证和使用文档负责各自的详细内容。
 
-## 5. SSOT layers
+## 5. 权威事实来源层级
 
-Use three layers for changing project facts:
+会变化的项目事实分为三层：
 
-| Layer | May contain | Must not contain |
+| 层级 | 可以包含 | 不应包含 |
 |---|---|---|
-| Index | Status, priority, one-line scope, links | Detailed implementation history or duplicated acceptance steps |
-| Topic | Cross-task decisions, authoritative topic status, summarized outcomes | Unrelated project-wide rollups |
-| Requirement / implementation / reference | Local detail, steps, exact interfaces, acceptance evidence | Cross-topic status aggregation |
+| 索引 | 状态、优先级、简短范围和链接 | 详细实现历史或重复的验收步骤 |
+| 主题 | 跨任务决策、主题权威状态和结果摘要 | 无关的项目级汇总 |
+| 需求、实现或参考资料 | 局部细节、步骤、准确接口和验收证据 | 跨主题状态汇总 |
 
-For each fact that changes over time, record:
+为每项会随时间变化的事实记录：
 
 ```text
-Fact: <what changes>
-Authoritative document: <single maintained document>
-Readers: <indexes or documents that link to it>
-Archive rule: <when the authoritative document stops being active>
+事实：<会发生变化的内容>
+权威维护文档：<唯一持续维护的文档>
+引用入口：<链接到该事实的索引或文档>
+归档条件：<权威文档何时不再作为当前有效文档>
 ```
 
-When two documents appear authoritative, do not merge them silently. Identify their audiences, select one authority with evidence, and convert the other into a link or historical snapshot after confirmation.
+两个文档看起来都具备权威性时，不要静默合并。先识别各自读者，以证据选定一个权威来源；得到确认后，再把另一个改成链接或历史快照。
 
-## 6. Archive lifecycle
+## 6. 归档生命周期
 
-Archive only when active maintenance has ended:
+只在当前维护已经结束时归档：
 
-1. Identify the current authority that supersedes or summarizes the document.
-2. Add a clear archived or superseded banner with a relative link to that authority.
-3. Move the document into the nearest domain archive when a move improves active navigation.
-4. Update every incoming project-owned link.
-5. Remove it from active indexes and list it only in a clearly historical section when still useful.
-6. Preserve the body as historical evidence unless the user explicitly authorizes deletion.
+1. 找到取代或汇总该文档的当前权威来源。
+2. 添加清楚的“已归档”或“已被取代”说明，并用相对链接指向权威来源。
+3. 当移动能改善当前导航时，将文档移入最近的领域归档目录。
+4. 更新项目内所有入站链接。
+5. 从当前有效索引中移除；仍有历史价值时，仅在明确的历史章节列出。
+6. 除非用户明确授权删除，否则保留正文作为历史证据。
 
-Never use `archive/` as a dumping ground for documents whose ownership is merely unclear.
+不要把`archive/`当作存放所有权不明文档的杂物目录。
 
-## 7. Migration protocol
+## 7. 迁移流程
 
-For an existing tree, propose a table before applying moves:
+整理现有文档树时，先给出迁移表再执行移动：
 
-| Current path | Proposed path | Classification | SSOT owner | Link updates | Risk |
+| 当前路径 | 目标路径 | 文档分类 | 权威维护文档 | 需要更新的链接 | 风险 |
 |---|---|---|---|---|---|
-| `<path>` | `<path>` | `<type>` | `<owner>` | `<count or files>` | `<low/medium/high>` |
+| `<path>` | `<path>` | `<type>` | `<owner>` | `<数量或文件>` | `<低/中/高>` |
 
-Use these rules:
+遵循以下规则：
 
-- Keep stable public paths when the organizational gain is small.
-- Prefer adding an index over moving dozens of valid documents.
-- Separate generated documentation from hand-maintained documentation.
-- Preserve documentation-framework routing metadata and sidebar configuration.
-- Treat case-only renames and non-ASCII path changes as portability-sensitive.
-- Request confirmation for bulk moves, deletions, or redirects that cannot be preserved.
+- 整理收益较小时保留稳定的公开路径；
+- 优先增加索引，不要轻易移动数十份有效文档；
+- 将生成文档和人工维护文档分开；
+- 保留文档框架的路由元数据和侧边栏配置；
+- 仅大小写不同的重命名和非 ASCII 路径变更可能影响跨平台兼容性；
+- 批量移动、删除或无法保留重定向时，先请求确认。
 
-## 8. Verified-fact update discipline
+## 8. 已验证事实更新规则
 
-After code or validation changes, only verified, reusable project facts may be written into existing documents.
+代码或验证变化后，只能把已经验证且可重复使用的项目事实写入现有文档。
 
-Admission gate — every fact must satisfy all of:
+准入条件——每项事实必须同时满足：
 
-- proven by current code, configuration, or a successful validation;
-- something future developers will repeatedly need;
-- a clear owning document and stable scope.
+- 已由当前代码、配置或成功的验证证明；
+- 后续开发者会反复需要；
+- 有明确的权威维护文档和稳定范围。
 
-Excluded by default: task logs, commit summaries, one-off paths, failed attempts, and personal preferences.
+默认排除任务日志、提交摘要、一次性路径、失败尝试和个人偏好。
 
-Update flow:
+更新流程：
 
-1. Read the diff, design or review artifacts, and validation evidence.
-2. Locate the existing SSOT owner; do not create a second authority to host a fact.
-3. Produce a minimal add/correct/delete plan with per-fact evidence; no opportunistic rewrites.
-4. Preserve human-authored sections, encoding, heading levels, line endings, style, and framework metadata.
-5. Check links, commands, versions, examples, and duplicates; put unverified items into a `待确认` section instead of writing them as facts.
-6. Report modified files, how each was verified, and the remaining documentation gaps.
+1. 阅读差异、设计或审查材料以及验证证据。
+2. 找到现有权威维护文档，不要为容纳一项事实创建第二个权威来源。
+3. 给出最小的新增、纠正和删除方案，并为每项事实说明证据；不要顺便整篇重写。
+4. 保留人工编写章节、编码、标题层级、换行符、文风和框架元数据。
+5. 检查链接、命令、版本、示例和重复内容；未验证内容放入`待确认`，不要写成事实。
+6. 报告修改文件、验证依据和尚未处理的文档缺口。
 
-Managed context sections (`README.md` / `AGENTS.md` / `ARCHITECTURE.md` / `HARNESS.md`) are refreshed by `dev-harness-context`; release and CHANGELOG facts belong to the project Git workflow. This discipline does not bypass those owners.
+`README.md`、`AGENTS.md`、`ARCHITECTURE.md`和`HARNESS.md`中的托管区块由`dev-harness-context`刷新；发布和 CHANGELOG 事实属于项目 Git 工作流。本规则不能绕过这些所有权边界。
 
-## 9. Optional content-authoring integration
+## 9. 可选的内容编写协作
 
-After structure and ownership are settled, a content-writing workflow may fill identified gaps:
+文档结构和所有权确定后，可按需补充内容：
 
-- Generate factual reference material from code and tests.
-- Write explanations for design rationale and trade-offs.
-- Write task-focused how-to guides with verification.
-- Write tutorials only when newcomers need a guided learning path.
+- 根据代码和测试生成有事实依据的参考资料；
+- 编写设计依据和取舍说明；
+- 编写带验证步骤的任务型操作指南；
+- 仅在新成员确实需要渐进学习路径时编写教程。
 
-Keep this integration optional. The core `dev-harness-docs` workflow (structure, SSOT, and the verified-fact update discipline) must not require gstack or another external documentation package. If such a skill is available, use it only for heavier authoring or audit work:
+内容编写协作是可选项。`dev-harness-docs`的核心流程（文档结构、权威事实来源和已验证事实更新规则）不应依赖 gstack 或其他外部文档包。相关 skill 可用时，仅在较重的编写或审计工作中使用：
 
-- from-scratch Diataxis generation (tutorials, API references, explanations) → a content-authoring skill, passing the resolved `<docs-root>`, target document type, existing index, and SSOT owner;
-- post-ship full-repository audit and coverage reporting → a release-oriented documentation skill.
+- 从零生成符合 Diátaxis 的教程、API 参考资料和设计说明时，将确定的`<docs-root>`、目标文档类型、现有索引和权威维护文档交给内容编写 skill；
+- 发版后的全仓库审计和覆盖率报告交给面向发布的文档 skill。
 
-Everyday verified-fact sync stays inside this skill's Update operation, so projects without external packages still get a safe default.
+日常的已验证事实同步仍由本 skill 的 Update 操作负责，这样没有外部包的项目也能获得安全的默认行为。

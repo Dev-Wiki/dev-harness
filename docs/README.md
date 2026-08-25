@@ -32,4 +32,4 @@
 - 当前行为以代码、测试、对应 Skill/reference 和已经验证的命令为准。
 - 已完成的实施计划不继续作为活动文档维护；历史由 Git 保存。
 - Codebase Audit 负责维护目标项目中的 `<docs-root>/audit/` 内容，Docs 只管理导航、链接和归档。
-- Planning 负责维护目标项目中的 `<docs-root>/plan/` 内容，Docs 不复制任务状态。
+- Planning 负责维护目标项目中的 `<docs-root>/plan/` 内容及任务生命周期归档，Docs 只治理其放置、导航和链接，不复制或改写任务状态。

@@ -1,4 +1,4 @@
-# Context-driven Partitioning
+# 基于 Context 的审计分区
 
 目标是把超出单次上下文的代码库拆成可验证的行为域，同时保留跨边界关系。不要维护语言或框架 checklist。
 
@@ -39,25 +39,25 @@
 
 这些只决定阅读顺序，不直接证明存在 Finding，也不预设 category 或 severity。
 
-## Task Contract
+## 任务契约
 
 每个 `tasks/Axx-*.md` 必须包含：
 
 | 字段 | 要求 |
 |---|---|
-| Task ID / Status | 稳定 ID；状态可 checkpoint |
-| Scope | 行为域和 in-scope 路径 |
-| Why this scope exists | 引用 Context 事实与证据 |
-| Entry Points | 最小起始位置 |
-| Important Boundaries | 接缝两端和相关 Task |
-| Exclusions | 本 Task 明确不覆盖什么 |
-| Evidence Strategy | search → chain → focused read / behavior verification |
-| Dependencies | 前置 Task、共享证据和待回答问题 |
-| Snapshot | 当前代码与 Context 基线 |
+| 任务 ID / 状态 | 稳定 ID；状态可持久化到检查点 |
+| 范围 | 行为域和范围内路径 |
+| 分区依据 | 引用 Context 事实与证据 |
+| 入口 | 最小起始位置 |
+| 重要边界 | 接缝两端和相关任务 |
+| 排除项 | 本任务明确不覆盖什么 |
+| 证据策略 | 搜索 → 追踪链路 → 聚焦阅读 / 行为验证 |
+| 依赖 | 前置任务、共享证据和待回答问题 |
+| 审计快照 | 当前代码与 Context 基线 |
 
 建议 ID `A01`、`A02`…；名称描述行为域，例如 `A03-session-lifecycle`，不要只写技术栈名。Task 标题和问题应描述实际工程行为，例如“工作区路径与操作边界”“执行前置检查与状态变化”，不要仅复制 Context 中缺少具体机制的风险标签。默认中文产物使用自然中文名称；仅在 `output_language=en` 时使用全英文自然语言。
 
-## Coverage Review
+## 覆盖检查
 
 生成 Task 后检查：
 

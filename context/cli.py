@@ -51,11 +51,11 @@ TEMPLATE_FILES = (
 )
 RUNTIME_DIRECTORY_NAMES = {"data", "logs", "log", "tmp", "temp", "cache"}
 GENERATED_DOCUMENT_ANTI_PATTERNS = (
-    ("internal semantic evidence field", re.compile(r"AI `[a-z_]+(?:\[\d+\])?` \[(?:high|medium|low)\]")),
-    ("stale test result count", re.compile(r"\b\d+\s+passed\b", re.IGNORECASE)),
-    ("generic directory placeholder", re.compile(r"contains (?:project files|submodules or grouped resources)")),
-    ("project-inappropriate SDK template term", re.compile(r"SDK 调用链")),
-    ("meaningless Unknown list item", re.compile(r"(?m)^- Unknown\s*$")),
+    ("内部语义证据字段", re.compile(r"AI `[a-z_]+(?:\[\d+\])?` \[(?:high|medium|low)\]")),
+    ("可能已过期的测试数量", re.compile(r"\b\d+\s+passed\b", re.IGNORECASE)),
+    ("无具体含义的目录占位说明", re.compile(r"contains (?:project files|submodules or grouped resources)")),
+    ("不适用于当前项目的 SDK 模板术语", re.compile(r"SDK 调用链")),
+    ("无具体含义的 Unknown 列表项", re.compile(r"(?m)^- Unknown\s*$")),
 )
 LANGUAGE_BY_SUFFIX = {
     ".py": "Python",
@@ -73,8 +73,8 @@ LANGUAGE_BY_SUFFIX = {
     ".cc": "C++",
     ".cxx": "C++",
     ".c": "C",
-    ".h": "C/C++ Header",
-    ".hpp": "C/C++ Header",
+    ".h": "C/C++ 头文件",
+    ".hpp": "C/C++ 头文件",
     ".rb": "Ruby",
     ".php": "PHP",
     ".sh": "Shell",
@@ -94,7 +94,7 @@ def discover_template_dir(repo_root: Path | None = None) -> Path:
             required_templates = [candidate / file_name for file_name in TEMPLATE_FILES]
             if all(path.exists() for path in required_templates):
                 return candidate
-    raise FileNotFoundError("Cannot locate context templates directory")
+    raise FileNotFoundError("找不到 Context 模板目录")
 
 
 def read_template(name: str, repo_root: Path | None = None) -> str:
@@ -126,8 +126,8 @@ def detect_build_systems(repo_root: Path) -> list[str]:
         ("build.gradle.kts", "Gradle"),
         ("CMakeLists.txt", "CMake"),
         ("Makefile", "Make"),
-        ("*.sln", ".NET Solution"),
-        ("*.csproj", ".NET Project"),
+        ("*.sln", ".NET 解决方案"),
+        ("*.csproj", ".NET 项目"),
     ]
     for pattern, label in file_markers:
         matches = list(repo_root.glob(pattern))
@@ -280,7 +280,7 @@ def detect_validation_commands(repo_root: Path, project_type: str, build_step: s
 
 
 def detect_test_command(repo_root: Path, project_type: str, quick_step: str) -> str:
-    """Return an evidence-backed generic test candidate without inventing toolchain entries."""
+    """返回有证据支持的通用测试候选，不臆造工具链入口。"""
     if project_type == "FastAPI" and (repo_root / "tests").is_dir():
         return "python -m pytest -q"
     if project_type == "Qt" and (repo_root / "CMakeLists.txt").exists():
@@ -305,58 +305,58 @@ def is_wsl_host() -> bool:
 
 def detect_build_bootstrap(repo_root: Path, project_type: str, build_step: str) -> str:
     lines = [
-        "- **WorkingDirectory**: repository root",
+        "- **WorkingDirectory**（工作目录）：仓库根目录",
     ]
 
     if project_type in {"WPF", "Win32"}:
-        lines.append("- **RecommendedTerminal**: Windows PowerShell 7 或 cmd")
+        lines.append("- **RecommendedTerminal**（建议终端）：Windows PowerShell 7 或 cmd")
         if is_wsl_host():
-            lines.append("- **CanRunBuildHere**: no")
-            lines.append("- **Reason**: 当前宿主是 WSL，Windows 客户端编译链容易受路径、SDK、MSBuild 发现和子进程语义影响")
+            lines.append("- **CanRunBuildHere**（当前环境能否构建）：no")
+            lines.append("- **Reason**（原因）：当前宿主是 WSL，Windows 客户端编译链容易受路径、SDK、MSBuild 发现和子进程语义影响")
         elif sys.platform == "win32":
-            lines.append("- **CanRunBuildHere**: yes")
+            lines.append("- **CanRunBuildHere**（当前环境能否构建）：yes")
         else:
-            lines.append("- **CanRunBuildHere**: unknown")
-            lines.append("- **Reason**: 当前宿主不是 Windows，需在 Windows PowerShell/cmd 中确认工具链")
+            lines.append("- **CanRunBuildHere**（当前环境能否构建）：unknown")
+            lines.append("- **Reason**（原因）：当前宿主不是 Windows，需在 Windows PowerShell/cmd 中确认工具链")
 
         if project_type == "WPF":
-            lines.append("- **Preflight**: `dotnet --info`; 若使用旧式 .NET Framework 项目，还需确认 Visual Studio Build Tools")
+            lines.append("- **Preflight**（执行前检查）：`dotnet --info`；若使用旧式 .NET Framework 项目，还需确认 Visual Studio Build Tools")
             if first_matching_file(repo_root, "global.json"):
-                lines.append("- **Evidence**: `global.json` 会约束 .NET SDK 版本")
+                lines.append("- **Evidence**（证据）：`global.json` 会约束 .NET SDK 版本")
             if first_matching_file(repo_root, "NuGet.config", "packages.config"):
-                lines.append("- **Preflight**: 先执行 NuGet restore 或确认私有源可访问")
+                lines.append("- **Preflight**（执行前检查）：先执行 NuGet restore 或确认私有源可访问")
         else:
-            lines.append("- **Preflight**: `where msbuild`; 确认 Visual Studio Build Tools、Windows SDK、PlatformToolset、Configuration/Platform")
+            lines.append("- **Preflight**（执行前检查）：`where msbuild`；确认 Visual Studio Build Tools、Windows SDK、PlatformToolset、Configuration/Platform")
             if first_matching_file(repo_root, "*.vcxproj"):
-                lines.append("- **Evidence**: 检测到 `.vcxproj`，需要 Windows 原生 MSBuild 工具链")
+                lines.append("- **Evidence**（证据）：检测到 `.vcxproj`，需要 Windows 原生 MSBuild 工具链")
     elif project_type == "Harmony":
-        lines.append("- **RecommendedTerminal**: 项目约定的本机 shell；Windows 下优先 PowerShell/cmd")
-        lines.append("- **CanRunBuildHere**: unknown")
-        lines.append("- **Preflight**: `ohpm --version`; `hvigorw --version`; 确认 DevEco / hvigor / ohpm 与签名配置")
+        lines.append("- **RecommendedTerminal**（建议终端）：项目约定的本机 shell；Windows 下优先 PowerShell/cmd")
+        lines.append("- **CanRunBuildHere**（当前环境能否构建）：unknown")
+        lines.append("- **Preflight**（执行前检查）：`ohpm --version`；`hvigorw --version`；确认 DevEco / hvigor / ohpm 与签名配置")
     elif project_type == "Qt":
-        lines.append("- **RecommendedTerminal**: 已加载 Qt/CMake 工具链环境的终端")
-        lines.append("- **CanRunBuildHere**: unknown")
-        lines.append("- **Preflight**: `cmake --version`; `ctest --version`; 确认 Qt Kit、生成器和 build preset")
+        lines.append("- **RecommendedTerminal**（建议终端）：已加载 Qt/CMake 工具链环境的终端")
+        lines.append("- **CanRunBuildHere**（当前环境能否构建）：unknown")
+        lines.append("- **Preflight**（执行前检查）：`cmake --version`；`ctest --version`；确认 Qt Kit、生成器和 build preset")
     elif project_type == "FastAPI":
-        lines.append("- **RecommendedTerminal**: 项目 Python 虚拟环境中的 shell")
-        lines.append("- **CanRunBuildHere**: unknown")
-        lines.append("- **Preflight**: `python --version`; 确认已安装运行依赖与测试依赖")
+        lines.append("- **RecommendedTerminal**（建议终端）：项目 Python 虚拟环境中的 shell")
+        lines.append("- **CanRunBuildHere**（当前环境能否构建）：unknown")
+        lines.append("- **Preflight**（执行前检查）：`python --version`；确认已安装运行依赖与测试依赖")
         if (repo_root / "requirements.txt").exists():
-            lines.append("- **Evidence**: `requirements.txt` 定义运行依赖")
+            lines.append("- **Evidence**（证据）：`requirements.txt` 定义运行依赖")
         if (repo_root / "requirements-dev.txt").exists():
-            lines.append("- **Evidence**: `requirements-dev.txt` 定义测试或开发依赖")
+            lines.append("- **Evidence**（证据）：`requirements-dev.txt` 定义测试或开发依赖")
     else:
-        lines.append("- **RecommendedTerminal**: PowerShell（Windows）或项目兼容 shell")
-        lines.append("- **CanRunBuildHere**: unknown")
+        lines.append("- **RecommendedTerminal**（建议终端）：PowerShell（Windows）或项目兼容 shell")
+        lines.append("- **CanRunBuildHere**（当前环境能否构建）：unknown")
 
     if build_step == "Unknown":
-        lines.append("- **MissingCommands**: build 命令缺失，不能启动编译")
+        lines.append("- **MissingCommands**（缺失命令）：build 命令缺失，不能启动编译")
     elif build_step.startswith("N/A"):
-        lines.append("- **BuildCommand**: N/A")
-        lines.append("- **Reason**: 项目无独立编译或打包步骤")
+        lines.append("- **BuildCommand**（构建命令）：N/A")
+        lines.append("- **Reason**（原因）：项目无独立编译或打包步骤")
     else:
-        lines.append(f"- **BuildCommand**: `{build_step}`")
-        lines.append("- **FailureEvidence**: 记录完整命令、工作目录、终端类型、退出码、前 50 行和最后 100 行构建日志")
+        lines.append(f"- **BuildCommand**（构建命令）：`{build_step}`")
+        lines.append("- **FailureEvidence**（失败证据）：记录完整命令、工作目录、终端类型、退出码、前 50 行和最后 100 行构建日志")
     return "\n".join(lines)
 
 
@@ -367,12 +367,12 @@ def detect_high_risk_directories(repo_root: Path, project_type: str) -> list[str
 def detect_restricted_areas(repo_root: Path) -> list[str]:
     restricted: list[str] = []
     for candidate, description in [
-        ("bin", "generated build outputs"),
-        ("obj", "generated intermediate outputs"),
-        ("dist", "packaged artifacts"),
-        ("build", "generated build directory"),
-        ("node_modules", "third-party installed dependencies"),
-        (".git", "version control metadata"),
+        ("bin", "构建产物"),
+        ("obj", "构建中间产物"),
+        ("dist", "打包产物"),
+        ("build", "构建输出目录"),
+        ("node_modules", "已安装的第三方依赖"),
+        (".git", "版本控制元数据"),
     ]:
         if (repo_root / candidate).exists():
             restricted.append(f"{candidate}: {description}")
@@ -438,9 +438,9 @@ def detect_language_framework_summary(repo_root: Path, project_type: str, langua
     if project_type == "WPF":
         summary_parts.append("C# + WPF")
     elif project_type == "Qt":
-        summary_parts.append("Qt Client")
+        summary_parts.append("Qt 客户端")
         if has_shared_cpp_core:
-            summary_parts.append("Shared C++ Core")
+            summary_parts.append("共享 C++ 核心")
     elif project_type == "Harmony":
         summary_parts.append("Harmony")
     elif project_type == "FastAPI":
@@ -463,8 +463,8 @@ def detect_language_framework_summary(repo_root: Path, project_type: str, langua
 def detect_architecture_pattern(repo_root: Path, project_type: str) -> str:
     if project_type == "FastAPI":
         if (repo_root / "app" / "routers").is_dir():
-            return "FastAPI modular service"
-        return "FastAPI service"
+            return "FastAPI 模块化服务"
+        return "FastAPI 服务"
     if first_matching_file(repo_root, "*ViewModel.cs") or (repo_root / "ViewModel").exists():
         return "MVVM"
     return "Unknown"
@@ -479,10 +479,10 @@ def detect_sdk_call_chain(repo_root: Path) -> str:
     project_type = detect_project_type(repo_root)
     has_shared_cpp_core, _ = detect_shared_cpp_core_info(repo_root)
     if project_type == "Qt" and has_shared_cpp_core:
-        return "Qt UI -> Qt Controller/Service -> C++ wrapper -> Shared C++ Core"
+        return "Qt UI -> Qt 控制器/服务 -> C++ 包装层 -> 共享 C++ 核心"
     if project_type == "FastAPI":
         entry = find_fastapi_entry(repo_root)
-        parts = [relative_display(entry, repo_root) if entry else "ASGI entry"]
+        parts = [relative_display(entry, repo_root) if entry else "ASGI 入口"]
         for candidate in ("app/routers", "app/services", "app/core"):
             if (repo_root / candidate).is_dir():
                 parts.append(candidate)
@@ -589,7 +589,7 @@ def _extract_py_style_anchor_line(path: Path) -> str | None:
 
 
 def detect_style_anchors(repo_root: Path) -> str:
-    """Sample real file paths (+ one structural line) so agents align with existing style."""
+    """抽取真实文件路径和一行结构示例，帮助 Agent 对齐现有风格。"""
     anchors: list[tuple[str, str | None]] = []
     seen: set[str] = set()
 
@@ -993,35 +993,35 @@ def detect_nativebridge_signals(repo_root: Path) -> list[str]:
     has_shared_cpp_core, shared_cpp_markers = detect_shared_cpp_core_info(repo_root)
 
     if project_type == "Qt" and has_shared_cpp_core:
-        signals.append("Qt Client -> Shared C++ Core: 检测到 Qt UI 与共享 C++ 底层链路")
+        signals.append("Qt 客户端 -> 共享 C++ 核心：检测到 Qt UI 与共享 C++ 底层链路")
         for marker in shared_cpp_markers[:3]:
-            signals.append(f"`{marker}`: Shared C++ Core 候选")
+            signals.append(f"`{marker}`：共享 C++ 核心候选")
     elif project_type == "FastAPI":
         entry = find_fastapi_entry(repo_root)
         if entry:
-            signals.append(f"`{relative_display(entry, repo_root)}`: FastAPI ASGI 应用入口")
+            signals.append(f"`{relative_display(entry, repo_root)}`：FastAPI ASGI 应用入口")
         for candidate, label in (("app/routers", "路由层"), ("app/services", "服务层"), ("app/core", "核心基础设施层")):
             if (repo_root / candidate).is_dir():
-                signals.append(f"`{candidate}`: FastAPI {label}候选")
+                signals.append(f"`{candidate}`：FastAPI {label}候选")
 
     for path in islice(iter_matching_files(repo_root, "*.vcxproj"), 3):
-        signals.append(f"`{relative_display(path, repo_root)}`: 检测到原生工程或桥接工程")
+        signals.append(f"`{relative_display(path, repo_root)}`：检测到原生工程或桥接工程")
 
     for path in islice(iter_matching_files(repo_root, "*.cs"), 30):
         content = path.read_text(encoding="utf-8", errors="ignore")
         relative_path = relative_display(path, repo_root)
         if "DllImport" in content:
-            signals.append(f"`{relative_path}`: 检测到 DllImport / PInvoke")
+            signals.append(f"`{relative_path}`：检测到 DllImport / PInvoke")
         if "MarshalAs" in content or "System.Runtime.InteropServices.Marshal" in content:
-            signals.append(f"`{relative_path}`: 检测到 MarshalAs / marshaling")
+            signals.append(f"`{relative_path}`：检测到 MarshalAs / marshaling")
         if "delegate" in content and ("Callback" in content or "Observer" in content):
-            signals.append(f"`{relative_path}`: 检测到 callback / observer 定义")
+            signals.append(f"`{relative_path}`：检测到 callback / observer 定义")
 
     for path in islice(iter_matching_files(repo_root, "*.cpp", "*.h", "*.hpp"), 30):
         content = path.read_text(encoding="utf-8", errors="ignore")
         relative_path = relative_display(path, repo_root)
         if any(token in content for token in ("windows.h", "HWND", "HANDLE", "CreateWindow", "SendMessage", "GetMessage")):
-            signals.append(f"`{relative_path}`: 检测到 Win32 API 使用")
+            signals.append(f"`{relative_path}`：检测到 Win32 API 使用")
 
     deduped: list[str] = []
     seen: set[str] = set()
@@ -1047,7 +1047,7 @@ def detect_manual_review_items(
     if project_type == "Qt" and has_shared_cpp_core:
         header_markers = [marker for marker in shared_cpp_markers if marker.endswith((".h", ".hpp"))]
         if header_markers:
-            items.append(f"`{header_markers[0]}`: C++ 导出头文件或 ABI 边界需人工确认")
+            items.append(f"`{header_markers[0]}`：C++ 导出头文件或 ABI 边界需人工确认")
         else:
             items.append("C++ 导出头文件或 ABI 边界需人工确认")
         items.append("Qt signal/slot 跨线程调用、回调生命周期和共享 C++ Core 影响面需人工确认")
@@ -1088,7 +1088,7 @@ def detect_architecture_overview(core_modules: list[str]) -> str:
     if not core_modules:
         return "Unknown"
     module_names = ", ".join(item.split(":", 1)[0] for item in core_modules[:5])
-    return f"Repository is organized around top-level modules: {module_names}."
+    return f"仓库按顶层模块组织，主要包括：{module_names}。"
 
 
 def detect_module_dependency_graph(core_modules: list[str]) -> str:
@@ -1120,7 +1120,7 @@ def validate_generated_documents(generated_files: dict[str, str]) -> None:
     for file_name, content in generated_files.items():
         for label, pattern in GENERATED_DOCUMENT_ANTI_PATTERNS:
             if pattern.search(content):
-                raise ManagedDocumentError(f"{file_name}: generated document contains {label}")
+                raise ManagedDocumentError(f"{file_name}：生成文档包含{label}")
 
 
 def render_readme(
@@ -1262,7 +1262,7 @@ def generate_context_files(repo_root: Path, analysis: SemanticAnalysis | None = 
     install_step, build_step, run_step = detect_usage_steps(repo_root, project_type)
     quick_step, bugfix_step, full_step = detect_validation_commands(repo_root, project_type, build_step)
     test_step = detect_test_command(repo_root, project_type, quick_step)
-    project_summary = f"Automatically detected {project_type} project." if project_type != "Unknown" else "Unknown"
+    project_summary = f"根据仓库证据识别为 {project_type} 项目。" if project_type != "Unknown" else "Unknown"
     architecture_overview = detect_architecture_overview(core_modules)
     dependency_graph = detect_module_dependency_graph(core_modules)
     module_interfaces = detect_module_interfaces(core_modules)
@@ -1275,10 +1275,10 @@ def generate_context_files(repo_root: Path, analysis: SemanticAnalysis | None = 
     sdk_call_chain = detect_sdk_call_chain(repo_root)
     if project_type == "FastAPI":
         dependency_graph = sdk_call_chain
-        architecture_overview = "FastAPI ASGI entry delegates HTTP handling to router modules and downstream service/core modules."
+        architecture_overview = "FastAPI ASGI 入口把 HTTP 请求交给路由模块，再由下游 service/core 模块处理。"
         module_interfaces = [
-            "ASGI entry -> routers: FastAPI include_router registration",
-            "routers -> services/core: Python module calls and dependency injection",
+            "ASGI 入口 -> routers：通过 FastAPI include_router 注册路由",
+            "routers -> services/core：通过 Python 模块调用和依赖注入协作",
         ]
     version_marker = detect_version_marker(repo_root)
     style_rules = detect_style_rules(repo_root)
@@ -1415,15 +1415,15 @@ def summarize_diff(file_name: str, existing: str, generated: str) -> tuple[str, 
         difflib.unified_diff(
             existing.splitlines(),
             generated.splitlines(),
-            fromfile=f"{file_name} (existing)",
-            tofile=f"{file_name} (generated)",
+            fromfile=f"{file_name}（现有内容）",
+            tofile=f"{file_name}（生成内容）",
             lineterm="",
         )
     )
     changed_line_count = sum(
         1 for line in diff if (line.startswith("+") or line.startswith("-")) and not line.startswith("+++") and not line.startswith("---")
     )
-    summary = f"{file_name}: diff lines={changed_line_count}, existing_lines={len(existing.splitlines())}, generated_lines={len(generated.splitlines())}"
+    summary = f"{file_name}：差异行数={changed_line_count}，现有行数={len(existing.splitlines())}，生成行数={len(generated.splitlines())}"
     return summary, "\n".join(diff)
 
 
@@ -1444,8 +1444,8 @@ def summarize_section_diffs(
             difflib.unified_diff(
                 existing.splitlines(),
                 cleaned_existing.splitlines(),
-                fromfile=f"{file_name}:legacy-markers (existing)",
-                tofile=f"{file_name}:legacy-markers (removed)",
+                fromfile=f"{file_name}:legacy-markers（现有内容）",
+                tofile=f"{file_name}:legacy-markers（已移除）",
                 lineterm="",
             )
         )
@@ -1456,8 +1456,8 @@ def summarize_section_diffs(
             difflib.unified_diff(
                 existing_body.splitlines(),
                 merged_body.splitlines(),
-                fromfile=f"{file_name}:{section_id} (existing)",
-                tofile=f"{file_name}:{section_id} (generated)",
+                fromfile=f"{file_name}:{section_id}（现有内容）",
+                tofile=f"{file_name}:{section_id}（生成内容）",
                 lineterm="",
             )
         )
@@ -1465,7 +1465,7 @@ def summarize_section_diffs(
 
 
 def prompt_overwrite_action(file_name: str) -> str:
-    prompt = f"Action for {file_name}? [y]es / [n]o / [all] / [none] / [quit]: "
+    prompt = f"如何处理 {file_name}？[y] 应用 / [n] 跳过 / [all] 全部应用 / [none] 全部跳过 / [quit] 退出："
     while True:
         response = input(prompt).strip().lower()
         if response in {"y", "yes"}:
@@ -1478,7 +1478,7 @@ def prompt_overwrite_action(file_name: str) -> str:
             return "none"
         if response in {"q", "quit"}:
             return "quit"
-        print("Invalid choice. Enter one of: y, n, all, none, quit.")
+        print("输入无效，请输入 y、n、all、none 或 quit。")
 
 
 def write_initial_context_files(repo_root: Path, generated_files: dict[str, str], force: bool = False) -> int:
@@ -1501,24 +1501,24 @@ def write_initial_context_files(repo_root: Path, generated_files: dict[str, str]
         differing_files.append(file_name)
 
     if created_files:
-        print("Created files:")
+        print("已创建文件：")
         for file_name in created_files:
             print(f"- {file_name}")
 
     if unchanged_files:
-        print("Unchanged files:")
+        print("未变化的文件：")
         for file_name in unchanged_files:
             print(f"- {file_name}")
 
     if not differing_files:
         return 0
 
-    print("Existing context files differ and were left unchanged:")
+    print("以下上下文文件已有不同内容，本次未修改：")
     for file_name in differing_files:
         print(f"- {file_name}")
     if force:
-        print("--force cannot overwrite existing context files during scan.")
-    print("Run `dev-harness-context refresh <repo-path>` to preview fixed-section updates.")
+        print("scan 模式下，即使使用 --force 也不会覆盖现有上下文文件。")
+    print("请运行 `dev-harness-context refresh <repo-path>` 预览固定章节更新。")
     return 2
 
 
@@ -1557,35 +1557,35 @@ def refresh_context_files(repo_root: Path, generated_files: dict[str, str], forc
 
     if errors:
         for file_name, message in errors:
-            print(f"Error: cannot refresh {file_name}: {message}")
+            print(f"错误：无法刷新 {file_name}：{message}")
         return 1
 
     for file_name, target_path, content in missing:
         target_path.write_bytes(content)
-        print(f"Created: {file_name}")
+        print(f"已创建：{file_name}")
 
     if not pending:
         return 0
 
-    print("Fixed-section updates detected:")
+    print("检测到固定章节更新：")
     for file_name, _, _, _, changed_ids, _ in pending:
         print(f"- {file_name}: {', '.join(changed_ids)}")
 
     if not force and not interactive:
         for file_name, _, _, _, _, diff_text in pending:
-            print(f"--- BEGIN SECTION DIFF: {file_name} ---")
+            print(f"--- 章节差异开始：{file_name} ---")
             print(diff_text)
-            print(f"--- END SECTION DIFF: {file_name} ---")
-        print("Preview only; re-run with --force or use an interactive terminal to apply fixed-section updates.")
+            print(f"--- 章节差异结束：{file_name} ---")
+        print("当前仅预览；请使用 --force 重新运行，或在交互式终端中确认后应用固定章节更新。")
         return 2
 
     updated: list[str] = []
     skipped: list[str] = []
     interactive_mode = "ask"
     for file_name, target_path, merged, document_format, _, diff_text in pending:
-        print(f"--- BEGIN SECTION DIFF: {file_name} ---")
+        print(f"--- 章节差异开始：{file_name} ---")
         print(diff_text)
-        print(f"--- END SECTION DIFF: {file_name} ---")
+        print(f"--- 章节差异结束：{file_name} ---")
         if force or interactive_mode == "all":
             action = "yes"
         elif interactive_mode == "none":
@@ -1593,7 +1593,7 @@ def refresh_context_files(repo_root: Path, generated_files: dict[str, str], forc
         else:
             action = prompt_overwrite_action(file_name)
         if action == "quit":
-            print(f"Quit requested. Left unchanged: {file_name}")
+            print(f"已按要求退出，未修改：{file_name}")
             return 130
         if action == "all":
             interactive_mode = "all"
@@ -1604,30 +1604,30 @@ def refresh_context_files(repo_root: Path, generated_files: dict[str, str], forc
         if action == "yes":
             atomic_write_document(target_path, merged, document_format)
             updated.append(file_name)
-            print(f"Updated fixed sections: {file_name}")
+            print(f"已更新固定章节：{file_name}")
         else:
             skipped.append(file_name)
-            print(f"Skipped: {file_name}")
+            print(f"已跳过：{file_name}")
 
     return 2 if skipped else 0
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Generate README.md, AGENTS.md, and ARCHITECTURE.md from a real repository scan.")
+    parser = argparse.ArgumentParser(description="扫描真实仓库并生成 README.md、AGENTS.md、ARCHITECTURE.md 和 HARNESS.md。")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    evidence_parser = subparsers.add_parser("evidence", help="collect framework-agnostic repository evidence as JSON")
-    evidence_parser.add_argument("repo_path", type=Path, help="target repository root path")
+    evidence_parser = subparsers.add_parser("evidence", help="以 JSON 收集不依赖框架的仓库证据")
+    evidence_parser.add_argument("repo_path", type=Path, help="目标仓库根目录")
 
-    scan_parser = subparsers.add_parser("scan", help="scan repository and generate context files")
-    scan_parser.add_argument("repo_path", type=Path, help="target repository root path")
-    scan_parser.add_argument("--force", action="store_true", help="accepted for compatibility; existing files are never overwritten")
-    scan_parser.add_argument("--analysis", type=Path, help="validated AI semantic analysis JSON")
+    scan_parser = subparsers.add_parser("scan", help="扫描仓库并生成上下文文件")
+    scan_parser.add_argument("repo_path", type=Path, help="目标仓库根目录")
+    scan_parser.add_argument("--force", action="store_true", help="仅为兼容旧调用保留；不会覆盖现有文件")
+    scan_parser.add_argument("--analysis", type=Path, help="已校验的 AI 语义分析 JSON")
 
-    refresh_parser = subparsers.add_parser("refresh", help="refresh only fixed Markdown sections")
-    refresh_parser.add_argument("repo_path", type=Path, help="target repository root path")
-    refresh_parser.add_argument("--force", action="store_true", help="apply fixed-section updates without prompting")
-    refresh_parser.add_argument("--analysis", type=Path, help="validated AI semantic analysis JSON")
+    refresh_parser = subparsers.add_parser("refresh", help="只刷新固定 Markdown 章节")
+    refresh_parser.add_argument("repo_path", type=Path, help="目标仓库根目录")
+    refresh_parser.add_argument("--force", action="store_true", help="不询问，直接应用固定章节更新")
+    refresh_parser.add_argument("--analysis", type=Path, help="已校验的 AI 语义分析 JSON")
 
     return parser
 
@@ -1638,14 +1638,14 @@ def main(argv: list[str] | None = None) -> int:
 
     repo_root = args.repo_path.resolve()
     if not repo_root.exists() or not repo_root.is_dir():
-        print(f"Error: repository path does not exist or is not a directory: {repo_root}")
+        print(f"错误：仓库路径不存在或不是目录：{repo_root}")
         return 1
 
     if args.command == "evidence":
         evidence = collect_repository_evidence(repo_root)
         print(json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True))
         if evidence["truncated"]:
-            print("Error: repository evidence was truncated; narrow the repository or raise the scanner limit.", file=sys.stderr)
+            print("错误：仓库证据已被截断；请缩小扫描范围或提高扫描上限。", file=sys.stderr)
             return 2
         return 0
 
@@ -1654,19 +1654,19 @@ def main(argv: list[str] | None = None) -> int:
         try:
             analysis = load_semantic_analysis(args.analysis.resolve(), repo_root)
         except SemanticAnalysisError as exc:
-            print(f"Error: invalid semantic analysis: {exc}")
+            print(f"错误：AI 语义分析无效：{exc}")
             return 1
 
     try:
         generated_files = generate_context_files(repo_root, analysis=analysis)
     except (ManagedDocumentError, FileNotFoundError, UnicodeError) as exc:
-        print(f"Error: invalid context template: {exc}")
+        print(f"错误：Context 模板无效：{exc}")
         return 1
     if args.command == "scan":
         return write_initial_context_files(repo_root, generated_files, force=args.force)
     if args.command == "refresh":
         return refresh_context_files(repo_root, generated_files, force=args.force)
-    parser.error("unknown command")
+    parser.error("未知命令")
 
 
 def cli_main() -> int:

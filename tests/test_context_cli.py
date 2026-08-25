@@ -309,7 +309,7 @@ class ContextCliTests(unittest.TestCase):
             self.assertEqual(preview_exit, 2)
             self.assertEqual(readme_path.read_bytes(), before)
             self.assertIn("readme.build-systems", preview.getvalue())
-            self.assertIn("README.md:readme.build-systems (existing)", preview.getvalue())
+            self.assertIn("README.md:readme.build-systems（现有内容）", preview.getvalue())
 
             with patch("sys.stdin.isatty", return_value=True), patch("builtins.input", return_value="all"):
                 self.assertEqual(main(["refresh", str(repo_root)]), 0)
@@ -464,7 +464,7 @@ class ContextCliTests(unittest.TestCase):
             self.assertEqual(exit_code, 2)
             self.assertEqual((repo_root / "README.md").read_text(encoding="utf-8"), "# Existing\n")
             self.assertIn("README.md", buffer.getvalue())
-            self.assertIn("diff", buffer.getvalue().lower())
+            self.assertIn("预览固定章节更新", buffer.getvalue())
 
     def test_scan_never_overwrites_existing_files_even_with_force(self) -> None:
         for extra_args in ([], ["--force"]):
@@ -524,7 +524,7 @@ class ContextCliTests(unittest.TestCase):
 
             self.assertEqual(exit_code, 0)
             harness_content = (repo_root / "HARNESS.md").read_text(encoding="utf-8")
-            self.assertIn("CanRunBuildHere**: no", harness_content)
+            self.assertIn("CanRunBuildHere**（当前环境能否构建）：no", harness_content)
             self.assertIn("当前宿主是 WSL", harness_content)
             self.assertIn("Windows 客户端编译链", harness_content)
 
@@ -543,7 +543,7 @@ class ContextCliTests(unittest.TestCase):
             harness_content = (repo_root / "HARNESS.md").read_text(encoding="utf-8")
 
             self.assertIn("FastAPI", harness_content)
-            self.assertIn("BuildCommand**: N/A", harness_content)
+            self.assertIn("BuildCommand**（构建命令）：N/A", harness_content)
             self.assertIn("项目无独立编译或打包步骤", harness_content)
             self.assertIn("python -m pytest -q", harness_content)
             self.assertIn("- **test**: `python -m pytest -q`", harness_content)
@@ -551,7 +551,7 @@ class ContextCliTests(unittest.TestCase):
             self.assertIn("Python + FastAPI", agents_content)
             self.assertIn("main.py", agents_content)
             self.assertIn("main.py -> app/routers -> app/services", agents_content)
-            self.assertIn("FastAPI modular service", architecture_content)
+            self.assertIn("FastAPI 模块化服务", architecture_content)
 
     def test_scan_python_service_avoids_template_noise_and_finds_runtime_risks(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -589,7 +589,7 @@ class ContextCliTests(unittest.TestCase):
             agents = (repo_root / "AGENTS.md").read_text(encoding="utf-8")
             harness = (repo_root / "HARNESS.md").read_text(encoding="utf-8")
             self.assertTrue(readme.startswith("# python-service\n"))
-            self.assertIn("构建: N/A（项目无独立编译或打包步骤）", readme)
+            self.assertIn("构建：N/A（项目无独立编译或打包步骤）", readme)
             self.assertNotIn("data:", readme)
             self.assertNotIn("logs:", readme)
             self.assertNotIn("contains project files", readme)
@@ -599,7 +599,7 @@ class ContextCliTests(unittest.TestCase):
             self.assertNotIn("*.cpp", agents)
             self.assertIn("app/main.py", agents)
             self.assertIn("app/api/requirements.py", agents)
-            self.assertIn("**WorkingDirectory**: repository root", harness)
+            self.assertIn("**WorkingDirectory**（工作目录）：仓库根目录", harness)
             self.assertNotIn(str(repo_root), harness)
             self.assertNotIn("- Unknown", harness)
             self.assertNotIn("### 快速验证命令\n`N/A", harness)
@@ -865,9 +865,9 @@ class ContextCliTests(unittest.TestCase):
             self.assertEqual(exit_code, 0)
             agents_content = (repo_root / "AGENTS.md").read_text(encoding="utf-8")
             harness_content = (repo_root / "HARNESS.md").read_text(encoding="utf-8")
-            self.assertIn("Qt Client", agents_content)
-            self.assertIn("Shared C++ Core", agents_content)
-            self.assertIn("Qt UI -> Qt Controller/Service -> C++ wrapper -> Shared C++ Core", agents_content)
+            self.assertIn("Qt 客户端", agents_content)
+            self.assertIn("共享 C++ 核心", agents_content)
+            self.assertIn("Qt UI -> Qt 控制器/服务 -> C++ 包装层 -> 共享 C++ 核心", agents_content)
             self.assertNotIn("C++/CLI", agents_content)
             self.assertIn("cmake -S . -B build && cmake --build build", harness_content)
             self.assertIn("ctest --test-dir build --output-on-failure", harness_content)

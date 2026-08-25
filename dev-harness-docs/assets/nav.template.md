@@ -1,19 +1,19 @@
-# Documentation route: {Route Name}
+# 阅读路径：{路径名称}
 
-> Read this route for {reader intent}. Open only the linked documents needed for the current task.
+> 适用于{读者目标}。只打开完成当前任务所需的文档。
 
-## Start here
+## 从这里开始
 
-| Order | Document | Purpose |
+| 顺序 | 文档 | 用途 |
 |---|---|---|
-| 1 | [{Title}]({relative/path.md}) | {Why it is read first} |
+| 1 | [{标题}]({relative/path.md}) | {优先阅读的原因} |
 
-## Task routing
+## 按任务阅读
 
-| Task | Reading order |
+| 任务 | 阅读顺序 |
 |---|---|
-| {Task type} | `{entry}` → `{detail}` → `{optional reference}` |
+| {任务类型} | `{入口}` → `{详细文档}` → `{可选参考资料}` |
 
-## Large collections
+## 大型文档集合
 
-- Enter `{collection}/` through its index and open only the relevant document.
+- 先通过索引进入`{文档集合}/`，再只打开相关文档。
