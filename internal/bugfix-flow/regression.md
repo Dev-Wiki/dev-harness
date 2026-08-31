@@ -9,6 +9,7 @@
 - 问题现象与预期
 - 关键调用链或高风险路径
 - 当前项目已有的测试层级或验证方式
+- 当前 `ValidationProfile` 与初始风险评估
 
 ## 输出契约
 
@@ -20,6 +21,7 @@
 - **AssertionFocus**：必须验证的核心断言
 - **FailureSignature**：回归失败与目标 bug 一致的判定签名
 - **RegressionRedEvidence**：回归在修复前失败的命令、退出码和关键输出
+- **BaselineFailureEvidence**：`fast` 复用既有失败证据时的 BaseSha、环境、输入、时间和 FailureSignature
 - **RegressionGreenEvidence**：同一回归在修复后通过的命令、退出码和关键输出
 - **RegressionSkipReason**：只能是 `device-required` / `ui-only` / `environment-unavailable` / `no-test-seam`
 - **ReuseStrategy**：后续相似 bug 如何复用
@@ -29,7 +31,7 @@
 
 1. 判断问题更适合单测、集成、端到端还是命令级验证
 2. 选择最便宜且足够证明修复有效的那一层
-3. 固化最小样本和断言，先运行并证明修复前失败，保存 RegressionRedEvidence
+3. 固化最小样本和断言，先运行并证明修复前失败，保存 RegressionRedEvidence；`fast` 已有同 BaseSha、同环境和同 FailureSignature 的有效基线证据时可复用并记录 BaselineFailureEvidence
 4. 修复后运行同一用例并证明修复后通过，保存 RegressionGreenEvidence
 5. 记录后续可复用方式
 6. 对客户端项目，说明是否需要把 UI、资源、原生层、打包层分开回归
@@ -40,7 +42,7 @@
 - 无法拿到可复用样本
 - 只能写笼统「补测试」，无法明确断言
 - 预期行为本身未定义
-- 无法给出 quick / bugfix / full 任一层的实际命令
+- 无法给出当前 ValidationProfile 所要求的实际命令；未被当前档位使用的 full 缺失不能阻塞 `fast` 或 `standard`
 
 出现上述情况时，必须停下补测试策略输入。
 

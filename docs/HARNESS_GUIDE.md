@@ -74,9 +74,13 @@ AGENTS 中只保留轻量的项目规范索引。Context 会识别已有 Git 工
 auto fix
 ```
 
-**写模式流程顺序**：Bug 上下文 → 确认最小复现条件 → 根因定位 → RED → 最小修复 → GREEN → 审查 → 最终验证 → 可选提交。
+**写模式流程顺序**：Bug 上下文 → 确认最小复现条件 → 根因定位 → 风险档位评估 → RED → 最小修复 → GREEN → 审查 → 最终验证 → 可选提交。
 
 `analyze` 只读分析；`fix` 修改和验证但不得提交；只有用户明确选择 `commit` 或 `unattended` 时才允许在最终验证后精确提交。commit 不包含 push、PR、tag、release 或 deploy 授权。
+
+`Mode` 与 `ValidationProfile` 相互独立。`fast` 用于不超过两个生产文件的单一低风险修复，只要求专项 GREEN、必要编译和差异自审；`standard` 补齐受影响的 `quick / test / bugfix`；`strict` 用于安全、ABI、并发、持久化、权限、签名、共享基础设施、跨仓库生产依赖或风险无法判断的变更，并按需执行 `full`、独立审查和人工验证。档位在问题边界确认后和最终 diff 稳定后各评估一次，只能自动升级。
+
+验证计划记录每项命令实际证明的义务。相同 diff 下已被成功证据覆盖的 check 不重复执行；`fast / standard` 的审查后 diff hash 未变化且义务已覆盖时，最终验证只检查工作区和 hash。只有环境恢复、失败特征错误、设备重置、用户要求、证据过期或 diff 变化时才允许重跑并记录原因。
 
 ### 2.2 配套 Skills
 
@@ -86,7 +90,7 @@ auto fix
 | `dev-harness-docs` | 整理文档根目录、索引、渐进式导航、SSOT、Capability Catalog、归档和链接，并同步已验证事实 |
 | `dev-harness-planning` | 在项目现有文档根目录生成唯一活跃 Dashboard、单任务详情与里程碑归档，并检查计划漂移 |
 | `dev-harness-commands` | 补齐 build / test / quick / bugfix / full 的真实命令映射 |
-| `dev-harness-auto-fix` | 执行内置的复现、定位、修复、审查与验证流程 |
+| `dev-harness-auto-fix` | 执行内置的复现、定位、修复、按风险分档验证与审查流程 |
 | `dev-harness-codebase-audit` | 对用户拥有或明确授权的代码库执行工程质量、行为正确性和跨模块一致性审计，持久化证据与 Finding；默认生成中文文档，显式要求全英文时才切换语言 |
 | `dev-harness-git-workflow` | 遵循项目已有 Git 规范；缺失时确认并初始化提交、tag、changelog 和发布约定 |
 | `dev-harness-retro` | 仅在用户显式要求时复盘，分类 FACT / POLICY / LESSON 并更新 `LESSONS.md` |

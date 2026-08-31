@@ -168,11 +168,13 @@ Audit 发现、验证和路由问题，但不修改业务源码、测试或配�
 confirmed defect 交给 [`dev-harness-auto-fix`](../auto-fix/SKILL.md)：
 
 ```text
-preflight → context → reproduce → hypothesize → RED
+preflight → context → reproduce → hypothesize → profile assessment → RED
 → minimal fix → GREEN → review → final verify → optional commit
 ```
 
 推荐每个 confirmed defect 使用独立 Auto Fix Run，以便单独验证、审查、回滚和保存证据。Auto Fix 已提交的修改不得由外层流程重复提交；`fix` 模式结束后则需要另行授权 Git Workflow 提交。
+
+授权 `Mode` 与验证 `ValidationProfile` 正交。低风险小改可走 `fast`，中风险走 `standard`，安全、ABI、并发、持久化、权限、签名、共享基础设施、跨仓库生产依赖或风险不明时必须走 `strict`。档位在边界确认后和最终 diff 稳定后各评估一次，只能自动升级。验证计划按实际证明义务复用证据；`fast / standard` 在审查后 diff hash 未变化且义务已覆盖时，最终验证不重复耗时命令。
 
 `BLOCKED` 或 `NEEDS_CONTEXT` 必须停止处理，不能静默跳过。Docs、Commands、Planning 和 Git Workflow handoff 由各自 Owner 维护，详细状态不复制回 Audit 报告。
 

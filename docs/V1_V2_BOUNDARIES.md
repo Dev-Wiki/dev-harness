@@ -5,7 +5,7 @@
 
 ## 版本命名
 
-设计方案中的 **VNext** 指从既有 V1 向 v1.8.0 Project Contract 与 Codebase Audit 功能的兼容演进，仍属于本文件定义的 V1 范围；v1.9.0 在同一边界内补充 Capability Catalog 与 Audit 文档入口可达性，v1.9.1 进一步统一中文术语和模板表达，v1.10.0 明确 Engineering Audit 职责、输出语言约定、最小行为验证和 Finding identity gate，v1.11.0 增加有界计划分片、旧版单体计划迁移和全 Skill 自然中文输出契约，v1.11.1 再将 Dashboard 收敛为唯一活跃计划入口并增加规划漂移门禁，均不改变 V2 边界。VNext 不是 V2 的别名。当前功能、版本边界和后续候选分别以 `CAPABILITIES.md`、本文件和 `V2_BACKLOG.md` 为准，设计记录中的实施阶段不作为活动任务清单。
+设计方案中的 **VNext** 指从既有 V1 向 v1.8.0 Project Contract 与 Codebase Audit 功能的兼容演进，仍属于本文件定义的 V1 范围；v1.9.0 在同一边界内补充 Capability Catalog 与 Audit 文档入口可达性，v1.9.1 进一步统一中文术语和模板表达，v1.10.0 明确 Engineering Audit 职责、输出语言约定、最小行为验证和 Finding identity gate，v1.11.0 增加有界计划分片、旧版单体计划迁移和全 Skill 自然中文输出契约，v1.11.1 再将 Dashboard 收敛为唯一活跃计划入口并增加规划漂移门禁，v1.11.2 为 Auto Fix 增加风险分档验证、结构化证据复用和状态写入快速失败，均不改变 V2 边界。VNext 不是 V2 的别名。当前功能、版本边界和后续候选分别以 `CAPABILITIES.md`、本文件和 `V2_BACKLOG.md` 为准，设计记录中的实施阶段不作为活动任务清单。
 
 ## V1 定位
 

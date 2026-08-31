@@ -78,9 +78,40 @@ class AutoFixContractTests(unittest.TestCase):
 
     def test_review_and_verification_are_diff_bound(self) -> None:
         self.assertIn("ReviewDiffHash", self.auto_fix)
-        self.assertIn("旧 Review/Verify 证据失效", self.auto_fix)
+        self.assertIn("ReviewDiffHash 与 FinalDiffHash 失效", self.auto_fix)
         self.assertIn("FreshVerificationEvidence", self.verify)
         self.assertIn("最终 diff hash 与 ReviewDiffHash 不一致", self.verify)
+
+    def test_validation_profiles_are_orthogonal_and_fail_safe(self) -> None:
+        for token in (
+            "ValidationProfile",
+            "fast",
+            "standard",
+            "strict",
+            "SchemaVersion",
+            "ProfileAssessment",
+            "VerificationPlan",
+            "FinalDiffHash",
+        ):
+            self.assertIn(token, self.auto_fix)
+        self.assertIn("旧状态", self.auto_fix)
+        self.assertIn("默认 `strict`", self.auto_fix)
+        self.assertIn("只允许自动升级", self.auto_fix)
+        self.assertIn("最低为 `standard`", self.auto_fix)
+
+    def test_fast_and_standard_final_verify_reuse_unchanged_evidence(self) -> None:
+        self.assertIn("不重复执行耗时命令", self.auto_fix)
+        self.assertIn("ReviewDiffHash", self.auto_fix)
+        self.assertIn("FinalDiffHash", self.auto_fix)
+        self.assertIn("subsumes", self.verify)
+        self.assertIn("RepeatReason", self.verify)
+        self.assertIn("禁止无理由重复", self.verify)
+
+    def test_invalidation_is_impact_aware(self) -> None:
+        for token in ("production", "test", "documentation", "shared-infrastructure"):
+            self.assertIn(token, self.auto_fix)
+        self.assertIn("文档变化", self.auto_fix)
+        self.assertIn("共享基础设施", self.auto_fix)
 
     def test_completion_status_is_explicit(self) -> None:
         for status in ("DONE", "DONE_WITH_CONCERNS", "BLOCKED", "NEEDS_CONTEXT"):

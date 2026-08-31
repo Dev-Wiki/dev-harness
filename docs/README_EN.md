@@ -23,7 +23,7 @@ Supports Cursor, Codex CLI, OpenCode, and Antigravity.
 | `dev-harness-planning` | Generates one authoritative active dashboard, task-scoped details, milestone archives, and planning drift checks under the existing documentation root |
 | `dev-harness-commands` | Standardizes `build / test / quick / bugfix / full` command entry points |
 | `dev-harness-git-workflow` | Validates branch naming, generates commit messages, blocks debug artifacts |
-| `dev-harness-auto-fix` | Explicit `analyze / fix / commit / unattended` modes with reproducible diagnosis, RED/GREEN, diff-bound review, final verification, and authorized commit only |
+| `dev-harness-auto-fix` | Explicit authorization modes plus independent `fast / standard / strict` validation profiles, reproducible diagnosis, RED/GREEN, evidence reuse, diff-bound review, and authorized commit only |
 | `dev-harness-codebase-audit` | Audits engineering quality, behavioral correctness, and cross-module consistency in user-owned or explicitly authorized repositories; dynamically partitions the codebase and persists evidence-backed findings without changing product source |
 | `dev-harness-retro` | Explicit retrospective — classifies FACT / POLICY / LESSON and proposes contract promotions |
 
@@ -198,7 +198,7 @@ dev-harness/
 
 ## V1 / V2 Boundary
 
-V1 / VNext is the current project-contract layer for existing projects. It covers canonical context, documentation and planning governance, conditional current-capability catalogs, five verification command semantics, Git policy discovery, evidence-driven bug fixing, and resumable codebase audit with an explicit documentation-discoverability handoff. The v1.8.0 design record introduced this VNext evolution, v1.9.0 extends it with capability inventory and audit discoverability, v1.9.1 improves Chinese terminology and template localization, v1.10.0 clarifies the Engineering Audit scope and Finding identity gate, v1.11.0 adds bounded task planning, safe monolith migration, and a consistent natural-Chinese output contract across all skills, and v1.11.1 makes Dashboard the sole active planning authority with a planning drift gate. These releases do not change the V1 boundary; VNext is not another name for the V2 backlog.
+V1 / VNext is the current project-contract layer for existing projects. It covers canonical context, documentation and planning governance, conditional current-capability catalogs, five verification command semantics, Git policy discovery, evidence-driven bug fixing, and resumable codebase audit with an explicit documentation-discoverability handoff. The v1.8.0 design record introduced this VNext evolution, v1.9.0 extends it with capability inventory and audit discoverability, v1.9.1 improves Chinese terminology and template localization, v1.10.0 clarifies the Engineering Audit scope and Finding identity gate, v1.11.0 adds bounded task planning, safe monolith migration, and a consistent natural-Chinese output contract across all skills, v1.11.1 makes Dashboard the sole active planning authority with a planning drift gate, and v1.11.2 adds risk-tiered Auto Fix validation with structured evidence reuse and bounded state-write failure handling. These releases do not change the V1 boundary; VNext is not another name for the V2 backlog.
 
 V1 explicitly excludes: UI automation, screenshot-driven verification, log/metric/trace platforms, multi-worktree runtime, auto PR/review loop, native-layer auto-repair.
 

@@ -4,6 +4,23 @@
 
 ---
 
+## v1.11.2 — 2026-08-31
+
+### Added
+
+- `dev-harness-auto-fix` 新增与授权模式正交的 `fast / standard / strict` 验证档位、两次风险评估、结构化验证计划和 SchemaVersion 2 状态契约。
+
+### Changed
+
+- Auto Fix 根据生产代码、测试、文档和共享基础设施的实际影响使证据失效；允许从已证明义务推导验证复用，并在差异未变化时用 hash 终检代替重复耗时命令。
+- 独立审查改为按风险启用；只有审查基础设施不可用时才能降级自审，审查失败不得被覆盖。
+
+### Fixed
+
+- Auto Fix 状态写入按 `mkdir / create / fsync / replace` 阶段报告稳定错误；权限拒绝立即返回 `state_write_denied`，临时文件名冲突仅有限重试。
+
+---
+
 ## v1.11.1 — 2026-08-25
 
 ### Changed
