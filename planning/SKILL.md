@@ -1,6 +1,6 @@
 ---
 name: dev-harness-planning
-description: Create or refresh bounded project, release, or milestone plans under an existing doc/ or docs/ root, using one authoritative active Dashboard, task-scoped detail files, completed-task archives, and drift checks.
+description: Create or refresh bounded project, release, or milestone plans under an existing doc/ or docs/ root, using one authoritative active Dashboard, task-scoped execution packets with readiness gates, completed-task archives, and drift checks.
 ---
 
 # dev-harness-planning
@@ -18,7 +18,7 @@ Use this skill when asked to:
 - split an oversized planning document or archive completed planning work
 - reuse another project's planning format without copying its business content
 
-Do not use this for ordinary one-file edits, bug fixing, code review, or command mapping.
+Do not use this for ordinary one-file edits, bug fixing, code review, task execution, or command mapping.
 
 ## Required Inputs and Read Scope
 
@@ -32,7 +32,7 @@ test ! -d "$PLAN_ROOT" || rg --files "$PLAN_ROOT"
 for plan_file in "$PLAN_ROOT/Dashboard.md" "$PLAN_ROOT/TaskDetails.md"; do
   test ! -f "$plan_file" || wc -l -c "$plan_file"
 done
-test ! -d "$PLAN_ROOT" || rg -n '^#{2,4} .*Task|^\|.*(📋|🚧|✅)' "$PLAN_ROOT"
+test ! -d "$PLAN_ROOT" || rg -n '^#{2,4} .*Task|^\|.*(📋|🟢|🚧|✅)' "$PLAN_ROOT"
 ```
 
 Missing files are acceptable during initialization. Do not fail the whole inventory because one file does not exist.
@@ -75,7 +75,7 @@ Default planning layout:
 ```
 
 - `Dashboard.md` is the only active planning authority: milestone status, work order, Task ID, priority, status, dependency, blocker, shared verification baseline, coverage, recent completions, and links. It must not repeat task implementation detail.
-- `tasks/<Task-ID>.md` is the authoritative execution packet for one active task: background, goal, scope, files, steps, acceptance, verification evidence, and risks. It must not duplicate mutable cross-task fields such as status, priority, dependency, work order, or blocker.
+- `tasks/<Task-ID>.md` is the authoritative execution packet for one active task: background, goal, scope, authoritative sources, code and test entry points, invariants, expected files, suggested steps, acceptance, verification evidence, confirmed decisions, and task-specific stop conditions. It must not duplicate mutable cross-task fields such as status, priority, dependency, work order, or blocker.
 - `archive/<milestone>/README.md` indexes completed tasks for one closed or active milestone. Archived task files preserve useful final rationale and evidence without remaining in the active read path.
 - An existing `TaskDetails.md` may remain only as a short compatibility redirect to `Dashboard.md`. It must not contain task rows, status, priority, dependency, work order, blockers, validation baselines, or task bodies.
 
@@ -123,7 +123,8 @@ The snapshot binds `HEAD`, Dashboard hash, selected Task ID and path, task-file 
 
 ## Task Lifecycle
 
-- `📋 规划中`, `🚧 开发中`, and `📋 远期` tasks stay in `tasks/` and Dashboard.
+- `📋 规划中` means the execution packet is incomplete. `🟢 待执行` means the planning packet is complete enough to hand off after its Dashboard dependencies and blockers are checked. `🚧 开发中` means execution has started. `📋 远期` remains outside the current work order. These active tasks stay in `tasks/` and Dashboard.
+- Move a task from `📋 规划中` to `🟢 待执行` only when its goal, scope, authoritative context, invariants, acceptance criteria, verification method, and unresolved planning questions are complete enough for a fresh conversation to act without access to planning chat history.
 - Never mark a task completed from AI inference alone. Require implementation and verification evidence or an explicit user status.
 - When a task becomes `✅ 已完成`, first record its final acceptance result and durable evidence links, then move its detail file to `archive/<milestone>/` in the same planning refresh. Do not treat an ambiguous local state such as “implemented, pending acceptance” as completed without the project's explicit status semantics.
 - Remove the completed task from Dashboard's active work order and task table. Dashboard may keep at most five recent completed summaries; older completions belong only in the milestone archive index.
@@ -136,7 +137,7 @@ These rules bound the active read path; the archive can still grow when the proj
 ## Planning Rules
 
 - Prefer phase-and-scope IDs such as `V0`, `K1`, `K2`, or the project-local convention.
-- Default priorities are `🔴 P0`, `🟡 P1`, and `🟢 P2`; default statuses are `📋 规划中`, `🚧 开发中`, `✅ 已完成`, and `📋 远期`.
+- Default priorities are `🔴 P0`, `🟡 P1`, and `🟢 P2`; default statuses are `📋 规划中`, `🟢 待执行`, `🚧 开发中`, `✅ 已完成`, and `📋 远期`.
 - Keep one task independently implementable, verifiable, and linkable. Split a task file that itself becomes a broad multi-feature plan.
 - Keep status, priority, dependency, work order, and blockers only in Dashboard. Active task files must link back to Dashboard instead of copying those values.
 - Reference authoritative requirements, code, test output, commits, or audit results instead of duplicating their full contents.
@@ -159,4 +160,4 @@ test ! -d "$PLAN_ROOT/tasks" || ! rg -n '^\*\*(状态|优先级|依赖|阻塞|�
 test ! -f "$PLAN_ROOT/TaskDetails.md" || rg -n 'Dashboard\.md' "$PLAN_ROOT/TaskDetails.md"
 ```
 
-The placeholder and duplicated-mutable-field scans should exit 1; report intentional registers instead of rewriting them. If `TaskDetails.md` exists as a compatibility redirect, verify it has no task rows, mutable state, validation baseline, or task body. For a migrated plan, also search the repository for obsolete `TaskDetails.md#...` inbound links and verify all changed relative links. Confirm that each active Task ID appears once in Dashboard and has exactly one active task file; immutable archived closure snapshots are history, not active authorities. Recompute the planning snapshot before claiming completion.
+The placeholder and duplicated-mutable-field scans should exit 1; report intentional registers instead of rewriting them. If `TaskDetails.md` exists as a compatibility redirect, verify it has no task rows, mutable state, validation baseline, or task body. For a migrated plan, also search the repository for obsolete `TaskDetails.md#...` inbound links and verify all changed relative links. Confirm that each active Task ID appears once in the active task table and has exactly one active task file, and that every `🟢 待执行` Task ID appears exactly once in current work order. Immutable archived closure snapshots are history, not active authorities. Recompute the planning snapshot before claiming completion.

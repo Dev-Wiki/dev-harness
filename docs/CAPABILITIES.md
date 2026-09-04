@@ -4,12 +4,12 @@
 
 ## 汇总
 
-仓库 [`VERSION`](../VERSION) 与 [`CHANGELOG.md`](../CHANGELOG.md) 当前版本条目均为 `v1.11.2`；最新 Git 标签仍为 `v1.11.1`。每次修改清单后必须根据下表重新统计；“待确认”不计入总数。
+仓库 [`VERSION`](../VERSION) 与 [`CHANGELOG.md`](../CHANGELOG.md) 当前版本条目均为 `v1.11.3`；最新 Git 标签为 `v1.11.2`。每次修改清单后必须根据下表重新统计；“待确认”不计入总数。
 
 | 版本范围 | 已支持 | 部分支持 | 试验性 | 已弃用 |
 |---|---:|---:|---:|---:|
-| 当前开发版本（v1.11.2） | 32 | 0 | 0 | 0 |
-| 最新标签版本（v1.11.1） | 31 | 0 | 0 | 0 |
+| 当前开发版本（v1.11.3） | 33 | 0 | 0 | 0 |
+| 最新标签版本（v1.11.2） | 32 | 0 | 0 | 0 |
 
 ## 当前已支持功能
 
@@ -47,6 +47,7 @@
 | PLN-001 | 从需求、PRD、原型或参考格式生成同一文档根下唯一活跃 Dashboard 和单任务详情 | 已支持 | 项目、版本或里程碑级规划 | 已发布：v1.11.1 | 契约测试 + 资源安装测试 | `tests/test_docs_contract.py`；`tests/test_install.py` | [Planning 契约](../planning/SKILL.md) |
 | PLN-002 | 刷新计划时按 Task ID 合并，保留有效 ID、本地约定和有证据的完成状态，并通过临时快照识别读取漂移 | 已支持 | 已有计划，包括单体 TaskDetails 迁移 | 已发布：v1.11.1 | 契约测试 | `tests/test_planning_contract.py`；`planning/SKILL.md` | [Planning 契约](../planning/SKILL.md) |
 | PLN-003 | 活跃任务按 Task ID 分片，跨任务可变字段只在 Dashboard 维护；完成任务进入里程碑归档并退出默认读取路径 | 已支持 | 长期演进或大型计划 | 已发布：v1.11.1 | 契约测试 + 模板安装测试 | `tests/test_planning_contract.py`；`tests/test_install.py` | [Planning 契约](../planning/SKILL.md) |
+| PLN-004 | 用 `规划中` 与 `待执行` 区分任务包完整性，并在单任务执行包中固定权威需求、代码与测试入口、不变量、已确认决策和停止条件 | 已支持 | 规划与执行分属不同对话或外部工作流的项目 | 当前开发：v1.11.3 | 契约测试 + 模板安装测试 | `tests/test_planning_contract.py`；`tests/test_install.py`；`planning/templates/Task.template.md` | [Planning 契约](../planning/SKILL.md) |
 
 ### 验证命令
 
@@ -70,7 +71,7 @@
 | FIX-002 | `fix` 模式要求 confirmed 假设、修复前 RED、最小实现、修复后 GREEN、diff-bound review 和 final verify | 已支持 | 可建立复现与项目验证入口的 Bug | 已发布：v1.10.0 | 运行时测试 + 契约测试 | `tests/test_auto_fix_runtime.py:174-227`；`tests/test_auto_fix_contract.py:51-87` | [Auto Fix 契约](../auto-fix/SKILL.md) |
 | FIX-003 | `commit` / `unattended` 可在授权范围内精确提交；`fix` / `analyze` 禁止提交，push / PR / release 仍需独立授权 | 已支持 | 明确授权提交的 Auto Fix Run | 已发布：v1.10.0 | 运行时测试 + 契约测试 | `tests/test_auto_fix_runtime.py:229-237`；`auto-fix/SKILL.md:10-21,133-135` | [Auto Fix 契约](../auto-fix/SKILL.md) |
 | FIX-004 | WorkspaceSnapshot、Git 私有原子状态、断点恢复、变更集合和 diff hash 防止 dirty worktree、HEAD、分支及未声明文件漂移 | 已支持 | Git 仓库中的长流程修复 | 已发布：v1.10.0 | 运行时测试 | `tests/test_auto_fix_runtime.py:55-159,188-251`；`auto-fix/SKILL.md:42-71` | [Auto Fix 契约](../auto-fix/SKILL.md) |
-| FIX-005 | 授权 Mode 与 `fast / standard / strict` 验证档位正交；按文件影响使证据失效、从证明义务复用验证、限制无理由重复，并对状态写入权限失败快速终止 | 已支持 | 已知问题的低、中、高风险修复；旧状态与风险不明场景 fail-safe | 当前开发：v1.11.2 | 运行时测试 + 契约测试 | `tests/test_auto_fix_runtime.py`；`tests/test_auto_fix_contract.py`；`auto-fix/runtime.py`；`auto-fix/SKILL.md` | [Auto Fix 契约](../auto-fix/SKILL.md) |
+| FIX-005 | 授权 Mode 与 `fast / standard / strict` 验证档位正交；按文件影响使证据失效、从证明义务复用验证、限制无理由重复，并对状态写入权限失败快速终止 | 已支持 | 已知问题的低、中、高风险修复；旧状态与风险不明场景 fail-safe | 已发布：v1.11.2 | 运行时测试 + 契约测试 | `tests/test_auto_fix_runtime.py`；`tests/test_auto_fix_contract.py`；`auto-fix/runtime.py`；`auto-fix/SKILL.md` | [Auto Fix 契约](../auto-fix/SKILL.md) |
 
 ### Codebase Audit
 

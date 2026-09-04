@@ -55,16 +55,37 @@ class PlanningLifecycleContractTests(unittest.TestCase):
 
         for section in (
             "## 背景与目标",
+            "## 执行上下文",
             "## 范围",
-            "## 实施步骤",
+            "## 建议实施顺序",
             "## 验收标准",
             "## 验证证据",
+            "## 已确认决策",
+            "## 未知项与停止条件",
         ):
             self.assertIn(section, task)
 
+        for field in ("权威需求", "代码入口", "相关测试", "必须保持的不变量"):
+            self.assertIn(field, task)
+
         self.assertIn("编辑过程由 Git 历史承担", archive)
         self.assertIn("## 已归档任务", archive)
-        self.assertNotIn("## 实施步骤", archive)
+        self.assertNotIn("## 建议实施顺序", archive)
+
+    def test_planning_produces_ready_packets_without_owning_execution(self) -> None:
+        skill = self.read("SKILL.md")
+        dashboard = self.read("templates/Dashboard.template.md")
+        task = self.read("templates/Task.template.md")
+
+        self.assertIn("🟢 待执行", skill)
+        self.assertIn("execution packet is incomplete", skill)
+        self.assertIn("complete enough for a fresh conversation", skill)
+        self.assertIn("工作顺序是计划维护的权威顺序", dashboard)
+
+        combined = "\n".join((skill, dashboard, task)).lower()
+        self.assertIsNone(re.search(r"\b(?:gpt-[\w.-]+|sol|terra)\b", combined), combined)
+        for execution_rule in ("selected_task", "automatic pickup", "atomic claim"):
+            self.assertNotIn(execution_rule, combined)
 
     def test_generated_planning_text_defaults_to_natural_chinese(self) -> None:
         skill = self.read("SKILL.md")
@@ -98,6 +119,7 @@ class PlanningLifecycleContractTests(unittest.TestCase):
         self.assertIn("Planning Snapshot and Drift Gate", skill)
         self.assertIn("Do not generate `TaskDetails.md`", skill)
         self.assertIn("唯一活跃计划入口", dashboard)
+        self.assertIn("🟢 待执行", dashboard)
 
         for mutable_label in ("**优先级**", "**状态**", "**依赖**", "**阻塞**"):
             self.assertNotIn(mutable_label, task)

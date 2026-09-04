@@ -97,7 +97,7 @@ Windows：
 |---|---|
 | `dev-harness-context` | 初始化或刷新项目上下文和规范索引 |
 | `dev-harness-docs` | 整理文档根、导航、SSOT、Capability Catalog、归档和已验证事实 |
-| `dev-harness-planning` | 生成单一权威 Dashboard、单任务详情和里程碑归档，并检查计划漂移 |
+| `dev-harness-planning` | 生成单一权威 Dashboard、带就绪门禁的可交接任务执行包和里程碑归档，并检查计划漂移 |
 | `dev-harness-commands` | 将真实命令映射为 `build / test / quick / bugfix / full` |
 | `dev-harness-git-workflow` | 遵循或初始化 Git、提交、tag、changelog 和发布约定 |
 | `dev-harness-retro` | 仅在显式触发时沉淀 FACT / POLICY / LESSON 候选结论 |
