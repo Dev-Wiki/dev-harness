@@ -20,7 +20,7 @@ Supports Cursor, Codex CLI, OpenCode, and Antigravity.
 |-------|-------------|
 | `dev-harness-context` | Scans a repo and generates `README.md`, `ARCHITECTURE.md`, `HARNESS.md`, `AGENTS.md` |
 | `dev-harness-docs` | Organizes an existing `doc/` or `docs/` root, indexes, progressive navigation, SSOT, conditional Capability Catalogs, archives, and links, and syncs verified facts into existing docs |
-| `dev-harness-planning` | Generates one authoritative active dashboard, task-scoped details, milestone archives, and planning drift checks under the existing documentation root |
+| `dev-harness-planning` | Generates one authoritative active dashboard, readiness-gated task packets for cross-conversation handoff, milestone archives, and planning drift checks without owning task pickup or execution orchestration |
 | `dev-harness-commands` | Standardizes `build / test / quick / bugfix / full` command entry points |
 | `dev-harness-git-workflow` | Validates branch naming, generates commit messages, blocks debug artifacts |
 | `dev-harness-auto-fix` | Explicit authorization modes plus independent `fast / standard / strict` validation profiles, reproducible diagnosis, RED/GREEN, evidence reuse, diff-bound review, and authorized commit only |

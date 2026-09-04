@@ -1,8 +1,6 @@
-# dev-harness 使用指南
+# dev-harness HARNESS 使用指南
 
-面向 **Cursor** 环境，使用 **`dev-harness-*`** skills 时的通用操作说明。
-
-业务仓库需已具备 **`AGENTS.md`** 和作为“项目构建与验证契约”的 **`HARNESS.md`**，且 **`harness:quick` / `harness:build` / `harness:bugfix` / `harness:full`** 映射为**真实可执行**命令（缺失时用 **`dev-harness-commands`** 补齐，禁止编造）。
+本文只说明如何维护和使用业务仓库中的 `HARNESS.md` 验证契约，适用于 Cursor、Codex CLI、OpenCode 和 Antigravity。安装及首次接入见[项目概览](../README.md#安装)和[客户端项目接入](CLIENT_PROJECT_ONBOARDING.md)，跨 Skill 阶段顺序见[端到端工作流](WORKFLOW.md)。
 
 各项目的具体命令和执行环境以仓库根目录 `HARNESS.md` 为唯一事实源；行为、安全和修改边界以 `AGENTS.md` 为准。
 
@@ -10,109 +8,31 @@
 
 ## 一、前置条件
 
-| 组件 | 说明 |
-|------|------|
-| **Cursor IDE** | 已安装，建议使用最新版 |
-| **dev-harness skills** | 已通过 `install.py` 安装到 `~/.cursor/skills/` |
-| **业务仓库** | 根目录有 `HARNESS.md`（或先运行 `dev-harness-context` 生成） |
+- 已安装 `dev-harness` Skills。
+- 业务仓库根目录已有 `AGENTS.md` 和 `HARNESS.md`；缺失时先用 `dev-harness-context` 初始化。
+- `HARNESS.md` 中的命令必须来自真实脚本、构建配置或成功执行证据，不能根据技术栈经验编造。
 
-### 安装 dev-harness
+需要补齐命令时，在业务仓库中调用：
 
-```bash
-# 克隆仓库
-git clone https://github.com/your-org/dev-harness.git
-cd dev-harness
-
-# 安装到 Cursor skills 目录（运行后按提示选择安装位置）
-python install.py
-```
-
-### 初始化业务仓库上下文
-
-在业务仓库根目录，用 Cursor 打开并执行：
-
-```
-使用 dev-harness-context 扫描本仓库
-```
-
-首次执行使用 `scan`，只创建缺失的 `README.md`、`AGENTS.md`、`ARCHITECTURE.md`、`HARNESS.md`，不会覆盖现有文件。
-
-项目开发一段时间后需要同步自动识别信息时，使用 `refresh`。它按模板约定的固定 Markdown 标题更新章节，不注入 HTML 管理标记，并保留其他人工章节以及原文件编码、换行和权限：
-
-```bash
-dev-harness-context refresh <repo-path>
-```
-
-非交互环境默认只预览差异；确认后可使用 `--force` 应用成功定位的章节。固定标题缺失、重复或层级变化时停止更新；旧版合法 managed 标记会在首次刷新时无损移除。
-
-AGENTS 中只保留轻量的项目规范索引。Context 会识别已有 Git 工作流、代码规范、发布规范和 changelog 文档并刷新路径，但不会创建这些专业文档。Git/提交/tag/发布规范缺失时由 `dev-harness-git-workflow` 在用户确认后初始化；代码规范不自动生成；`CHANGELOG.md` 仅在确认初始化或首次发布时创建。
-
-如果仓库已经积累了较多文档，使用 `dev-harness-docs` 识别现有 `doc/` 或 `docs/` 根目录，整理文档入口、渐进式导航、SSOT 与归档规则。当前功能信息分散或无法可靠统计时，它会按需建立 Capability Catalog；已有承担相同职责的文档则复用。它不会为了匹配模板重命名已有文档根目录，也不会生成第二套目录。代码或验证完成后，也可以用它的 `Update` 操作把已验证、可复用的事实同步进现有文档；未验证内容保持待确认，不做全量重写。
-
-然后用 `dev-harness-commands` 补齐真实命令映射：
-
-```
+```text
 使用 dev-harness-commands 帮我定义 build / test / quick / bugfix / full 命令
 ```
 
----
+## 二、五类验证入口
 
-## 二、核心工作流
+`harness:build`、`harness:test`、`harness:quick`、`harness:bugfix` 和 `harness:full` 是稳定语义，不要求项目改写原有工具链或统一脚本名称。
 
-### 2.1 Bug 修复流程（推荐）
+| 入口 | 证明范围 |
+|---|---|
+| `build` | 当前目标或构建图能够完成编译、生成或等价构建 |
+| `test` | 仓库已有的自动化测试入口能够运行 |
+| `quick` | 为高频迭代提供最短、可信的相关反馈 |
+| `bugfix` | 验证某个已知问题的复现或专项回归路径 |
+| `full` | 执行项目已确认的完整本地构建与测试边界 |
 
-使用 `dev-harness-auto-fix` 按显式授权模式串联分析或修复流水线：
+打包、签名和发布链应标记为 `package/release-only` 或 CI-only，不能冒充本地 `full`。多平台、设备或构建变体应分别记录，并通过 Platform / Variant 唯一选择；设备依赖同时写入 `DeviceRequirement`。
 
-```
-# 方式 1：提供 issue URL
-修这个 bug https://github.com/owner/repo/issues/123
-
-# 方式 2：直接描述
-自动修这个 bug：登录后点击设置按钮崩溃，复现步骤：1. 登录 2. 点设置
-
-# 方式 3：触发 auto fix
-auto fix
-```
-
-**写模式流程顺序**：Bug 上下文 → 确认最小复现条件 → 根因定位 → 风险档位评估 → RED → 最小修复 → GREEN → 审查 → 最终验证 → 可选提交。
-
-`analyze` 只读分析；`fix` 修改和验证但不得提交；只有用户明确选择 `commit` 或 `unattended` 时才允许在最终验证后精确提交。commit 不包含 push、PR、tag、release 或 deploy 授权。
-
-`Mode` 与 `ValidationProfile` 相互独立。`fast` 用于不超过两个生产文件的单一低风险修复，只要求专项 GREEN、必要编译和差异自审；`standard` 补齐受影响的 `quick / test / bugfix`；`strict` 用于安全、ABI、并发、持久化、权限、签名、共享基础设施、跨仓库生产依赖或风险无法判断的变更，并按需执行 `full`、独立审查和人工验证。档位在问题边界确认后和最终 diff 稳定后各评估一次，只能自动升级。
-
-验证计划记录每项命令实际证明的义务。相同 diff 下已被成功证据覆盖的 check 不重复执行；`fast / standard` 的审查后 diff hash 未变化且义务已覆盖时，最终验证只检查工作区和 hash。只有环境恢复、失败特征错误、设备重置、用户要求、证据过期或 diff 变化时才允许重跑并记录原因。
-
-### 2.2 配套 Skills
-
-| Skill | 用途 |
-|-------|------|
-| `dev-harness-context` | 初始化上下文文件，并按固定 Markdown 标题安全刷新自动识别章节 |
-| `dev-harness-docs` | 整理文档根目录、索引、渐进式导航、SSOT、Capability Catalog、归档和链接，并同步已验证事实 |
-| `dev-harness-planning` | 在项目现有文档根目录生成唯一活跃 Dashboard、单任务详情与里程碑归档，并检查计划漂移 |
-| `dev-harness-commands` | 补齐 build / test / quick / bugfix / full 的真实命令映射 |
-| `dev-harness-auto-fix` | 执行内置的复现、定位、修复、按风险分档验证与审查流程 |
-| `dev-harness-codebase-audit` | 对用户拥有或明确授权的代码库执行工程质量、行为正确性和跨模块一致性审计，持久化证据与 Finding；默认生成中文文档，显式要求全英文时才切换语言 |
-| `dev-harness-git-workflow` | 遵循项目已有 Git 规范；缺失时确认并初始化提交、tag、changelog 和发布约定 |
-| `dev-harness-retro` | 仅在用户显式要求时复盘，分类 FACT / POLICY / LESSON 并更新 `LESSONS.md` |
-
-复现（repro）、定位（triage）、回归（regression）和验证（verify）已内置为 `dev-harness-auto-fix` 的流程阶段，不再作为 `dev-harness-repro`、`dev-harness-triage`、`dev-harness-regression`、`dev-harness-verify` 独立安装或调用。
-
-**典型 Prompt**：
-
-```
-使用 dev-harness-auto-fix 处理这个 bug：<描述现象>。
-先确认最小复现条件并收集证据（日志/截图/版本），确认根因后再修改代码。
-```
-
-Codebase Audit 默认使用自然中文生成 Dashboard、Finding Registry、Task Result 和 Report，状态显示为“候选项、待验证、已确认、已排除、已失效、已解决”，runtime 仍保存稳定的英文枚举。需要英文产物时，在调用中显式要求“所有审计文档使用全英文”。Audit 只验证项目声明行为的正确性，不用于渗透测试或攻击性安全流程。
-
-### 2.3 回归测试
-
-影响面大时，追加：
-
-```
-使用 dev-harness-auto-fix 时明确回归验证方式（自动化测试或手工检查表）。
-```
+`dev-harness-context` 只维护自动识别的候选命令，`dev-harness-commands` 只维护人工确认区。候选命令不能直接作为成功验证证据；确认入口仍为 `Unknown` 或 `Missing` 时必须停止并补齐。
 
 ---
 
@@ -155,19 +75,15 @@ AI Agent 在执行构建、测试或验证命令前必须先读取该文件，�
 
 **Q: HARNESS.md 命令显示 Unknown/Missing**
 
-先用 `dev-harness-commands` 补齐命令映射，再继续修复。
+先用 `dev-harness-commands` 根据仓库证据补齐命令映射，再继续开发或验证。
 
-**Q: 修复触及高风险区域被拦截**
+**Q: 同一入口在不同平台或 Variant 下使用不同命令**
 
-dev-harness 要求修改底层 native bridge、ABI、C++/CLI、Win32 API 等区域前先取得人工确认。
+为每种 Platform / Variant 建立独立命令记录，不要把互不兼容的命令拼成一条；设备要求和终端环境分别记录。
 
-**Q: 没有 GitHub/GitLab issue，只有内部描述**
+**Q: 发布包构建能否作为 full**
 
-直接将 bug 标题 + 现象 + 复现步骤粘贴给 AI，auto-fix 支持手动输入模式。
-
-**Q: 多仓库项目（如前端 + 后端）**
-
-当前 Auto Fix 状态与 WorkspaceSnapshot 以单个 Git 仓库为边界。多仓库问题应为每个仓库建立独立 Run，并由上层计划或人工流程维护跨仓库顺序；在缺少跨仓库 runtime 和测试证据前，不把它描述为原生多仓库编排能力。
+不能。`full` 只表示项目确认的完整本地验证边界；打包、签名、安装器制作和发布属于独立的 release-only 流程。
 
 ---
 
@@ -175,8 +91,9 @@ dev-harness 要求修改底层 native bridge、ABI、C++/CLI、Win32 API 等区�
 
 | 文档 | 说明 |
 |------|------|
-| `README.md` | 项目概览和 skill 列表 |
-| `docs/GIT_WORKFLOW.md` | Git 分支命名和提交信息规范 |
-| `docs/BUGFIX_GUIDE.md` | Bug 描述格式指南 |
-| `docs/CLIENT_PROJECT_ONBOARDING.md` | 新项目接入 dev-harness 指南 |
-| `docs/TESTING.md` | 测试策略说明 |
+| [项目概览](../README.md) | 安装、宿主支持和 Skill 入口 |
+| [客户端项目接入](CLIENT_PROJECT_ONBOARDING.md) | 新项目初始化与最小契约 |
+| [端到端工作流](WORKFLOW.md) | 新功能交付、审计与修复的阶段顺序 |
+| [测试说明](TESTING.md) | 分层测试策略与验证证据要求 |
+| [Bugfix 指南](BUGFIX_GUIDE.md) | Bug 描述、复现和专项回归格式 |
+| [Commands 契约](../commands/SKILL.md) | 命令记录字段、停止条件和所有权边界 |

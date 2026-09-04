@@ -4,12 +4,12 @@
 
 ## 汇总
 
-仓库 [`VERSION`](../VERSION) 与 [`CHANGELOG.md`](../CHANGELOG.md) 当前版本条目均为 `v1.11.3`；最新 Git 标签为 `v1.11.2`。每次修改清单后必须根据下表重新统计；“待确认”不计入总数。
+仓库 [`VERSION`](../VERSION)、[`CHANGELOG.md`](../CHANGELOG.md) 当前版本条目与最新 Git 标签均为 `v1.11.3`。每次修改清单后必须根据下表重新统计；“待确认”不计入总数。
 
 | 版本范围 | 已支持 | 部分支持 | 试验性 | 已弃用 |
 |---|---:|---:|---:|---:|
 | 当前开发版本（v1.11.3） | 33 | 0 | 0 | 0 |
-| 最新标签版本（v1.11.2） | 32 | 0 | 0 | 0 |
+| 最新标签版本（v1.11.3） | 33 | 0 | 0 | 0 |
 
 ## 当前已支持功能
 
@@ -47,7 +47,7 @@
 | PLN-001 | 从需求、PRD、原型或参考格式生成同一文档根下唯一活跃 Dashboard 和单任务详情 | 已支持 | 项目、版本或里程碑级规划 | 已发布：v1.11.1 | 契约测试 + 资源安装测试 | `tests/test_docs_contract.py`；`tests/test_install.py` | [Planning 契约](../planning/SKILL.md) |
 | PLN-002 | 刷新计划时按 Task ID 合并，保留有效 ID、本地约定和有证据的完成状态，并通过临时快照识别读取漂移 | 已支持 | 已有计划，包括单体 TaskDetails 迁移 | 已发布：v1.11.1 | 契约测试 | `tests/test_planning_contract.py`；`planning/SKILL.md` | [Planning 契约](../planning/SKILL.md) |
 | PLN-003 | 活跃任务按 Task ID 分片，跨任务可变字段只在 Dashboard 维护；完成任务进入里程碑归档并退出默认读取路径 | 已支持 | 长期演进或大型计划 | 已发布：v1.11.1 | 契约测试 + 模板安装测试 | `tests/test_planning_contract.py`；`tests/test_install.py` | [Planning 契约](../planning/SKILL.md) |
-| PLN-004 | 用 `规划中` 与 `待执行` 区分任务包完整性，并在单任务执行包中固定权威需求、代码与测试入口、不变量、已确认决策和停止条件 | 已支持 | 规划与执行分属不同对话或外部工作流的项目 | 当前开发：v1.11.3 | 契约测试 + 模板安装测试 | `tests/test_planning_contract.py`；`tests/test_install.py`；`planning/templates/Task.template.md` | [Planning 契约](../planning/SKILL.md) |
+| PLN-004 | 用 `规划中` 与 `待执行` 区分任务包完整性，并在单任务执行包中固定权威需求、代码与测试入口、不变量、已确认决策和停止条件 | 已支持 | 规划与执行分属不同对话或外部工作流的项目 | 已发布：v1.11.3 | 契约测试 + 模板安装测试 | `tests/test_planning_contract.py`；`tests/test_install.py`；`planning/templates/Task.template.md` | [Planning 契约](../planning/SKILL.md) |
 
 ### 验证命令
 
