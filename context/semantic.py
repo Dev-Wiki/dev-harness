@@ -179,6 +179,10 @@ def load_semantic_analysis(path: Path, repo_root: Path) -> SemanticAnalysis:
     if raw.get("schema_version") != SCHEMA_VERSION:
         raise SemanticAnalysisError(f"unsupported semantic analysis schema version: {raw.get('schema_version')}")
     current_evidence = collect_repository_evidence(repo_root)
+    if current_evidence.get("truncated"):
+        raise SemanticAnalysisError(
+            "repository evidence is truncated; narrow the repository scope or increase the evidence limit before analysis"
+        )
     if raw.get("evidence_fingerprint") != current_evidence["evidence_fingerprint"]:
         raise SemanticAnalysisError("repository evidence fingerprint changed; collect evidence and analyze again")
 

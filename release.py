@@ -18,6 +18,7 @@ INSTALLABLE_SOURCE_PATHS = (
     "install.bat",
     "VERSION",
     "README.md",
+    "docs",
     "commands",
     "context",
     "codebase-audit",
@@ -28,6 +29,15 @@ INSTALLABLE_SOURCE_PATHS = (
     "retro",
     "internal/bugfix-flow",
 )
+PACKAGE_EXCLUDED_PREFIXES = ("docs/audit",)
+
+
+def _is_excluded_package_file(path: Path) -> bool:
+    relative = path.relative_to(SCRIPT_DIR).as_posix()
+    return any(
+        relative == prefix or relative.startswith(f"{prefix}/")
+        for prefix in PACKAGE_EXCLUDED_PREFIXES
+    )
 
 
 def _iter_package_files(path: Path):
@@ -36,6 +46,8 @@ def _iter_package_files(path: Path):
         return
     for file in sorted(path.rglob("*")):
         if not file.is_file():
+            continue
+        if _is_excluded_package_file(file):
             continue
         if "__pycache__" in file.parts or file.suffix == ".pyc" or file.name.endswith(":Zone.Identifier"):
             continue

@@ -695,6 +695,13 @@ class AutoFixStateStore:
         if current == "final-verify" and target in {"report", "commit"}:
             if not state.get("FinalDiffHash") or state["FinalDiffHash"] != state.get("ReviewDiffHash"):
                 raise StateTransitionError("FinalDiffHash must match ReviewDiffHash")
+            validation = validate_workspace(
+                state["WorkspaceSnapshot"], state.get("ChangedFiles", [])
+            )
+            if validation.diff_hash != state["FinalDiffHash"]:
+                raise StateTransitionError(
+                    "current diff does not match FinalDiffHash; final verification evidence is stale"
+                )
 
 
 def _print_json(value: Any) -> None:

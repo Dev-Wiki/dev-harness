@@ -13,6 +13,29 @@ from context.evidence import collect_repository_evidence
 
 
 class ContextCliTests(unittest.TestCase):
+    def test_noninteractive_refresh_preview_does_not_create_missing_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp) / "preview-repo"
+            repo_root.mkdir()
+            (repo_root / "package.json").write_text(
+                '{"name":"fixture"}\n', encoding="utf-8"
+            )
+            self.assertEqual(main(["scan", str(repo_root)]), 0)
+            (repo_root / "HARNESS.md").unlink()
+            (repo_root / "CMakeLists.txt").write_text(
+                "project(Fixture)\n", encoding="utf-8"
+            )
+            readme_before = (repo_root / "README.md").read_bytes()
+
+            output = io.StringIO()
+            with patch("sys.stdin.isatty", return_value=False), redirect_stdout(output):
+                exit_code = main(["refresh", str(repo_root)])
+
+            self.assertEqual(exit_code, 2)
+            self.assertIn("当前仅预览", output.getvalue())
+            self.assertFalse((repo_root / "HARNESS.md").exists())
+            self.assertEqual((repo_root / "README.md").read_bytes(), readme_before)
+
     def create_native_bridge_repo(self, repo_root: Path) -> None:
         """Generic WPF + C++/CLI native bridge project fixture."""
         (repo_root / "AppClient" / "Service").mkdir(parents=True)

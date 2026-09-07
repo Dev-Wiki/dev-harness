@@ -114,6 +114,27 @@ class WorkspaceSnapshotTests(GitRepoCase):
 
 
 class StateStoreTests(GitRepoCase):
+    def test_report_rejects_workspace_drift_after_final_verify(self) -> None:
+        store = self.runtime.AutoFixStateStore.initialize(
+            self.repo, "run-post-final-drift", "fix"
+        )
+        self.write("app.py", "print('verified')\n")
+        state = store.load()
+        current_hash = self.runtime.compute_diff_hash(
+            state["WorkspaceSnapshot"], ["app.py"]
+        )
+        state["Stage"] = "final-verify"
+        state["ChangedFiles"] = ["app.py"]
+        state["ReviewDiffHash"] = current_hash
+        state["FinalDiffHash"] = current_hash
+        store._write(state)
+        self.write("app.py", "raise RuntimeError('changed after final verify')\n")
+
+        with self.assertRaisesRegex(
+            self.runtime.StateTransitionError, "final verification|FinalDiffHash"
+        ):
+            store.checkpoint("report", completion_status="DONE")
+
     @staticmethod
     def assessment(profile: str, required_checks: list[str] | None = None) -> dict:
         return {

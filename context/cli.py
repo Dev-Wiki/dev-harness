@@ -1560,6 +1560,21 @@ def refresh_context_files(repo_root: Path, generated_files: dict[str, str], forc
             print(f"错误：无法刷新 {file_name}：{message}")
         return 1
 
+    if not force and not interactive and (missing or pending):
+        if missing:
+            print("检测到缺失的上下文文件：")
+            for file_name, _, _ in missing:
+                print(f"- {file_name}")
+        if pending:
+            print("检测到固定章节更新：")
+            for file_name, _, _, _, changed_ids, diff_text in pending:
+                print(f"- {file_name}: {', '.join(changed_ids)}")
+                print(f"--- 章节差异开始：{file_name} ---")
+                print(diff_text)
+                print(f"--- 章节差异结束：{file_name} ---")
+        print("当前仅预览；请使用 --force 重新运行以创建缺失文件并应用固定章节更新。")
+        return 2
+
     for file_name, target_path, content in missing:
         target_path.write_bytes(content)
         print(f"已创建：{file_name}")
@@ -1570,14 +1585,6 @@ def refresh_context_files(repo_root: Path, generated_files: dict[str, str], forc
     print("检测到固定章节更新：")
     for file_name, _, _, _, changed_ids, _ in pending:
         print(f"- {file_name}: {', '.join(changed_ids)}")
-
-    if not force and not interactive:
-        for file_name, _, _, _, _, diff_text in pending:
-            print(f"--- 章节差异开始：{file_name} ---")
-            print(diff_text)
-            print(f"--- 章节差异结束：{file_name} ---")
-        print("当前仅预览；请使用 --force 重新运行，或在交互式终端中确认后应用固定章节更新。")
-        return 2
 
     updated: list[str] = []
     skipped: list[str] = []

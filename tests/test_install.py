@@ -14,9 +14,29 @@ from install import (
     install_bundle_to_root,
 )
 import release
+import install
 
 
 class InstallBundleTests(unittest.TestCase):
+    def test_failed_export_preserves_previous_bundle(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out_dir = root / "out"
+            previous = out_dir / "bundle" / "skills" / "previous" / "SKILL.md"
+            previous.parent.mkdir(parents=True)
+            previous.write_text("previous working artifact\n", encoding="utf-8")
+
+            with patch.dict(
+                install.SKILL_SOURCES,
+                {"dev-harness-commands": root / "missing" / "SKILL.md"},
+            ):
+                with self.assertRaises(FileNotFoundError):
+                    install.export_bundle(out_dir)
+
+            self.assertEqual(
+                previous.read_text(encoding="utf-8"), "previous working artifact\n"
+            )
+
     def test_full_install_contains_every_registered_skill(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             bundle_root = Path(tmp) / "bundle"
@@ -290,6 +310,9 @@ class InstallBundleTests(unittest.TestCase):
                 self.assertIn(
                     "skills/dev-harness-docs/assets/capabilities.template.md", names
                 )
+                self.assertIn("docs/README.md", names)
+                self.assertIn("docs/TESTING.md", names)
+                self.assertNotIn("docs/audit/Report.md", names)
                 zf.extractall(extracted)
 
             result = subprocess.run(

@@ -8,6 +8,7 @@ import argparse
 import os
 import shutil
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -457,9 +458,31 @@ def install_bundle_to_root(bundle_root: Path, skills: list[str] | None = None) -
 
 
 def export_bundle(out_dir: Path, skills: list[str] | None = None) -> Path:
+    out_dir.mkdir(parents=True, exist_ok=True)
     bundle_root = out_dir / "bundle"
-    remove_existing(bundle_root)
-    return install_bundle_to_root(bundle_root, skills)
+    staging_parent = Path(tempfile.mkdtemp(prefix=".dev-harness-export-", dir=out_dir))
+    staging_bundle = staging_parent / "bundle"
+    previous_bundle = staging_parent / "previous-bundle"
+    previous_moved = False
+    try:
+        install_bundle_to_root(staging_bundle, skills)
+        if bundle_root.exists() or bundle_root.is_symlink():
+            os.replace(bundle_root, previous_bundle)
+            previous_moved = True
+        try:
+            os.replace(staging_bundle, bundle_root)
+        except OSError:
+            if previous_moved:
+                os.replace(previous_bundle, bundle_root)
+                previous_moved = False
+            raise
+        if previous_moved:
+            remove_existing(previous_bundle)
+            previous_moved = False
+        return bundle_root
+    finally:
+        if not previous_moved:
+            remove_existing(staging_parent)
 
 
 def build_parser() -> argparse.ArgumentParser:

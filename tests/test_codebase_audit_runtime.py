@@ -118,13 +118,16 @@ class AuditSnapshotTests(GitRepoCase):
         self.assertEqual(validation.audit_output_files, ("docs/audit/Findings.md",))
         self.assertEqual(store.load()["Status"], "ACTIVE")
 
-    def test_preexisting_dirty_audit_output_is_preserved(self) -> None:
+    def test_preexisting_dirty_audit_output_can_be_updated_by_new_run(self) -> None:
         self.write("docs/audit/Findings.md", "user draft\n")
         store = self.init_store()
         self.write("docs/audit/Findings.md", "agent overwrite\n")
 
-        with self.assertRaisesRegex(self.runtime.WorkspaceDrift, "pre-existing dirty"):
-            store.verify_workspace("ctx-1")
+        validation = store.verify_workspace("ctx-1")
+
+        self.assertEqual(validation.business_dirty_files, ())
+        self.assertEqual(validation.audit_output_files, ("docs/audit/Findings.md",))
+        self.assertEqual(store.load()["Status"], "ACTIVE")
 
     def test_business_source_change_fails_closed_and_marks_run_stale(self) -> None:
         store = self.init_store()
@@ -161,6 +164,35 @@ class AuditSnapshotTests(GitRepoCase):
 
 
 class DurableStateTests(GitRepoCase):
+    def test_finding_change_invalidates_completed_cross_module_review(self) -> None:
+        store = self.init_store()
+        finding = self.confirmed_finding(store.load()["AuditSnapshot"])
+        store.upsert_finding(finding, "ctx-1")
+        store.checkpoint_task("A01", "completed", "ctx-1")
+        store.checkpoint_cross_module(
+            "completed", "ctx-1", {"reviewed_tasks": ["A01"]}
+        )
+
+        finding["summary"] = "Updated evidence changes the finding"
+        store.upsert_finding(finding, "ctx-1")
+
+        self.assertEqual(store.load()["CrossModuleReview"]["Status"], "pending")
+        with self.assertRaisesRegex(self.runtime.StateTransitionError, "cross-module"):
+            store.complete("ctx-1")
+
+    def test_task_change_invalidates_completed_cross_module_review(self) -> None:
+        store = self.init_store()
+        store.checkpoint_task("A01", "completed", "ctx-1")
+        store.checkpoint_cross_module(
+            "completed", "ctx-1", {"reviewed_tasks": ["A01"]}
+        )
+
+        store.checkpoint_task("A02", "completed", "ctx-1")
+
+        self.assertEqual(store.load()["CrossModuleReview"]["Status"], "pending")
+        with self.assertRaisesRegex(self.runtime.StateTransitionError, "cross-module"):
+            store.complete("ctx-1")
+
     def test_task_checkpoint_can_resume_in_a_new_store_instance(self) -> None:
         store = self.init_store()
         store.checkpoint_task(

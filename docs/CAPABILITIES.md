@@ -4,11 +4,11 @@
 
 ## 汇总
 
-仓库 [`VERSION`](../VERSION)、[`CHANGELOG.md`](../CHANGELOG.md) 当前版本条目与最新 Git 标签均为 `v1.11.3`。每次修改清单后必须根据下表重新统计；“待确认”不计入总数。
+仓库 [`VERSION`](../VERSION) 与 [`CHANGELOG.md`](../CHANGELOG.md) 当前版本条目为 `v1.11.4`，最新 Git 标签为 `v1.11.3`。每次修改清单后必须根据下表重新统计；“待确认”不计入总数。
 
 | 版本范围 | 已支持 | 部分支持 | 试验性 | 已弃用 |
 |---|---:|---:|---:|---:|
-| 当前开发版本（v1.11.3） | 33 | 0 | 0 | 0 |
+| 当前开发版本（v1.11.4） | 33 | 0 | 0 | 0 |
 | 最新标签版本（v1.11.3） | 33 | 0 | 0 | 0 |
 
 ## 当前已支持功能
@@ -18,7 +18,7 @@
 | ID | 功能说明 | 支持状态 | 适用范围 | 版本归属 | 验证方式 | 证据 | 详情 |
 |---|---|---|---|---|---|---|---|
 | INS-001 | 安装全部或指定 Skill，支持 Cursor、Codex、OpenCode、Antigravity、交互选择和自定义目标，并展开 Skill 依赖 | 已支持 | Python 3；POSIX / Windows wrapper | 已发布：v1.10.0 | 自动化测试 + 代码证据 | `tests/test_install.py:15-22,101-204`；`install.py:182-217,229-295,432-511`；`install.bat:1-32` | [安装说明](../README.md#安装) |
-| INS-002 | 导出便携 `bundle/`，并生成包含源码、安装器、Skill 自包含资源和 CHANGELOG 的版本 zip | 已支持 | 维护者发布与离线分发 | 已发布：v1.10.0 | 自动化测试 + 代码证据 | `tests/test_install.py:242-284`；`install.py:447-504`；`release.py:45-82` | [安装与发布入口](../README.md#安装) |
+| INS-002 | 原子导出便携 `bundle/`，失败时保留旧产物；版本 zip 包含源码、安装器、Skill 自包含资源、CHANGELOG 和使用文档，并排除内部审计工作产物 | 已支持 | 维护者发布与离线分发 | 已发布：v1.10.0；修正：v1.11.4 | 自动化测试 + 代码证据 | `tests/test_install.py`；`install.py`；`release.py` | [安装与发布入口](../README.md#安装) |
 
 ### 项目上下文
 
@@ -26,8 +26,8 @@
 |---|---|---|---|---|---|---|---|
 | CTX-001 | `evidence` 输出通用仓库清单、分析字段契约、截断状态和快照指纹 | 已支持 | 可读取的本地仓库，不限内置 Profile | 已发布：v1.10.0 | 自动化测试 + 契约证据 | `tests/test_context_cli.py:750-764`；`context/SKILL.md:14-20,70-79,102-118` | [Context 契约](../context/SKILL.md) |
 | CTX-002 | `scan` 只创建缺失的 README、AGENTS、ARCHITECTURE、HARNESS，不覆盖已有同名文件 | 已支持 | 首次初始化项目 | 已发布：v1.10.0 | 自动化测试 + 代码证据 | `tests/test_context_cli.py:175-225,453-482`；`tests/test_install.py:139-204` | [Context 契约](../context/SKILL.md) |
-| CTX-003 | `refresh` 只更新固定 Markdown 章节，保留人工内容、编码、换行和权限，结构异常时 fail closed | 已支持 | 固定标题结构有效的已初始化项目 | 已发布：v1.10.0 | 自动化测试 | `tests/test_context_cli.py:291-451`；`tests/test_managed_context.py:21-150` | [Context 契约](../context/SKILL.md) |
-| CTX-004 | 接受绑定仓库证据、置信度和 fingerprint 的 AI 语义分析，支持未知框架，并拒绝越界路径、无证据命令和漂移分析 | 已支持 | 通用仓库；内置 Profile 为增强与离线回退 | 已发布：v1.10.0 | 自动化测试 + 契约证据 | `tests/test_context_cli.py:609-748`；`tests/test_semantic_analysis.py:42-176` | [Context 契约](../context/SKILL.md) |
+| CTX-003 | `refresh` 只更新固定 Markdown 章节，保留人工内容、编码、换行和权限，结构异常时 fail closed；非交互且未使用 `--force` 时不写入缺失文件或章节更新 | 已支持 | 固定标题结构有效的已初始化项目 | 已发布：v1.10.0；修正：v1.11.4 | 自动化测试 | `tests/test_context_cli.py`；`tests/test_managed_context.py` | [Context 契约](../context/SKILL.md) |
+| CTX-004 | 接受绑定仓库证据、置信度和 fingerprint 的 AI 语义分析，支持未知框架，并拒绝越界路径、无证据命令、漂移分析和截断仓库证据 | 已支持 | 通用仓库；内置 Profile 为增强与离线回退 | 已发布：v1.10.0；修正：v1.11.4 | 自动化测试 + 契约证据 | `tests/test_context_cli.py`；`tests/test_semantic_analysis.py` | [Context 契约](../context/SKILL.md) |
 
 ### 文档治理
 
@@ -70,7 +70,7 @@
 | FIX-001 | `analyze` 模式执行只读复现、探测、可证伪根因分析和报告，运行时阻止进入写阶段 | 已支持 | 只分析、不修改的 Bug 调查 | 已发布：v1.10.0 | 运行时测试 + 契约测试 | `tests/test_auto_fix_runtime.py:161-172`；`tests/test_auto_fix_contract.py:26-37` | [Auto Fix 契约](../auto-fix/SKILL.md) |
 | FIX-002 | `fix` 模式要求 confirmed 假设、修复前 RED、最小实现、修复后 GREEN、diff-bound review 和 final verify | 已支持 | 可建立复现与项目验证入口的 Bug | 已发布：v1.10.0 | 运行时测试 + 契约测试 | `tests/test_auto_fix_runtime.py:174-227`；`tests/test_auto_fix_contract.py:51-87` | [Auto Fix 契约](../auto-fix/SKILL.md) |
 | FIX-003 | `commit` / `unattended` 可在授权范围内精确提交；`fix` / `analyze` 禁止提交，push / PR / release 仍需独立授权 | 已支持 | 明确授权提交的 Auto Fix Run | 已发布：v1.10.0 | 运行时测试 + 契约测试 | `tests/test_auto_fix_runtime.py:229-237`；`auto-fix/SKILL.md:10-21,133-135` | [Auto Fix 契约](../auto-fix/SKILL.md) |
-| FIX-004 | WorkspaceSnapshot、Git 私有原子状态、断点恢复、变更集合和 diff hash 防止 dirty worktree、HEAD、分支及未声明文件漂移 | 已支持 | Git 仓库中的长流程修复 | 已发布：v1.10.0 | 运行时测试 | `tests/test_auto_fix_runtime.py:55-159,188-251`；`auto-fix/SKILL.md:42-71` | [Auto Fix 契约](../auto-fix/SKILL.md) |
+| FIX-004 | WorkspaceSnapshot、Git 私有原子状态、断点恢复、变更集合和 diff hash 防止 dirty worktree、HEAD、分支及未声明文件漂移，并在 report / commit 前拒绝 `final-verify` 后发生的差异变化 | 已支持 | Git 仓库中的长流程修复 | 已发布：v1.10.0；修正：v1.11.4 | 运行时测试 | `tests/test_auto_fix_runtime.py`；`auto-fix/SKILL.md`；`auto-fix/runtime.py` | [Auto Fix 契约](../auto-fix/SKILL.md) |
 | FIX-005 | 授权 Mode 与 `fast / standard / strict` 验证档位正交；按文件影响使证据失效、从证明义务复用验证、限制无理由重复，并对状态写入权限失败快速终止 | 已支持 | 已知问题的低、中、高风险修复；旧状态与风险不明场景 fail-safe | 已发布：v1.11.2 | 运行时测试 + 契约测试 | `tests/test_auto_fix_runtime.py`；`tests/test_auto_fix_contract.py`；`auto-fix/runtime.py`；`auto-fix/SKILL.md` | [Auto Fix 契约](../auto-fix/SKILL.md) |
 
 ### Codebase Audit
@@ -80,8 +80,8 @@
 | AUD-001 | 初始化 Git 私有 AuditSnapshot，并通过 checkpoint、status、resume 跨会话恢复任务和 Finding 状态 | 已支持 | 用户拥有或明确授权的 Git 仓库，已有唯一 docs root 与 Canonical Context | 已发布：v1.10.0 | 运行时测试 | `tests/test_codebase_audit_runtime.py:83-109,164-236` | [Audit 契约](../codebase-audit/SKILL.md) |
 | AUD-002 | 基于 Context 动态分区并逐任务生成 Dashboard、Task、Result、Findings 和 Report | 已支持 | 大型或跨模块存量仓库；工程质量审计，不含 offensive security | 已发布：v1.10.0 | 契约测试 | `tests/test_vnext_contract.py:78-127`；`codebase-audit/SKILL.md:10-26,80-108` | [Audit 契约](../codebase-audit/SKILL.md) |
 | AUD-003 | Finding 支持 candidate、needs-verification、confirmed、rejected、stale、resolved，confirmed 必须绑定完整证据和当前 Snapshot | 已支持 | Audit Finding Registry | 已发布：v1.10.0 | 运行时测试 | `tests/test_codebase_audit_runtime.py:296-352` | [Finding 契约](../codebase-audit/references/finding-contract.md) |
-| AUD-004 | 完成前强制 Cross-module Reconciliation，执行 checkpoint、去重、矛盾处理和完整调用链复核 | 已支持 | 所有 Audit Run，包括小项目或零 Finding | 已发布：v1.10.0 | 运行时测试 + 契约测试 | `tests/test_codebase_audit_runtime.py:248-271`；`tests/test_vnext_contract.py:129-152` | [跨模块复核](../codebase-audit/references/cross-module-review.md) |
-| AUD-005 | HEAD、分支、已有 dirty 内容、Context 或业务源码漂移时 fail closed，并限制输出到 `<docs-root>/audit/**` | 已支持 | 活跃或恢复中的 Audit Run | 已发布：v1.10.0 | 运行时测试 | `tests/test_codebase_audit_runtime.py:121-196,275-294,354-376` | [Audit 契约](../codebase-audit/SKILL.md) |
+| AUD-004 | 完成前强制 Cross-module Reconciliation，执行 checkpoint、去重、矛盾处理和完整调用链复核；task 或 Finding 变化后旧复核自动失效 | 已支持 | 所有 Audit Run，包括小项目或零 Finding | 已发布：v1.10.0；修正：v1.11.4 | 运行时测试 + 契约测试 | `tests/test_codebase_audit_runtime.py`；`tests/test_vnext_contract.py` | [跨模块复核](../codebase-audit/references/cross-module-review.md) |
+| AUD-005 | HEAD、分支、已有业务 dirty 内容、Context 或业务源码漂移时 fail closed，允许当前运行更新既有审计输出，并限制输出到 `<docs-root>/audit/**` | 已支持 | 活跃或恢复中的 Audit Run | 已发布：v1.10.0；修正：v1.11.4 | 运行时测试 | `tests/test_codebase_audit_runtime.py`；`codebase-audit/runtime.py` | [Audit 契约](../codebase-audit/SKILL.md) |
 | AUD-006 | 默认生成自然中文审计产物，显式要求时生成全英文；显示语言不改变内部状态和 Evidence fingerprint | 已支持 | Audit 文档输出 | 已发布：v1.10.0 | 契约测试 | `tests/test_vnext_contract.py:154-183`；`codebase-audit/SKILL.md:28-47` | [Audit 契约](../codebase-audit/SKILL.md) |
 | AUD-007 | 检查稳定入口 `audit/Report.md` 的文档可发现性，记录 `linked` 或 `docs-refresh-required`，缺入口时生成精确 Docs handoff | 已支持 | 已解析 docs root 的 Audit Run | 已发布：v1.10.0 | 契约测试 | `tests/test_vnext_contract.py:78-104`；`tests/test_docs_contract.py:140-151` | [Audit 契约](../codebase-audit/SKILL.md) |
 

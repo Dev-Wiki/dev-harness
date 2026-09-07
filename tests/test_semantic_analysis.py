@@ -3,11 +3,40 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from context.evidence import analysis_contract, collect_repository_evidence
+from context.evidence import MAX_FILES, analysis_contract, collect_repository_evidence
 from context.semantic import SemanticAnalysisError, load_semantic_analysis
 
 
 class SemanticAnalysisTests(unittest.TestCase):
+    def test_truncated_repository_rejects_analysis_even_when_prefix_fingerprint_matches(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo_root = root / "repo"
+            repo_root.mkdir()
+            for index in range(MAX_FILES):
+                (repo_root / f"f{index:04d}.txt").write_text(
+                    "original evidence\n", encoding="utf-8"
+                )
+            analysis_path = self._write_analysis(
+                root,
+                repo_root,
+                {
+                    "project_summary": {
+                        "value": "Only text fixtures",
+                        "confidence": "high",
+                        "evidence": ["f0000.txt:1"],
+                    }
+                },
+            )
+            before = collect_repository_evidence(repo_root)
+            (repo_root / "zzz.py").write_text("print(1)\n", encoding="utf-8")
+            after = collect_repository_evidence(repo_root)
+            self.assertTrue(after["truncated"])
+            self.assertEqual(before["evidence_fingerprint"], after["evidence_fingerprint"])
+
+            with self.assertRaisesRegex(SemanticAnalysisError, "truncated"):
+                load_semantic_analysis(analysis_path, repo_root)
+
     def test_analysis_contract_exposes_document_noise_guards(self) -> None:
         contract = analysis_contract()
 

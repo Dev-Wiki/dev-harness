@@ -326,6 +326,8 @@ def validate_workspace(
     preexisting = set(snapshot["preexisting_dirty_files"])
     current = _changed_paths(root)
     for path in sorted(preexisting):
+        if _is_audit_output(path, snapshot):
+            continue
         expected = snapshot["preexisting_fingerprints"].get(path)
         if expected is None or _file_fingerprint(root, path) != expected:
             raise WorkspaceDrift(f"pre-existing dirty content drifted: {path}")
@@ -713,6 +715,14 @@ class AuditStateStore:
                 "audit run is STALE/NeedsReverification; start a new snapshot before checkpointing"
             )
 
+    @staticmethod
+    def _invalidate_cross_module_review(state: dict[str, Any], reason: str) -> None:
+        if state.get("CrossModuleReview", {}).get("Status") == "completed":
+            state["CrossModuleReview"] = {
+                "Status": "pending",
+                "InvalidatedBy": reason,
+            }
+
     def checkpoint_task(
         self,
         task_id: str,
@@ -732,6 +742,7 @@ class AuditStateStore:
         state = self.load()
         self._require_active(state)
         previous = state["Tasks"].get(task_id, {})
+        self._invalidate_cross_module_review(state, f"task:{task_id}")
         state["Tasks"][task_id] = {
             "task_id": task_id,
             "status": status,
@@ -764,6 +775,7 @@ class AuditStateStore:
         state["CrossModuleReview"] = {
             "Status": status,
             "Evidence": dict(evidence or {}),
+            "InputRevision": int(state.get("Revision", 0)),
         }
         state["Revision"] = int(state.get("Revision", 0)) + 1
         self._write(state)
@@ -791,6 +803,10 @@ class AuditStateStore:
             raise StateTransitionError(
                 "completed cross-module reconciliation is required before audit completion"
             )
+        if review.get("InputRevision") != int(state.get("Revision", 0)) - 1:
+            raise StateTransitionError(
+                "cross-module reconciliation is stale; review the current tasks and findings again"
+            )
         state["Status"] = "COMPLETED"
         state["CompletedSnapshot"] = state["AuditSnapshot"]["snapshot_fingerprint"]
         state["Revision"] = int(state.get("Revision", 0)) + 1
@@ -815,6 +831,7 @@ class AuditStateStore:
         merged = dict(existing)
         merged.update(patch)
         validated = validate_finding(merged, state["AuditSnapshot"])
+        self._invalidate_cross_module_review(state, f"finding:{finding_id}")
         state["Findings"][finding_id] = validated
         state["Revision"] = int(state.get("Revision", 0)) + 1
         self._write(state)

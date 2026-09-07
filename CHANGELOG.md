@@ -4,6 +4,21 @@
 
 ---
 
+## v1.11.4 — 2026-09-07
+
+### Changed
+
+- 发布 zip 现在包含仓库 `docs/` 使用与维护文档，同时排除内部 `docs/audit/` 工作产物。
+
+### Fixed
+
+- export 改为先在临时目录构建并原子替换，构建失败时保留上一份可用 bundle。
+- Context 非交互 `refresh` 在未传入 `--force` 时保持纯预览，不再提前创建缺失文件；仓库证据被截断时拒绝复用可能过期的语义分析。
+- Codebase Audit 允许当前运行更新既有审计输出，并在 task 或 Finding 变化后使旧的跨模块复核失效。
+- Auto Fix 在 `final-verify` 后进入 report 或 commit 前重新校验工作区差异，拒绝使用过期验证证据。
+
+---
+
 ## v1.11.3 — 2026-09-04
 
 ### Changed
