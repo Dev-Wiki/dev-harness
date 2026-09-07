@@ -9,6 +9,7 @@
 3. [HARNESS 使用指南](HARNESS_GUIDE.md)：维护和使用 build / test / quick / bugfix / full 验证接口。
 4. [Bugfix 指南](BUGFIX_GUIDE.md)：使用证据驱动的已知问题分析与修复流程。
 5. [English README](README_EN.md)：英文项目概览与安装入口。
+6. [Audit 批量接口](../codebase-audit/references/runtime-interface.md)：结构化证据输入、紧凑文档生成与完成门禁。
 
 ## 维护与验证
 

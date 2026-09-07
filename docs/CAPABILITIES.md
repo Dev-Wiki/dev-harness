@@ -4,11 +4,11 @@
 
 ## 汇总
 
-仓库 [`VERSION`](../VERSION) 与 [`CHANGELOG.md`](../CHANGELOG.md) 当前版本条目为 `v1.11.4`，最新 Git 标签为 `v1.11.3`。每次修改清单后必须根据下表重新统计；“待确认”不计入总数。
+仓库 [`VERSION`](../VERSION) 与 [`CHANGELOG.md`](../CHANGELOG.md) 当前版本条目为 `v1.11.5`，最新 Git 标签为 `v1.11.3`。每次修改清单后必须根据下表重新统计；“待确认”不计入总数。
 
 | 版本范围 | 已支持 | 部分支持 | 试验性 | 已弃用 |
 |---|---:|---:|---:|---:|
-| 当前开发版本（v1.11.4） | 33 | 0 | 0 | 0 |
+| 当前开发版本（v1.11.5） | 35 | 0 | 0 | 0 |
 | 最新标签版本（v1.11.3） | 33 | 0 | 0 | 0 |
 
 ## 当前已支持功能
@@ -84,6 +84,8 @@
 | AUD-005 | HEAD、分支、已有业务 dirty 内容、Context 或业务源码漂移时 fail closed，允许当前运行更新既有审计输出，并限制输出到 `<docs-root>/audit/**` | 已支持 | 活跃或恢复中的 Audit Run | 已发布：v1.10.0；修正：v1.11.4 | 运行时测试 | `tests/test_codebase_audit_runtime.py`；`codebase-audit/runtime.py` | [Audit 契约](../codebase-audit/SKILL.md) |
 | AUD-006 | 默认生成自然中文审计产物，显式要求时生成全英文；显示语言不改变内部状态和 Evidence fingerprint | 已支持 | Audit 文档输出 | 已发布：v1.10.0 | 契约测试 | `tests/test_vnext_contract.py:154-183`；`codebase-audit/SKILL.md:28-47` | [Audit 契约](../codebase-audit/SKILL.md) |
 | AUD-007 | 检查稳定入口 `audit/Report.md` 的文档可发现性，记录 `linked` 或 `docs-refresh-required`，缺入口时生成精确 Docs handoff | 已支持 | 已解析 docs root 的 Audit Run | 已发布：v1.10.0 | 契约测试 | `tests/test_vnext_contract.py:78-104`；`tests/test_docs_contract.py:140-151` | [Audit 契约](../codebase-audit/SKILL.md) |
+| AUD-008 | 原子 batch 登记 Task/Finding/document、批量输出校验与摘要返回；同次工作区校验复用 Git 身份检查 | 已支持 | 结构化审计与长线程；保留漂移和跨模块门禁 | 已发布：v1.11.5 | 运行时回归测试 | `tests/test_codebase_audit_runtime.py`；`codebase-audit/runtime.py` | [批量接口](../codebase-audit/references/runtime-interface.md) |
+| AUD-009 | 从持久化证据生成紧凑 Markdown；保护手写/外部修改的输出，结构化运行完成前核对当前 Revision 的渲染凭据 | 已支持 | 新审计；旧手写产物保留兼容流程 | 已发布：v1.11.5 | 渲染/中断恢复/安装包实测 | `tests/test_codebase_audit_runtime.py`；`codebase-audit/render.py` | [写入与完成](../codebase-audit/references/runtime-interface.md#写入与完成) |
 
 ### 显式复盘
 

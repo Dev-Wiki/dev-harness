@@ -41,7 +41,7 @@
 
 ## 任务契约
 
-每个 `tasks/Axx-*.md` 必须包含：
+每个 Task 必须包含以下信息；结构化模式写入 checkpoint 后生成 `tasks/Axx.md`，旧 `tasks/Axx-*.md` 可继续维护：
 
 | 字段 | 要求 |
 |---|---|

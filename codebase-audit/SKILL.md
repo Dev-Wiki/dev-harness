@@ -7,6 +7,16 @@ description: Use when a user-owned or explicitly authorized repository needs a s
 
 对无法在一次会话中完整载入上下文的存量代码库做渐进式审计。让 AI 负责语义理解，让 `runtime.py` 负责快照、状态、漂移和写入边界；不要把本 Skill 变成语言规则库或静态分析器。
 
+## 执行效率
+
+- 优先完成用户关心的行为域与优先级判断，按真实边界分区；不为小项目强拆任务。验证深度由证据缺口决定，不降低 confirmed 和 Cross-module Reconciliation 要求。
+- 新运行使用 `batch` 保存结构化计划、结果与 Finding，使用 `render-output` 生成文档；AI 不逐份手写相同导航、Snapshot 表、状态与问题正文。批量接口和数据形状见 [runtime-interface.md](references/runtime-interface.md)。旧手写产物按原模板增量维护，避免整套删除重建。
+- 每个任务边界持久化已有证据；完成语义复核后及时收口。报告未落盘、门禁失败或工具仍在 running 时，不能宣称审计完成。
+- 独立读取合批；先搜索、再读命中的行为链，避免多轮加载完整 Context、runtime 源码或全部模板。状态命令使用 `--summary`，恢复时先读摘要与当前 Task/Result，按需读其余证据。
+- 同快照下已验证的证据可复用；跨模块阶段针对接缝、冲突、遗漏和变化补查，不重做所有任务。已完成完整测试后，仅新证据、变化或失败才触发重跑。
+- 长线程中先保存恢复位置；上下文拥挤时通过持久化状态继续，条件允许可在新会话 resume。不要求用户先换线程才能开始，也不自动切换模型/推理档位。
+- 使用宿主原生补丁与命令入口。普通工作区操作不预先提升权限；遇到沙箱失败按宿主权限机制处理。相同基础设施错误持续出现且无新恢复证据时记录 blocker，停止反复换 shell、睡眠探测或启动替代进程。
+
 ## 审计范围
 
 本 Skill 面向用户拥有或已获准审计的代码仓库，执行工程质量、行为正确性和跨模块一致性审计。主要关注：
@@ -63,7 +73,7 @@ Task 与运行状态同样只翻译显示层：`pending` 为“待开始”、`i
 - 生成审计任务时，读取 [references/partitioning.md](references/partitioning.md)。
 - 第一次记录 candidate 或改变 Finding 状态前，读取 [references/finding-contract.md](references/finding-contract.md)。
 - 所有任务结束、生成最终报告前，读取 [references/cross-module-review.md](references/cross-module-review.md)。
-- 创建产物时使用 `templates/` 中对应模板，不删除其职责、导航、`Snapshot`、`Evidence` 或 Finding Contract 章节；按本轮 `output_language` 转换所有面向读者的自然语言。
+- 新建结构化产物前读取 [references/runtime-interface.md](references/runtime-interface.md)，由 `render-output` 生成紧凑文档，保留导航、Snapshot、Evidence、Finding Contract 和原产物职责。手写维护既有产物时才读取 `templates/` 中所需模板。
 
 ## Preflight
 
@@ -74,7 +84,7 @@ Task 与运行状态同样只翻译显示层：`pending` 为“待开始”、`i
 5. 只读检查 `<docs-root>/README.md` 或一个既有 route index 是否链接固定入口 `<docs-root>/audit/Report.md`，将状态记为 `linked` 或 `docs-refresh-required`。缺入口不是 `AUD-*` Finding。
 6. 若用户同时授权 Docs Refresh，在 Audit 只读 preflight 已解析稳定路径后、`runtime.py init` 建立 Snapshot 前，由 `dev-harness-docs` 幂等补入口；Audit 自己不得越界写入。若只授权 Audit，继续运行但必须把精确 handoff 写入 Dashboard、Report 和最终回复。
 7. 校验所有预期输出都位于 `<docs-root>/audit/**`，所有运行状态都位于 Git 私有目录。
-8. 用 `runtime.py` 初始化或恢复运行并建立 `AuditSnapshot`。先读取 `python <skill-dir>/runtime.py --help`，再按实际接口使用 `init`、`resume` / `status`、`verify-workspace`、`checkpoint`、`upsert-finding`、`validate-output`、`checkpoint-cross-module` 和 `complete` 等语义操作；不硬编码未确认参数，不手工伪造或绕过状态校验。
+8. 用 `runtime.py` 初始化或恢复运行并建立 `AuditSnapshot`。先读取 `python <skill-dir>/runtime.py --help`，优先使用 `batch`、`validate-outputs`、`render-output` 和带 `--summary` 的状态命令；旧 `checkpoint/upsert-finding/validate-output` 仍兼容。不硬编码未确认参数，不手工伪造或绕过状态校验。
 
 `AuditSnapshot` 至少绑定 base SHA、branch、preexisting dirty files 及内容 fingerprint、Context fingerprint、audit scope 和 output paths。
 
@@ -102,17 +112,21 @@ preflight → snapshot → dynamic partition → task execution
 
 - `Dashboard.md`：仅维护运行快照、输出语言、任务状态、计数、当前焦点和阻塞；链接到其他产物，不放 Finding 正文。
 - `Findings.md`：稳定 Finding Registry；通过 identity gate 后确认同一根因的项复用 ID，记录状态、Snapshot 和 Evidence。
-- `tasks/Axx-*.md`：当前轮次要扫描什么，以及范围、边界、排除项、证据策略和依赖。
-- `results/Axx-*.md`：对应 Task 的检查范围、candidate、反证、证据缺口和跨模块输入。
+- `tasks/Axx.md`（既有 `Axx-*.md` 保留）：范围、边界、排除项、证据策略和依赖。
+- `results/Axx.md`（既有 `Axx-*.md` 保留）：对应 Task 的检查范围、candidate、反证、证据缺口和跨模块输入。
 - `Report.md`：当前快照下的开发者总览，聚合 Findings 和 Cross-module 结论。
 
 各文档必须互相链接。详细证据只维护在 Finding 或 Task Result 的权威位置，其他文档链接过去，不复制正文。历史由 Git 承担；V1 不创建按时间滚动的归档副本。
+
+结构化模式从 Git 私有状态单向渲染，禁止同时手改生成文件和 JSON 形成双源；快照全表只生成在 Dashboard，其他文档保留 Snapshot ID 和链接。
 
 稳定外部入口是 `<docs-root>/audit/Report.md`。`<docs-root>/README.md` 或既有 route index 的入口由 Docs 维护；根 README 快捷链接可选。Audit 不得把缺失导航伪装成 Finding，也不得在活跃 Snapshot 中调用 Docs 修改 hub，否则会形成 workspace drift。
 
 ## Drift 与停止条件
 
 在恢复运行、开始每个 Task、把 Finding 标为 `confirmed`、Cross-module Reconciliation 和生成报告前，运行 workspace drift 校验。
+
+`batch/checkpoint/upsert-finding/checkpoint-cross-module/complete/render-output` 内置的校验可履行同一时点的门禁，不要求紧邻追加独立 `verify-workspace`。批次不能跨越新的任务调查或长时间验证来复用旧校验。
 
 HEAD、分支、preexisting dirty 内容/暂存状态、Context fingerprint 或受审范围发生未纳入快照的变化时：
 

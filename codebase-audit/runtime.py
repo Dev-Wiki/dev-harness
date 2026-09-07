@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Deterministic state and workspace guardrails for Codebase Audit V1.
 
-This runtime deliberately does not inspect source code or generate audit prose.  It
-only owns the durable run state, snapshot validation, finding contract, and the
-boundary within which an agent may write audit documents.
+This runtime does not infer audit conclusions. It owns durable state, validation,
+batch updates, and deterministic document rendering from agent-supplied evidence.
 """
 
 from __future__ import annotations
@@ -282,6 +281,13 @@ def _is_audit_output(relative: str, snapshot: Mapping[str, Any]) -> bool:
 def validate_output_path(snapshot: Mapping[str, Any], output_path: str | Path) -> Path:
     """Validate a path relative to ``<docs-root>/audit`` and return its full path."""
 
+    return _validate_output_path(snapshot, output_path, _assert_snapshot_identity(snapshot))
+
+
+def _validate_output_path(
+    snapshot: Mapping[str, Any], output_path: str | Path, root: Path
+) -> Path:
+
     raw = os.fspath(output_path)
     if not raw.strip() or "\0" in raw:
         raise OutputPathError("audit output path must be non-empty")
@@ -294,7 +300,6 @@ def validate_output_path(snapshot: Mapping[str, Any], output_path: str | Path) -
     ):
         raise OutputPathError("audit output path must be relative and may not contain '..'")
 
-    root = _assert_snapshot_identity(snapshot)
     docs_root = root / snapshot["docs_root"]
     audit_root = root / snapshot["audit_output_root"]
     candidate = audit_root / relative
@@ -351,7 +356,7 @@ def validate_workspace(
     for relative in audit_outputs:
         within_audit = Path(relative).relative_to(Path(snapshot["audit_output_root"]))
         try:
-            validate_output_path(snapshot, within_audit)
+            _validate_output_path(snapshot, within_audit, root)
         except OutputPathError as error:
             raise WorkspaceDrift(str(error)) from error
 
@@ -497,12 +502,12 @@ def validate_finding(
     if not isinstance(finding_id, str) or not FINDING_ID_PATTERN.fullmatch(finding_id):
         raise FindingValidationError("finding id must match AUD- followed by at least three digits")
     status = canonical.get("status")
-    if status not in FINDING_STATUSES:
+    if not isinstance(status, str) or status not in FINDING_STATUSES:
         raise FindingValidationError(
             "invalid finding status; expected one of: " + ", ".join(sorted(FINDING_STATUSES))
         )
     severity = canonical.get("severity")
-    if severity is not None and severity not in SEVERITIES:
+    if severity is not None and (not isinstance(severity, str) or severity not in SEVERITIES):
         raise FindingValidationError("severity must be one of P0, P1, P2, or P3")
 
     if status == "confirmed":
@@ -730,17 +735,21 @@ class AuditStateStore:
         context_fingerprint: str,
         checkpoint: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
-        if not TASK_ID_PATTERN.fullmatch(task_id):
+        return self.batch({"tasks": [{"task_id": task_id, "status": status,
+                                     "checkpoint": dict(checkpoint or {})}]}, context_fingerprint)
+
+    def _apply_task(self, state: dict[str, Any], task: Mapping[str, Any]) -> None:
+        task_id = task.get("task_id")
+        status = task.get("status")
+        checkpoint = task.get("checkpoint", {})
+        if not isinstance(task_id, str) or not TASK_ID_PATTERN.fullmatch(task_id):
             raise StateTransitionError("invalid task id")
-        if status not in TASK_STATUSES:
+        if not isinstance(status, str) or status not in TASK_STATUSES:
             raise StateTransitionError(
                 "invalid task status; expected one of: " + ", ".join(sorted(TASK_STATUSES))
             )
-        state = self.load()
-        self._require_active(state)
-        self.verify_workspace(context_fingerprint)
-        state = self.load()
-        self._require_active(state)
+        if not isinstance(checkpoint, Mapping):
+            raise StateTransitionError("checkpoint must be an object")
         previous = state["Tasks"].get(task_id, {})
         self._invalidate_cross_module_review(state, f"task:{task_id}")
         state["Tasks"][task_id] = {
@@ -749,9 +758,6 @@ class AuditStateStore:
             "checkpoint": dict(checkpoint or {}),
             "revision": int(previous.get("revision", 0)) + 1,
         }
-        state["Revision"] = int(state.get("Revision", 0)) + 1
-        self._write(state)
-        return state
 
     # Convenient API name matching the CLI command.
     checkpoint = checkpoint_task
@@ -807,6 +813,17 @@ class AuditStateStore:
             raise StateTransitionError(
                 "cross-module reconciliation is stale; review the current tasks and findings again"
             )
+        if "Document" in state:
+            receipt_path = self.path.parent / "rendered.json"
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.exists() else {}
+            if receipt.get("revision") != state["Revision"] or receipt.get("snapshot") != state["AuditSnapshot"]["snapshot_fingerprint"]:
+                raise StateTransitionError("render-output must materialize the current revision before completion")
+            files = receipt.get("files", {})
+            if not files:
+                raise StateTransitionError("render-output receipt has no files")
+            for relative, path in zip(files, self.validate_outputs(list(files))):
+                if path.is_symlink() or not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != files[relative]:
+                    raise StateTransitionError(f"rendered output changed: {relative}")
         state["Status"] = "COMPLETED"
         state["CompletedSnapshot"] = state["AuditSnapshot"]["snapshot_fingerprint"]
         state["Revision"] = int(state.get("Revision", 0)) + 1
@@ -818,11 +835,9 @@ class AuditStateStore:
         finding: Mapping[str, Any],
         context_fingerprint: str,
     ) -> dict[str, Any]:
-        state = self.load()
-        self._require_active(state)
-        self.verify_workspace(context_fingerprint)
-        state = self.load()
-        self._require_active(state)
+        return self.batch({"findings": [finding]}, context_fingerprint)
+
+    def _apply_finding(self, state: dict[str, Any], finding: Mapping[str, Any]) -> None:
         patch = _canonicalize_finding(finding)
         finding_id = patch.get("id")
         if not isinstance(finding_id, str):
@@ -833,6 +848,45 @@ class AuditStateStore:
         validated = validate_finding(merged, state["AuditSnapshot"])
         self._invalidate_cross_module_review(state, f"finding:{finding_id}")
         state["Findings"][finding_id] = validated
+
+    def batch(self, payload: Mapping[str, Any], context_fingerprint: str) -> dict[str, Any]:
+        """Validate a bounded batch in memory, then publish exactly one revision.
+
+        Invalid input never leaves partially registered tasks or findings. Workspace
+        drift still persists STALE. Cross-module review and completion remain separate.
+        """
+        if not isinstance(payload, Mapping) or not payload or set(payload) - {"tasks", "findings", "document"}:
+            raise StateTransitionError("batch accepts only tasks, findings, document")
+        for key in ("tasks", "findings"):
+            if key in payload and (not isinstance(payload[key], list) or not payload[key]):
+                raise StateTransitionError(f"{key} must be a non-empty array")
+            ids = []
+            for item in payload.get(key, []):
+                if not isinstance(item, Mapping):
+                    raise StateTransitionError(f"{key} entries must be objects")
+                ids.append(item.get("task_id") if key == "tasks" else _canonicalize_finding(item).get("id"))
+            if any(not isinstance(i, str) for i in ids) or len(set(ids)) != len(ids):
+                raise StateTransitionError(f"{key} must have unique string IDs")
+        state = self.load()
+        self._require_active(state)
+        self.verify_workspace(context_fingerprint)
+        state = self.load()
+        self._require_active(state)
+        for task in payload.get("tasks", []):
+            self._apply_task(state, task)
+        for finding in payload.get("findings", []):
+            self._apply_finding(state, finding)
+        if "document" in payload:
+            document = payload["document"]
+            if not isinstance(document, Mapping):
+                raise StateTransitionError("document must be an object")
+            merged = {**state.get("Document", {}), **document}
+            if merged.get("output_language", "zh-CN") not in {"zh-CN", "en"}:
+                raise StateTransitionError("output_language must be zh-CN or en")
+            state["Document"] = merged
+            self._invalidate_cross_module_review(state, "document")
+        # No intermediate state has been written. Recheck immediately before publishing.
+        self.verify_workspace(context_fingerprint)
         state["Revision"] = int(state.get("Revision", 0)) + 1
         self._write(state)
         return state
@@ -840,9 +894,86 @@ class AuditStateStore:
     def validate_output(self, output_path: str | Path) -> Path:
         return validate_output_path(self.load()["AuditSnapshot"], output_path)
 
+    def validate_outputs(self, paths: Sequence[str]) -> list[Path]:
+        if not isinstance(paths, list) or not paths or not all(isinstance(p, str) for p in paths):
+            raise OutputPathError("paths must be a non-empty array of audit-relative strings")
+        snapshot = self.load()["AuditSnapshot"]
+        root = _assert_snapshot_identity(snapshot)
+        return [_validate_output_path(snapshot, p, root) for p in paths]
+
+    def render_output(self, context_fingerprint: str) -> dict[str, Any]:
+        # Load by sibling path so installed bundles and importlib callers behave alike.
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("audit_render", Path(__file__).with_name("render.py"))
+        module = importlib.util.module_from_spec(spec)
+        # Rendering must not add __pycache__ beside an installed skill outside audit roots.
+        previous_bytecode_setting = sys.dont_write_bytecode
+        try:
+            sys.dont_write_bytecode = True
+            spec.loader.exec_module(module)
+        finally:
+            sys.dont_write_bytecode = previous_bytecode_setting
+        self.verify_workspace(context_fingerprint)
+        state = self.load()
+        if state.get("Status") == "STALE" or state.get("NeedsReverification"):
+            raise StateTransitionError("cannot render current conclusions from a stale run")
+        documents = module.render_documents(state)
+        paths = self.validate_outputs(list(documents))
+        # Refuse edited or hand-authored files; never replace an old run's documents silently.
+        receipt_path = self.path.parent / "rendered.json"
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.exists() else {}
+        hashes = receipt.get("files", {})
+        for relative, target in zip(documents, paths):
+            if target.is_symlink():
+                raise OutputPathError(f"render target may not be a symlink: {relative}")
+            if target.exists():
+                if not target.is_file():
+                    raise OutputPathError(f"render target is not a file: {relative}")
+                digest = hashlib.sha256(target.read_bytes()).hexdigest()
+                desired = hashlib.sha256(documents[relative].encode("utf-8")).hexdigest()
+                if digest != desired and digest != hashes.get(relative):
+                    raise OutputPathError(f"unmanaged or edited audit output: {relative}; preserve and reconcile it first")
+        self.verify_workspace(context_fingerprint)
+        changed = []
+        for relative, target in zip(documents, paths):
+            content = documents[relative].encode("utf-8")
+            if not target.exists() or target.read_bytes() != content:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                descriptor, temporary_name = tempfile.mkstemp(prefix=".audit-render-", dir=target.parent)
+                try:
+                    with os.fdopen(descriptor, "wb") as stream:
+                        stream.write(content)
+                    os.replace(temporary_name, target)
+                finally:
+                    if os.path.exists(temporary_name):
+                        os.unlink(temporary_name)
+                changed.append(relative)
+            hashes[relative] = hashlib.sha256(content).hexdigest()
+            # Per-file receipt permits recovery after interruption between documents.
+            AuditStateStore(self.repo, receipt_path)._write({"files": hashes})
+        self.verify_workspace(context_fingerprint)
+        AuditStateStore(self.repo, receipt_path)._write({"files": hashes, "revision": state["Revision"],
+            "snapshot": state["AuditSnapshot"]["snapshot_fingerprint"]})
+        return {"Status": state["Status"], "Revision": state["Revision"],
+                "files": list(documents), "changed": changed}
+
 
 def _print_json(value: Any) -> None:
     print(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True))
+
+
+def _summary(state: Mapping[str, Any]) -> dict[str, Any]:
+    return {"RunId": state["RunId"], "Status": state["Status"], "Revision": state["Revision"],
+            "SnapshotFingerprint": state["AuditSnapshot"]["snapshot_fingerprint"],
+            "TaskCounts": dict(Counter(t["status"] for t in state["Tasks"].values())),
+            "FindingCounts": dict(Counter(f["status"] for f in state["Findings"].values())),
+            "CrossModuleReview": state["CrossModuleReview"]["Status"]}
+
+
+def _read_input(path: str) -> Any:
+    if path == "-":
+        return json.load(sys.stdin)
+    return json.loads(Path(path).read_text(encoding="utf-8-sig"))
 
 
 def _store_from_args(args: argparse.Namespace) -> AuditStateStore:
@@ -914,7 +1045,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     output_parser.add_argument("--run-id", required=True)
     output_parser.add_argument("--path", required=True)
 
+    for name, description in (
+        ("batch", "atomically update tasks/findings/document from one JSON object"),
+        ("validate-outputs", "validate an array of audit-relative paths in one process"),
+        ("render-output", "render compact Markdown from persisted state and evidence"),
+    ):
+        command_parser = sub.add_parser(name, help=description)
+        command_parser.add_argument("--repo", default=".")
+        command_parser.add_argument("--run-id", required=True)
+        if name != "validate-outputs":
+            command_parser.add_argument("--context-fingerprint", required=True)
+        if name != "render-output":
+            command_parser.add_argument("--input", default="-", help="UTF-8 JSON file, or - for stdin")
+    for command_parser in sub.choices.values():
+        command_parser.add_argument("--summary", action="store_true", help="omit full state from legacy command output")
+
     args = parser.parse_args(argv)
+    def print_state(state):
+        _print_json(_summary(state) if args.summary else state)
     try:
         if args.command == "init":
             store = AuditStateStore.initialize(
@@ -924,14 +1072,17 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.scope,
                 args.docs_root,
             )
-            _print_json({"state_path": str(store.path), "state": store.load()})
+            _print_json({"state_path": str(store.path), **(_summary(store.load()) if args.summary else {"state": store.load()})})
         elif args.command == "resume":
             store = AuditStateStore.resume(
                 args.repo, args.run_id, args.context_fingerprint
             )
-            _print_json({"state_path": str(store.path), "state": store.load()})
+            _print_json({"state_path": str(store.path), **(_summary(store.load()) if args.summary else {"state": store.load()})})
         elif args.command == "status":
-            _print_json(_store_from_args(args).status(args.context_fingerprint))
+            result = _store_from_args(args).status(args.context_fingerprint)
+            if args.summary:
+                result.pop("State", None)
+            _print_json(result)
         elif args.command == "verify-workspace":
             result = _store_from_args(args).verify_workspace(args.context_fingerprint)
             _print_json(result._asdict())
@@ -945,13 +1096,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.context_fingerprint,
                 checkpoint,
             )
-            _print_json(state)
+            print_state(state)
         elif args.command == "upsert-finding":
             finding = json.loads(args.finding_json)
             state = _store_from_args(args).upsert_finding(
                 finding, args.context_fingerprint
             )
-            _print_json(state)
+            print_state(state)
         elif args.command == "checkpoint-cross-module":
             evidence = json.loads(args.evidence_json)
             if not isinstance(evidence, dict):
@@ -961,14 +1112,21 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.context_fingerprint,
                 evidence,
             )
-            _print_json(state)
+            print_state(state)
         elif args.command == "complete":
             state = _store_from_args(args).complete(args.context_fingerprint)
-            _print_json(state)
+            print_state(state)
+        elif args.command == "batch":
+            _print_json(_summary(_store_from_args(args).batch(_read_input(args.input), args.context_fingerprint)))
+        elif args.command == "validate-outputs":
+            paths = _store_from_args(args).validate_outputs(_read_input(args.input))
+            _print_json({"paths": [str(p) for p in paths]})
+        elif args.command == "render-output":
+            _print_json(_store_from_args(args).render_output(args.context_fingerprint))
         else:
             validated = _store_from_args(args).validate_output(args.path)
             _print_json({"path": str(validated)})
-    except (AuditRuntimeError, ValueError, json.JSONDecodeError) as error:
+    except (AuditRuntimeError, ValueError, OSError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
     return 0

@@ -4,6 +4,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -406,6 +407,202 @@ class OutputAndFindingContractTests(GitRepoCase):
         (self.repo / "doc").mkdir()
         with self.assertRaisesRegex(self.runtime.OutputPathError, "both doc/ and docs/"):
             self.runtime.create_audit_snapshot(self.repo, "ctx", "all")
+
+
+class BatchAndRenderingTests(GitRepoCase):
+    def document_batch(self):
+        return {
+            "document": {"output_language": "zh-CN", "context": ["README.md:1"],
+                         "summary": "Only the fixture entry was inspected; no external platform validation.",
+                         "discoverability": {"hub": "docs/README.md", "status": "docs-refresh-required",
+                                             "handoff": "增加 audit/Report.md 入口"}},
+            "tasks": [{"task_id": "A01", "status": "completed", "checkpoint": {
+                "title": "入口", "scope": "app.py", "basis": "README.md:1",
+                "entry_points": ["app.py:1"], "boundaries": "entry to print",
+                "exclusions": "No external integrations", "strategy": "Trace entry",
+                "result": {"coverage": "Entry traced", "evidence": ["app.py:1"],
+                           "candidates": "None after checking entry", "counter_evidence": "No alternate caller",
+                           "gaps": "Only a fixture", "cross_module": "Entry and output checked"}}}],
+        }
+
+    def test_batch_is_atomic_and_checks_workspace_at_batch_boundaries(self):
+        store = self.init_store()
+        finding = self.confirmed_finding(store.load()["AuditSnapshot"])
+        initial = store.path.read_bytes()
+        invalid = {"tasks": [{"task_id": "A01", "status": "completed"}],
+                   "findings": [finding, {"id": "AUD-002", "status": "confirmed"}]}
+        with self.assertRaises(self.runtime.FindingValidationError):
+            store.batch(invalid, "ctx-1")
+        self.assertEqual(store.path.read_bytes(), initial)
+        invalid["findings"].pop()
+        with patch.object(store, "verify_workspace", wraps=store.verify_workspace) as guard:
+            result = store.batch(invalid, "ctx-1")
+        self.assertEqual(guard.call_count, 2)
+        self.assertEqual(result["Revision"], 1)
+        self.assertEqual(result["Tasks"]["A01"]["status"], "completed")
+        self.assertEqual(result["Findings"]["AUD-001"]["status"], "confirmed")
+        store.checkpoint_cross_module("completed", "ctx-1", {"boundary": "checked"})
+        store.batch({"findings": [{"id": "AUD-001", "summary": "updated"}]}, "ctx-1")
+        self.assertEqual(store.load()["CrossModuleReview"]["Status"], "pending")
+
+    def test_batch_duplicate_and_context_drift_rejected(self):
+        store = self.init_store()
+        for payload in ({"tasks": []}, {"complete": True},
+                        {"tasks": [{"task_id": "A01", "status": "pending"}] * 2}):
+            with self.assertRaises(self.runtime.StateTransitionError):
+                store.batch(payload, "ctx-1")
+        with self.assertRaises(self.runtime.WorkspaceDrift):
+            store.batch({"tasks": [{"task_id": "A01", "status": "pending"}]}, "changed-context")
+        self.assertEqual(store.load()["Status"], "STALE")
+        self.assertEqual(store.load()["Tasks"], {})
+
+    def test_validate_outputs_checks_identity_once_and_rejects_escape(self):
+        store = self.init_store()
+        with patch.object(self.runtime, "_assert_snapshot_identity", wraps=self.runtime._assert_snapshot_identity) as identity:
+            paths = store.validate_outputs([f"tasks/A{i:02}.md" for i in range(13)])
+        self.assertEqual(len(paths), 13)
+        self.assertEqual(identity.call_count, 1)
+        with self.assertRaises(self.runtime.OutputPathError):
+            store.validate_outputs(["Report.md", "../README.md"])
+
+    def test_cli_batch_accepts_utf8_file_and_stdin_with_summary_only(self):
+        store = self.init_store()
+        path = store.path.parent / "batch.json"
+        path.write_text(json.dumps(self.document_batch(), ensure_ascii=False), encoding="utf-8-sig")
+        base = [sys.executable, str(RUNTIME_PATH), "batch", "--repo", str(self.repo),
+                "--run-id", "audit-1", "--context-fingerprint", "ctx-1"]
+        first = subprocess.run(base + ["--input", str(path)], capture_output=True, text=True)
+        self.assertEqual(first.returncode, 0, first.stderr)
+        self.assertNotIn("State", json.loads(first.stdout))
+        self.assertEqual(json.loads(first.stdout)["SnapshotFingerprint"], store.load()["AuditSnapshot"]["snapshot_fingerprint"])
+        second = subprocess.run(base, input=json.dumps({"findings": [{"id": "AUD-002", "status": "candidate"}]}),
+                                capture_output=True, text=True)
+        self.assertEqual(second.returncode, 0, second.stderr)
+        self.assertEqual(json.loads(second.stdout)["FindingCounts"], {"candidate": 1})
+
+    def test_render_complete_flow_keeps_snapshot_evidence_and_task_links(self):
+        store = self.init_store()
+        data = self.document_batch()
+        finding = self.confirmed_finding(store.load()["AuditSnapshot"])
+        finding["source_task"] = "A01"
+        data["findings"] = [finding]
+        store.batch(data, "ctx-1")
+        result = store.render_output("ctx-1")
+        self.assertEqual(len(result["files"]), 5)
+        with self.assertRaisesRegex(self.runtime.StateTransitionError, "cross-module"):
+            store.complete("ctx-1")
+        store.checkpoint_cross_module("completed", "ctx-1", {"reviewed_tasks": ["A01"], "boundary": "entry/print checked"})
+        with self.assertRaisesRegex(self.runtime.StateTransitionError, "render-output"):
+            store.complete("ctx-1")
+        store.render_output("ctx-1")
+        store.complete("ctx-1")
+        result = store.render_output("ctx-1")
+        root = self.repo / "docs/audit"
+        self.assertIn("已完成", (root / "Report.md").read_text())
+        self.assertIn(finding["claim"], (root / "Findings.md").read_text())
+        self.assertNotIn(finding["claim"], (root / "Report.md").read_text())
+        self.assertIn("tasks/A01.md", (root / "Dashboard.md").read_text())
+        self.assertIn("../Dashboard.md#snapshot", (root / "results/A01.md").read_text())
+        self.assertIn("docs-refresh-required", (root / "Report.md").read_text())
+        before = {p: p.stat().st_mtime_ns for p in root.rglob("*.md")}
+        self.assertEqual(store.render_output("ctx-1")["changed"], [])
+        self.assertEqual(before, {p: p.stat().st_mtime_ns for p in root.rglob("*.md")})
+
+    def test_render_preserves_unmanaged_or_edited_files_before_any_write(self):
+        store = self.init_store()
+        store.batch(self.document_batch(), "ctx-1")
+        self.write("docs/audit/Report.md", "Hand-authored report\n")
+        with self.assertRaisesRegex(self.runtime.OutputPathError, "unmanaged or edited"):
+            store.render_output("ctx-1")
+        self.assertFalse((self.repo / "docs/audit/tasks/A01.md").exists())
+        self.assertEqual((self.repo / "docs/audit/Report.md").read_text(), "Hand-authored report\n")
+
+    def test_render_refuses_incomplete_results_and_symlink_targets(self):
+        store = self.init_store()
+        data = self.document_batch()
+        del data["tasks"][0]["checkpoint"]["result"]["evidence"]
+        store.batch(data, "ctx-1")
+        with self.assertRaisesRegex(ValueError, "evidence"):
+            store.render_output("ctx-1")
+        store.batch(self.document_batch(), "ctx-1")
+        (self.repo / "docs/audit").mkdir()
+        (self.repo / "docs/audit/Report.md").symlink_to(self.repo / "notes.md")
+        with self.assertRaises(self.runtime.WorkspaceDrift):
+            store.render_output("ctx-1")
+        self.assertEqual((self.repo / "notes.md").read_text(), "base notes\n")
+
+    def test_edited_rendered_file_blocks_complete_and_render_then_drift_stales(self):
+        store = self.init_store()
+        store.batch(self.document_batch(), "ctx-1")
+        store.checkpoint_cross_module("completed", "ctx-1", {"boundary": "checked"})
+        store.render_output("ctx-1")
+        self.write("docs/audit/results/A01.md", "User edits\n")
+        with self.assertRaisesRegex(self.runtime.StateTransitionError, "rendered output changed"):
+            store.complete("ctx-1")
+        with self.assertRaisesRegex(self.runtime.OutputPathError, "edited"):
+            store.render_output("ctx-1")
+        self.write("app.py", "print('changed')\n")
+        with self.assertRaises(self.runtime.WorkspaceDrift):
+            store.render_output("ctx-1")
+        self.assertEqual(store.load()["Status"], "STALE")
+
+    def test_english_renderer_and_interrupted_writes_are_recoverable(self):
+        store = self.init_store()
+        data = self.document_batch()
+        data["document"]["output_language"] = "en"
+        store.batch(data, "ctx-1")
+        replace = self.runtime.os.replace
+        def interrupt(source, target):
+            if Path(target).name == "Report.md":
+                raise OSError("simulated disk error")
+            return replace(source, target)
+        with patch.object(self.runtime.os, "replace", side_effect=interrupt):
+            with self.assertRaisesRegex(OSError, "disk error"):
+                store.render_output("ctx-1")
+        receipt = json.loads((store.path.parent / "rendered.json").read_text())
+        self.assertNotIn("revision", receipt)
+        store.render_output("ctx-1")
+        report = (self.repo / "docs/audit/Report.md").read_text()
+        self.assertIn("Audit is unfinished", report)
+        self.assertNotIn("## 审计", report)
+
+    def test_installed_runtime_renders_without_source_tree_imports(self):
+        from install import install_bundle_to_root
+        store = self.init_store()
+        store.batch(self.document_batch(), "ctx-1")
+        with tempfile.TemporaryDirectory() as tmp:
+            install_bundle_to_root(Path(tmp), ["dev-harness-codebase-audit"])
+            installed = Path(tmp) / "skills/dev-harness-codebase-audit/runtime.py"
+            result = subprocess.run(
+                [sys.executable, str(installed), "render-output", "--repo", str(self.repo),
+                 "--run-id", "audit-1", "--context-fingerprint", "ctx-1"],
+                cwd=tmp, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(len(json.loads(result.stdout)["files"]), 5)
+            self.assertFalse((installed.parent / "__pycache__").exists())
+
+    def test_workspace_validation_does_not_repeat_git_identity_per_audit_file(self):
+        store = self.init_store()
+        for index in range(13):
+            self.write(f"docs/audit/tasks/A{index:02}.md", "audit output\n")
+        with patch.object(self.runtime, "_assert_snapshot_identity", wraps=self.runtime._assert_snapshot_identity) as identity:
+            store.verify_workspace("ctx-1")
+        self.assertEqual(identity.call_count, 1)
+
+    def test_nested_evidence_zero_counts_and_final_focus_render_correctly(self):
+        store = self.init_store()
+        data = self.document_batch()
+        data["document"]["focus"] = "等待跨模块复核"
+        store.batch(data, "ctx-1")
+        store.checkpoint_cross_module("completed", "ctx-1", {
+            "boundaries": [{"producer": "entry", "consumer": "print"}]})
+        store.render_output("ctx-1")
+        store.complete("ctx-1")
+        store.render_output("ctx-1")
+        report = (self.repo / "docs/audit/Report.md").read_text()
+        self.assertIn("| 已确认 | 0 |", report)
+        self.assertIn("- Evidence:\n  - boundaries:\n    -\n      - consumer: print\n      - producer: entry", report)
+        self.assertNotIn("等待跨模块复核", (self.repo / "docs/audit/Dashboard.md").read_text())
 
 
 if __name__ == "__main__":

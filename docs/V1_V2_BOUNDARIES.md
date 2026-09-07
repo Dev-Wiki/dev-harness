@@ -9,6 +9,8 @@
 
 ## V1 定位
 
+v1.11.5 在同一边界内优化 Audit 批量状态更新与紧凑文档生成，并要求结构化运行在完成前核对当前 Revision 的落盘凭据；不扩展审计权限或引入执行编排。
+
 `dev-harness` V1 / VNext 的目标是：让已有项目具备一致的 Project Contract、可执行验证接口，以及 Bugfix 和大型代码库审计的完整证据链。
 
 适用项目：
@@ -108,6 +110,7 @@ V1 解决的问题：
 - 基于 Canonical Context 动态生成 subsystem / runtime / platform / native / data 等审计分区，不内置巨型语言 checklist
 - AuditSnapshot 绑定 HEAD、branch、既有 dirty fingerprints、Context fingerprint、scope 和输出根
 - 状态保存在 `.git/dev-harness/codebase-audit/<run-id>/state.json`，支持跨会话 resume/status/task checkpoint
+- 新结构化运行支持原子 batch、批量路径校验和摘要输出；render-output 从已有证据生成文档，完成前核对当前 Revision 已落盘。renderer 不分析代码、不推断结论；旧手写运行保持兼容（v1.11.5）
 - 只允许写入既有 `<docs-root>/audit/**`；源码、Context 或工作区漂移时 fail-closed 并把旧 confirmed Finding 标 stale
 - Finding 使用 candidate / needs-verification / confirmed / rejected / stale / resolved 内部状态并绑定 Evidence 与 Snapshot；默认文档使用自然中文显示，用户显式要求全英文时才切换
 - Candidate 默认独立保留，只有根因、职责归属、修复边界和单一修复效果均一致时才允许合并

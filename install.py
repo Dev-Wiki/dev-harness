@@ -45,12 +45,14 @@ RETRO_SKILL_SOURCE = SCRIPT_DIR / "retro" / "SKILL.md"
 CODEBASE_AUDIT_SOURCE_DIR = SCRIPT_DIR / "codebase-audit"
 CODEBASE_AUDIT_SKILL_SOURCE = CODEBASE_AUDIT_SOURCE_DIR / "SKILL.md"
 CODEBASE_AUDIT_RUNTIME_SOURCE = CODEBASE_AUDIT_SOURCE_DIR / "runtime.py"
+CODEBASE_AUDIT_RENDER_SOURCE = CODEBASE_AUDIT_SOURCE_DIR / "render.py"
 CODEBASE_AUDIT_REFERENCE_DIR = CODEBASE_AUDIT_SOURCE_DIR / "references"
 CODEBASE_AUDIT_REFERENCE_FILES = (
     "workflow.md",
     "partitioning.md",
     "finding-contract.md",
     "cross-module-review.md",
+    "runtime-interface.md",
 )
 CODEBASE_AUDIT_TEMPLATE_DIR = CODEBASE_AUDIT_SOURCE_DIR / "templates"
 CODEBASE_AUDIT_TEMPLATE_FILES = (
@@ -179,6 +181,8 @@ def validate_sources() -> None:
                 raise FileNotFoundError(f"Missing {label} source: {source}")
     if not CODEBASE_AUDIT_RUNTIME_SOURCE.exists():
         raise FileNotFoundError(f"Missing dev-harness-codebase-audit runtime: {CODEBASE_AUDIT_RUNTIME_SOURCE}")
+    if not CODEBASE_AUDIT_RENDER_SOURCE.exists():
+        raise FileNotFoundError(f"Missing dev-harness-codebase-audit renderer: {CODEBASE_AUDIT_RENDER_SOURCE}")
 
 
 def remove_existing(path: Path) -> None:
@@ -422,6 +426,7 @@ def build_dev_harness_git_workflow(_skill_name: str, destination: Path) -> None:
 def build_dev_harness_codebase_audit(_skill_name: str, destination: Path) -> None:
     build_skill("dev-harness-codebase-audit", destination)
     shutil.copy2(CODEBASE_AUDIT_RUNTIME_SOURCE, destination / "runtime.py")
+    shutil.copy2(CODEBASE_AUDIT_RENDER_SOURCE, destination / "render.py")
     for directory_name, source_dir, file_names in (
         ("references", CODEBASE_AUDIT_REFERENCE_DIR, CODEBASE_AUDIT_REFERENCE_FILES),
         ("templates", CODEBASE_AUDIT_TEMPLATE_DIR, CODEBASE_AUDIT_TEMPLATE_FILES),

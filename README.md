@@ -107,7 +107,7 @@ Windows：
 | Skill | 职责 |
 |---|---|
 | `dev-harness-auto-fix` | 以复现、根因假设、RED/GREEN 和差异证据修复已知问题，并按 `fast / standard / strict` 风险档位裁剪验证 |
-| `dev-harness-codebase-audit` | 分阶段审计大型代码库，持久化证据并执行跨模块复核 |
+| `dev-harness-codebase-audit` | 分阶段审计大型代码库，批量持久化证据、生成紧凑文档并执行跨模块复核 |
 
 每个 Skill 的模板、references 和脚本均自包含。跨 Skill 自动编排由独立的 [`dev-harness-dsh`](https://github.com/Dev-Wiki/dev-harness-dsh) 项目规划；本仓库保持纯 Skills Bundle。
 

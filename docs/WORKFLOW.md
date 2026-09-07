@@ -157,6 +157,8 @@ harness:quick / 相关 build
 
 Audit 发现、验证和路由问题，但不修改业务源码、测试或配置。只有权威 Finding Registry 中的 confirmed Finding 才进入后续处理。
 
+新运行优先使用 `batch` 将任务结果、Finding 与文档元数据一次持久化，再由 `render-output` 生成紧凑文档，避免反复手写相同导航和快照。完成跨模块复核后，按“生成当前文档 → 检查内容与互链 → complete → 刷新已完成显示”收口；旧手写产物保持兼容。输入格式和完整门禁见 [Audit 批量接口](../codebase-audit/references/runtime-interface.md)。
+
 | Finding 类型 | 后续 Owner |
 |---|---|
 | defect / crash / lifecycle bug | `dev-harness-auto-fix` |
