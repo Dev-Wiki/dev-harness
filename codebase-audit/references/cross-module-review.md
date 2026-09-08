@@ -76,6 +76,7 @@ entry/UI lifecycle → state/manager → wrapper/adapter
 - module → module；
 - input/state → transformation → output/side effect；
 - 调用是否可达，返回或错误是否被正确传播；
+- 链路是否把生命周期先后关系误写为调用关系，或跨越未经验证的入口；按 [Finding 契约的 Chain 要求](finding-contract.md#验证门禁) 区分前置条件与实际调用；
 - owner 的创建、共享、取消和销毁顺序；
 - 数据在边界两端的类型、单位、空值和一致性；
 - callback/thread/transaction 的上下文变化；

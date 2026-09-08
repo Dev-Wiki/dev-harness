@@ -47,7 +47,7 @@ confirmed → resolved
 按顺序验证 candidate：
 
 1. **Claim**：说明哪个行为在什么条件下为何错误。
-2. **Chain**：追踪 caller/callee、read/write、producer/consumer、owner/borrower 或 lifecycle。
+2. **Chain**：追踪 caller/callee、read/write、producer/consumer、owner/borrower 或 lifecycle。调用链中的每条箭头必须有对应的调用、调度或数据传递证据，并明确关系类型。对象创建、初始化、状态准备等前置条件应单独列出，不得与后续可能发生的调用串成连续调用链。追踪到公开接口但未找到上层调用时，标明已验证边界与未知入口；不得据此推断业务会自动触发，也不得仅因缺少上层调用而否定接口在合法调用条件下已证实的缺陷。
 3. **Positive Evidence**：给出支持机制的代码或运行证据及精确位置。
 4. **Counter-evidence**：检查保护条件、清理路径、替代实现、平台分支、异常路径和测试。
 5. **Impact**：证明影响可达，而非只存在理论可能。

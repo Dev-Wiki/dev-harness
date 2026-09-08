@@ -4,12 +4,12 @@
 
 ## 汇总
 
-仓库 [`VERSION`](../VERSION) 与 [`CHANGELOG.md`](../CHANGELOG.md) 当前版本条目为 `v1.11.5`，最新 Git 标签为 `v1.11.3`。每次修改清单后必须根据下表重新统计；“待确认”不计入总数。
+仓库 [`VERSION`](../VERSION) 与 [`CHANGELOG.md`](../CHANGELOG.md) 当前版本条目为 `v1.11.6`，最新 Git 标签为 `v1.11.5`。每次修改清单后必须根据下表重新统计；“待确认”不计入总数。
 
 | 版本范围 | 已支持 | 部分支持 | 试验性 | 已弃用 |
 |---|---:|---:|---:|---:|
-| 当前开发版本（v1.11.5） | 35 | 0 | 0 | 0 |
-| 最新标签版本（v1.11.3） | 33 | 0 | 0 | 0 |
+| 当前开发版本（v1.11.6） | 35 | 0 | 0 | 0 |
+| 最新标签版本（v1.11.5） | 35 | 0 | 0 | 0 |
 
 ## 当前已支持功能
 
@@ -79,8 +79,8 @@
 |---|---|---|---|---|---|---|---|
 | AUD-001 | 初始化 Git 私有 AuditSnapshot，并通过 checkpoint、status、resume 跨会话恢复任务和 Finding 状态 | 已支持 | 用户拥有或明确授权的 Git 仓库，已有唯一 docs root 与 Canonical Context | 已发布：v1.10.0 | 运行时测试 | `tests/test_codebase_audit_runtime.py:83-109,164-236` | [Audit 契约](../codebase-audit/SKILL.md) |
 | AUD-002 | 基于 Context 动态分区并逐任务生成 Dashboard、Task、Result、Findings 和 Report | 已支持 | 大型或跨模块存量仓库；工程质量审计，不含 offensive security | 已发布：v1.10.0 | 契约测试 | `tests/test_vnext_contract.py:78-127`；`codebase-audit/SKILL.md:10-26,80-108` | [Audit 契约](../codebase-audit/SKILL.md) |
-| AUD-003 | Finding 支持 candidate、needs-verification、confirmed、rejected、stale、resolved，confirmed 必须绑定完整证据和当前 Snapshot | 已支持 | Audit Finding Registry | 已发布：v1.10.0 | 运行时测试 | `tests/test_codebase_audit_runtime.py:296-352` | [Finding 契约](../codebase-audit/references/finding-contract.md) |
-| AUD-004 | 完成前强制 Cross-module Reconciliation，执行 checkpoint、去重、矛盾处理和完整调用链复核；task 或 Finding 变化后旧复核自动失效 | 已支持 | 所有 Audit Run，包括小项目或零 Finding | 已发布：v1.10.0；修正：v1.11.4 | 运行时测试 + 契约测试 | `tests/test_codebase_audit_runtime.py`；`tests/test_vnext_contract.py` | [跨模块复核](../codebase-audit/references/cross-module-review.md) |
+| AUD-003 | Finding 支持 candidate、needs-verification、confirmed、rejected、stale、resolved，confirmed 必须绑定完整证据和当前 Snapshot；调用链按证据区分前置条件、实际调用与未知入口 | 已支持 | Audit Finding Registry | 已发布：v1.10.0；修正：v1.11.6 | 运行时测试 + 契约证据 | `tests/test_codebase_audit_runtime.py:296-352`；`codebase-audit/references/finding-contract.md` | [Finding 契约](../codebase-audit/references/finding-contract.md) |
+| AUD-004 | 完成前强制 Cross-module Reconciliation，执行 checkpoint、去重、矛盾处理和完整调用链复核，检查生命周期关系误写与未经验证的入口；task 或 Finding 变化后旧复核自动失效 | 已支持 | 所有 Audit Run，包括小项目或零 Finding | 已发布：v1.10.0；修正：v1.11.4、v1.11.6 | 运行时测试 + 契约测试 + 契约证据 | `tests/test_codebase_audit_runtime.py`；`tests/test_vnext_contract.py`；`codebase-audit/references/cross-module-review.md` | [跨模块复核](../codebase-audit/references/cross-module-review.md) |
 | AUD-005 | HEAD、分支、已有业务 dirty 内容、Context 或业务源码漂移时 fail closed，允许当前运行更新既有审计输出，并限制输出到 `<docs-root>/audit/**` | 已支持 | 活跃或恢复中的 Audit Run | 已发布：v1.10.0；修正：v1.11.4 | 运行时测试 | `tests/test_codebase_audit_runtime.py`；`codebase-audit/runtime.py` | [Audit 契约](../codebase-audit/SKILL.md) |
 | AUD-006 | 默认生成自然中文审计产物，显式要求时生成全英文；显示语言不改变内部状态和 Evidence fingerprint | 已支持 | Audit 文档输出 | 已发布：v1.10.0 | 契约测试 | `tests/test_vnext_contract.py:154-183`；`codebase-audit/SKILL.md:28-47` | [Audit 契约](../codebase-audit/SKILL.md) |
 | AUD-007 | 检查稳定入口 `audit/Report.md` 的文档可发现性，记录 `linked` 或 `docs-refresh-required`，缺入口时生成精确 Docs handoff | 已支持 | 已解析 docs root 的 Audit Run | 已发布：v1.10.0 | 契约测试 | `tests/test_vnext_contract.py:78-104`；`tests/test_docs_contract.py:140-151` | [Audit 契约](../codebase-audit/SKILL.md) |
