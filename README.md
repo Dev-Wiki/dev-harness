@@ -67,6 +67,10 @@ retro：总结这次任务，并整理可纳入正式规范的候选结论
 
 支持 **Cursor、Codex CLI、OpenCode、Antigravity**。
 
+### 方式一：源码＋脚本安装
+
+克隆仓库或下载并解压对应版本的源码归档，进入包含 `install.py` 的项目根目录。安装脚本需要 Python 3。
+
 macOS / Linux：
 
 ```bash
@@ -79,7 +83,7 @@ Windows：
 .\install.bat --ide codex
 ```
 
-将 `codex` 替换为 `cursor`、`opencode` 或 `antigravity` 即可安装到其他宿主。还可以只安装一个 Skill 或导出便携包：
+将 `codex` 替换为 `cursor`、`opencode` 或 `antigravity` 即可安装到其他宿主。脚本会构建 Skill 并安装到对应目录；只安装一个 Skill 时会自动补齐依赖。也支持自定义目标或导出便携包：
 
 ```bash
 ./install.sh --ide codex --skill dev-harness-context
@@ -89,7 +93,24 @@ Windows：
 
 维护者使用 `python release.py` 生成版本 zip。
 
-v1.11.7 加固 Context 写入与证据校验、Audit 修复重验和 Auto Fix 完成门禁。升级后，旧版 Auto Fix 状态需要重新验证与审查；迁移限制见 [变更日志](CHANGELOG.md) 和 [Bugfix 指南](docs/BUGFIX_GUIDE.md)。
+### 方式二：dist 包直接复制安装
+
+取得 `dist/dev-harness-vX.Y.Z.zip`，或下载发布附件中的同名 Skill 包，解压后将 `skills/` 下的 `dev-harness-*` 文件夹复制到对应目录：
+
+| 工具 | Skill 目录 |
+|---|---|
+| Cursor | `~/.cursor/skills/` |
+| Codex | `~/.codex/skills/` |
+| OpenCode | `~/.config/opencode/skills/`；Windows 设置了 APPDATA 时用 `%APPDATA%/opencode/skills/` |
+| Antigravity | `~/.gemini/antigravity/skills/` |
+
+`~` 表示用户主目录。目标目录不存在时先创建；使用自定义配置时复制到实际配置的 Skill 目录。以 Codex 为例，复制后的路径应为 `~/.codex/skills/dev-harness-context/SKILL.md`，不要多套一层 `skills/`。
+
+建议复制全部 8 个 Skill。单独安装时，`dev-harness-codebase-audit` 还需要 `dev-harness-context`，`dev-harness-auto-fix` 还需要 `dev-harness-git-workflow`。升级时替换对应的 Skill 文件夹，先保留自己的修改，并保留其他 Skill；完成后重新加载宿主的 Skill 列表。
+
+此方式无需源码和安装脚本。包内的运行脚本、模板和参考资料需要完整保留；Context、Auto Fix 和 Codebase Audit 运行时仍需要 Python 3，Git 工作区操作需要 Git。包内 `README.md` 提供独立安装说明，源码和仓库维护文档由对应版本的源码归档提供。
+
+v1.11.8 将发布包收敛为可直接使用的 Skill 集合，并明确以上两种安装方式。从 v1.11.7 之前的版本升级时，旧版 Auto Fix 状态仍需重新验证与审查；迁移限制见 [变更日志](CHANGELOG.md) 和 [Bugfix 指南](docs/BUGFIX_GUIDE.md)。
 
 ## Skills 一览（8 个可发现 Skill）
 

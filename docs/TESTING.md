@@ -14,6 +14,7 @@ python -m unittest discover -s tests -v
 
 关键边界由以下测试覆盖：
 
+- Skill 发布包：归档仅包含完整 `skills/` 和发布说明，资源与导出产物一致、各 Skill 版本一致；解压复制后在隔离 Python 环境中执行 Context 扫描及 Auto Fix、Audit 命令入口。见 `tests/test_install.py`。
 - Context 证据完整性：workspace 源码、隐藏工程配置与完整文件内容纳入指纹，排除目录不能作为 AI 证据，Unknown、低置信度和空值不被回填。见 `tests/test_context_evidence_integrity.py`。
 - Context 写入保护：预览后的人工修改、文件替换、权限或链接变化拒绝覆盖；缺失文件独占创建，写入错误保留原文件，编码、换行与权限保持。见 `tests/test_context_write_safety.py`。
 - 规范发现：复用权威 `doc/` 或 `docs/` 根，保留有效索引优先级，冲突和越界链接需拒绝或人工处理。见 `tests/test_contract_discovery.py`。

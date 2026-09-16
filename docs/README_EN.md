@@ -31,46 +31,68 @@ Supports Cursor, Codex CLI, OpenCode, and Antigravity.
 
 ## Install
 
+Supports **Cursor, Codex CLI, OpenCode, and Antigravity**.
+
+### Option 1: Install from source with the scripts
+
+Clone the repository or download and extract the corresponding source archive.
+Open the project root containing `install.py`. The installer requires Python 3.
+
 **macOS / Linux:**
 
 ```bash
-./install.sh --ide cursor       # install to ~/.cursor
-./install.sh --ide codex        # install to ~/.codex
-./install.sh --ide opencode     # install to ~/.config/opencode
-./install.sh --ide antigravity  # install to ~/.gemini/antigravity
+./install.sh --ide codex
 ```
 
 **Windows:**
 
 ```powershell
-.\install.bat --ide cursor
 .\install.bat --ide codex
-.\install.bat --ide opencode
-.\install.bat --ide antigravity
 ```
 
-**Custom target:**
+Replace `codex` with `cursor`, `opencode`, or `antigravity` for another host.
+The scripts build the skills and install them into the host's directory.
+You can also install a single skill (dependencies are resolved automatically),
+choose a custom target, or export a portable bundle:
 
 ```bash
-./install.sh --target /path/to/target
-```
-
-**Export a portable bundle directory:**
-
-```bash
+./install.sh --ide codex --skill dev-harness-context
+./install.sh --target /custom/path
 ./install.sh --export dist
 # produces dist/bundle/
 ```
 
+Without flags: interactive menu in TTY; defaults to `--ide cursor` in non-interactive environments.
 Maintainers create the versioned zip with `python release.py`.
 
-**Install a single skill** (dependencies resolved automatically):
+### Option 2: Copy the skills from a dist package
 
-```bash
-./install.sh --ide cursor --skill dev-harness-context
-```
+Use `dist/dev-harness-vX.Y.Z.zip`, or download the matching Skill package from
+release assets. Extract it and copy the `dev-harness-*` folders inside `skills/`
+into your host's skills directory:
 
-Without flags: interactive menu in TTY; defaults to `--ide cursor` in non-interactive environments.
+| Host | Skills directory |
+|---|---|
+| Cursor | `~/.cursor/skills/` |
+| Codex | `~/.codex/skills/` |
+| OpenCode | `~/.config/opencode/skills/`; on Windows with APPDATA set, `%APPDATA%/opencode/skills/` |
+| Antigravity | `~/.gemini/antigravity/skills/` |
+
+`~` means your home directory. Create the target directory if needed, or use your
+host's configured custom skills directory. For example, the resulting Codex path
+should be `~/.codex/skills/dev-harness-context/SKILL.md`, with no extra `skills/` level.
+
+Copying all 8 skills is recommended. When copying individual skills,
+`dev-harness-codebase-audit` also requires `dev-harness-context`, and
+`dev-harness-auto-fix` also requires `dev-harness-git-workflow`.
+For upgrades, preserve your custom changes before replacing the corresponding
+skill folders, and keep unrelated skills. Then reload the host's skill list.
+
+This method requires no source checkout or installer. Keep each skill's runtime
+scripts, templates, and references together. Context, Auto Fix, and Codebase Audit
+still require Python 3 at runtime; Git workspace operations require Git.
+The package includes its own installation `README.md`. Source code and repository
+maintenance documentation are available in the corresponding source archive.
 
 ---
 
@@ -197,6 +219,8 @@ dev-harness/
 ---
 
 ## V1 / V2 Boundary
+
+v1.11.8 distributes ready-to-use skills in the versioned zip, with source code and repository maintenance documentation kept in the corresponding source archive. The installation guide distinguishes source-and-script installation from copying the dist package into a host's skills directory. Skill capabilities and the V1 / VNext boundary remain unchanged.
 
 v1.11.7 hardens Context writes and evidence fingerprints, requires fresh repair evidence for resolved Audit findings, and rechecks Auto Fix completion against current verification and review evidence. Auto Fix SchemaVersion 3 separates content from staging state and validates authorized commit recovery. Older run states require fresh verification and review; already committed older runs without a reliable receipt must be reviewed before starting a new run. See the [changelog](../CHANGELOG.md), [Auto Fix contract](../auto-fix/SKILL.md), and [Audit runtime interface](../codebase-audit/references/runtime-interface.md) for details. The V1 boundary remains unchanged.
 

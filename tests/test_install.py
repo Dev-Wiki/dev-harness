@@ -1,4 +1,5 @@
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -277,7 +278,7 @@ class InstallBundleTests(unittest.TestCase):
             self.assertIn("团队自定义约束", agents_path.read_text(encoding="utf-8"))
             self.assertTrue((skill_root / "lib" / "context" / "managed.py").exists())
 
-    def test_release_archive_is_self_contained_and_installable(self) -> None:
+    def test_release_archive_contains_ready_to_use_skills_without_source_tree(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             dist_dir = root / "dist"
@@ -290,17 +291,24 @@ class InstallBundleTests(unittest.TestCase):
             archive = dist_dir / f"dev-harness-v{release.VERSION_FILE.read_text(encoding='utf-8').strip()}.zip"
             with zipfile.ZipFile(archive) as zf:
                 names = set(zf.namelist())
-                self.assertIn("install.py", names)
-                self.assertIn("VERSION", names)
-                self.assertIn("context/platform_profiles.py", names)
-                self.assertIn("codebase-audit/runtime.py", names)
-                self.assertIn("codebase-audit/references/finding-contract.md", names)
+                self.assertEqual(
+                    {name.split("/")[0] for name in names},
+                    {"skills", "README.md", "VERSION", "CHANGELOG.md"},
+                )
+                exported_skills = {
+                    path.relative_to(dist_dir / "bundle").as_posix(): path
+                    for path in (dist_dir / "bundle" / "skills").rglob("*")
+                    if path.is_file()
+                }
+                self.assertEqual(
+                    {name for name in names if name.startswith("skills/")},
+                    set(exported_skills),
+                )
+                for name, path in exported_skills.items():
+                    self.assertEqual(zf.read(name), path.read_bytes(), name)
                 self.assertIn("skills/dev-harness-codebase-audit/runtime.py", names)
-                self.assertIn("dev-harness-docs/SKILL.md", names)
-                self.assertIn("dev-harness-docs/assets/capabilities.template.md", names)
-                self.assertIn("planning/templates/Task.template.md", names)
-                self.assertIn("planning/templates/ArchiveIndex.template.md", names)
-                self.assertIn("planning/references/legacy-migration.md", names)
+                self.assertIn("skills/dev-harness-codebase-audit/render.py", names)
+                self.assertIn("skills/dev-harness-auto-fix/runtime.py", names)
                 self.assertIn(
                     "skills/dev-harness-planning/templates/Task.template.md", names
                 )
@@ -310,28 +318,43 @@ class InstallBundleTests(unittest.TestCase):
                 self.assertIn(
                     "skills/dev-harness-docs/assets/capabilities.template.md", names
                 )
-                self.assertIn("docs/README.md", names)
-                self.assertIn("docs/TESTING.md", names)
-                self.assertNotIn("docs/audit/Report.md", names)
+                version = zf.read("VERSION").decode().strip()
+                self.assertIn(version, zf.read("README.md").decode())
+                for skill in SKILL_SOURCES:
+                    self.assertIn(
+                        f"bundle_version: {version}",
+                        zf.read(f"skills/{skill}/SKILL.md").decode(),
+                    )
                 zf.extractall(extracted)
 
+            # Install by copying the delivered skills; run from an unrelated directory
+            # in isolated Python mode so the checkout cannot supply missing modules.
+            shutil.copytree(extracted / "skills", install_root / "skills")
+            repo_root = root / "demo-repo"
+            repo_root.mkdir()
+            (repo_root / "package.json").write_text('{"name":"demo-repo"}', encoding="utf-8")
+            launcher = install_root / "skills" / "dev-harness-context" / "dev-harness-context"
             result = subprocess.run(
-                [
-                    sys.executable,
-                    str(extracted / "install.py"),
-                    "--target",
-                    str(install_root),
-                    "--skill",
-                    "dev-harness-context",
-                ],
+                [sys.executable, "-I", str(launcher), "scan", str(repo_root)],
+                cwd=root,
                 capture_output=True,
                 text=True,
                 check=False,
             )
 
             self.assertEqual(result.returncode, 0, result.stderr)
-            installed_profile = install_root / "skills" / "dev-harness-context" / "lib" / "context" / "platform_profiles.py"
-            self.assertIn("FastAPI", installed_profile.read_text(encoding="utf-8"))
+            self.assertTrue((repo_root / "HARNESS.md").exists())
+            for skill in ("dev-harness-auto-fix", "dev-harness-codebase-audit"):
+                with self.subTest(skill=skill):
+                    runtime = install_root / "skills" / skill / "runtime.py"
+                    result = subprocess.run(
+                        [sys.executable, "-I", str(runtime), "--help"],
+                        cwd=root,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == "__main__":
