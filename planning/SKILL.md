@@ -114,7 +114,7 @@ sha256sum "$PLAN_ROOT/Dashboard.md" "$PLAN_ROOT/tasks/<Task-ID>.md"
 git status --short
 ```
 
-The snapshot binds `HEAD`, Dashboard hash, selected Task ID and path, task-file hash, and pre-existing worktree changes. Before trusting a previous selection, changing planning state, archiving, or reporting completion, recompute it.
+The snapshot binds `HEAD`, branch, Dashboard hash, selected Task ID and path, task-file hash, and pre-existing worktree changes. The commands above only inventory those changes: `git status --short` is not a content fingerprint. For every pre-existing dirty path, also record its file type, raw-content hash (or link text for a symlink), deletion state, and index blob/mode. Include untracked files; record each path separately so this task's declared changes do not hide unrelated drift. Keep these hashes outside project documents. Before trusting a previous selection, changing planning state, archiving, or reporting completion, recompute them.
 
 - If HEAD, Dashboard, selected task path, or pre-existing content changed outside the current work, stop and reload Dashboard before continuing.
 - If the selected task is no longer active, its link changed, or another file now claims the same active Task ID, stop and reconcile ownership.
@@ -131,6 +131,7 @@ The snapshot binds `HEAD`, Dashboard hash, selected Task ID and path, task-file 
 - When all milestone tasks are closed, retain only a milestone summary and archive link in Dashboard.
 - Git history carries editing chronology. Do not accumulate repeated progress notes, command transcripts, or superseded implementation drafts in the final task body.
 - If a completed task becomes active again, keep its immutable closure snapshot in the milestone archive and create `tasks/<Task-ID>.md` as the sole active execution authority. Link the active file to the prior closure, record why it reopened, and add its mutable state only to Dashboard.
+- When that task closes again in the same milestone, preserve `<Task-ID>.md` as the first closure and allocate the next unused `<Task-ID>.closure-<N>.md` with `N` starting at 2. Never overwrite an existing closure. Keep the stable Task ID, record the closure number in the archive index, link to the previous closure, and make the recent completion link point to the new snapshot. Reopening in a different milestone follows the same collision rule within that milestone.
 
 These rules bound the active read path; the archive can still grow when the project chooses to retain historical evidence.
 
@@ -151,13 +152,27 @@ Before claiming completion, adapt and run:
 
 ```bash
 PLAN_ROOT="<resolved-docs-root>/plan"
-test -f "$PLAN_ROOT/Dashboard.md"
+planning_check_failed=0
+test -f "$PLAN_ROOT/Dashboard.md" || planning_check_failed=1
 active_plan_paths=("$PLAN_ROOT/Dashboard.md")
 test ! -d "$PLAN_ROOT/tasks" || active_plan_paths+=("$PLAN_ROOT/tasks")
-rg -n 'TBD|TODO|FIXME|待补|占位' "${active_plan_paths[@]}"
-wc -l -c "$PLAN_ROOT/Dashboard.md"
-test ! -d "$PLAN_ROOT/tasks" || ! rg -n '^\*\*(状态|优先级|依赖|阻塞|执行顺序)\*\*[：:]' "$PLAN_ROOT/tasks"
-test ! -f "$PLAN_ROOT/TaskDetails.md" || rg -n 'Dashboard\.md' "$PLAN_ROOT/TaskDetails.md"
+if rg -n 'TBD|TODO|FIXME|待补|占位' "${active_plan_paths[@]}"; then
+  planning_check_failed=1
+else
+  test "$?" -eq 1 || planning_check_failed=1
+fi
+wc -l -c "$PLAN_ROOT/Dashboard.md" || planning_check_failed=1
+if test -d "$PLAN_ROOT/tasks"; then
+  if rg -n '^\*\*(状态|优先级|依赖|阻塞|执行顺序)\*\*[：:]' "$PLAN_ROOT/tasks"; then
+    planning_check_failed=1
+  else
+    test "$?" -eq 1 || planning_check_failed=1
+  fi
+fi
+if test -f "$PLAN_ROOT/TaskDetails.md"; then
+  rg -n 'Dashboard\.md' "$PLAN_ROOT/TaskDetails.md" || planning_check_failed=1
+fi
+test "$planning_check_failed" -eq 0
 ```
 
-The placeholder and duplicated-mutable-field scans should exit 1; report intentional registers instead of rewriting them. If `TaskDetails.md` exists as a compatibility redirect, verify it has no task rows, mutable state, validation baseline, or task body. For a migrated plan, also search the repository for obsolete `TaskDetails.md#...` inbound links and verify all changed relative links. Confirm that each active Task ID appears once in the active task table and has exactly one active task file, and that every `🟢 待执行` Task ID appears exactly once in current work order. Immutable archived closure snapshots are history, not active authorities. Recompute the planning snapshot before claiming completion.
+Each raw `rg` scan should exit 1 when no unwanted text is found. The complete block aggregates failures and exits 0 only when all checks pass; matches and `rg` read errors both fail, and later successful checks cannot mask earlier failures. Report intentional registers instead of rewriting them. If `TaskDetails.md` exists as a compatibility redirect, verify it has no task rows, mutable state, validation baseline, or task body. For a migrated plan, also search the repository for obsolete `TaskDetails.md#...` inbound links and verify all changed relative links. Confirm that each active Task ID appears once in the active task table and has exactly one active task file, and that every `🟢 待执行` Task ID appears exactly once in current work order. Immutable archived closure snapshots are history, not active authorities. Recompute the planning snapshot before claiming completion.

@@ -77,15 +77,20 @@ class SemanticAnalysis:
     lists: dict[str, list[str]]
     manual_review_items: list[str]
     evidence_items: list[str]
+    provided_claims: frozenset[str] = frozenset()
 
     def claim(self, name: str, fallback: str) -> str:
-        return self.claims.get(name, fallback)
+        if name in self.claims:
+            return self.claims[name]
+        return "Unknown" if name in self.provided_claims else fallback
 
     def items(self, name: str, fallback: list[str]) -> list[str]:
         return self.lists.get(name, fallback)
 
 
-def _validate_evidence_reference(repo_root: Path, reference: object, field: str) -> str:
+def _validate_evidence_reference(
+    repo_root: Path, reference: object, field: str, snapshot_files: frozenset[str]
+) -> str:
     if not isinstance(reference, str) or not reference.strip():
         raise SemanticAnalysisError(f"{field}: evidence references must be non-empty strings")
     match = LINE_REFERENCE.fullmatch(reference.strip())
@@ -101,6 +106,15 @@ def _validate_evidence_reference(repo_root: Path, reference: object, field: str)
         raise SemanticAnalysisError(f"{field}: evidence escapes the repository: {reference}") from exc
     if not target.exists():
         raise SemanticAnalysisError(f"{field}: evidence path does not exist: {reference}")
+    relative_name = relative.as_posix()
+    covered = relative_name in snapshot_files
+    if target.is_dir():
+        prefix = "" if relative_name == "." else relative_name.rstrip("/") + "/"
+        covered = any(item.startswith(prefix) for item in snapshot_files)
+    if not covered:
+        raise SemanticAnalysisError(
+            f"{field}: evidence path is not covered by the repository snapshot: {reference}"
+        )
     if match.group("line") and not target.is_file():
         raise SemanticAnalysisError(f"{field}: line evidence must reference a file: {reference}")
     if match.group("line"):
@@ -120,7 +134,9 @@ def _validate_evidence_reference(repo_root: Path, reference: object, field: str)
     return reference.strip()
 
 
-def _validate_claim(repo_root: Path, field: str, raw: object) -> tuple[str, str, list[str]]:
+def _validate_claim(
+    repo_root: Path, field: str, raw: object, snapshot_files: frozenset[str]
+) -> tuple[str, str, list[str]]:
     if not isinstance(raw, dict):
         raise SemanticAnalysisError(f"{field}: claim must be an object")
     unexpected = set(raw) - {"value", "confidence", "evidence"}
@@ -142,7 +158,7 @@ def _validate_claim(repo_root: Path, field: str, raw: object) -> tuple[str, str,
         kind = "command" if field in COMMAND_CLAIMS else "claim"
         raise SemanticAnalysisError(f"{field}: non-Unknown {kind} requires evidence")
     validated_evidence = [
-        _validate_evidence_reference(repo_root, reference, field)
+        _validate_evidence_reference(repo_root, reference, field, snapshot_files)
         for reference in evidence
     ]
     base_field = field.split("[", 1)[0]
@@ -185,6 +201,7 @@ def load_semantic_analysis(path: Path, repo_root: Path) -> SemanticAnalysis:
         )
     if raw.get("evidence_fingerprint") != current_evidence["evidence_fingerprint"]:
         raise SemanticAnalysisError("repository evidence fingerprint changed; collect evidence and analyze again")
+    snapshot_files = frozenset(current_evidence["fingerprint_files"])
 
     raw_claims = raw.get("claims", {})
     raw_lists = raw.get("lists", {})
@@ -201,7 +218,7 @@ def load_semantic_analysis(path: Path, repo_root: Path) -> SemanticAnalysis:
     manual: list[str] = []
     evidence_items: list[str] = []
     for field, claim in raw_claims.items():
-        value, confidence, evidence = _validate_claim(repo_root, field, claim)
+        value, confidence, evidence = _validate_claim(repo_root, field, claim, snapshot_files)
         if confidence == "low" and value != "Unknown":
             manual.append(f"AI 分析 `{field}` 置信度较低（候选：{value}），需人工确认")
         elif value != "Unknown":
@@ -213,18 +230,20 @@ def load_semantic_analysis(path: Path, repo_root: Path) -> SemanticAnalysis:
             raise SemanticAnalysisError(f"{field}: list field must be an array")
         accepted: list[str] = []
         for index, claim in enumerate(entries):
-            value, confidence, evidence = _validate_claim(repo_root, f"{field}[{index}]", claim)
+            value, confidence, evidence = _validate_claim(repo_root, f"{field}[{index}]", claim, snapshot_files)
             if confidence == "low" and value != "Unknown":
                 manual.append(f"AI 分析 `{field}` 置信度较低（候选：{value}），需人工确认")
             elif value != "Unknown":
                 accepted.append(value)
                 evidence_items.append(f"AI `{field}[{index}]` [{confidence}] 证据：{', '.join(f'`{item}`' for item in evidence)}")
-        if accepted:
-            lists[field] = accepted
+        # An explicitly empty or wholly uncertain list must not restore a
+        # profile's conclusions through the missing-field fallback.
+        lists[field] = accepted
     manual.extend(lists.get("manual_review_items", []))
     return SemanticAnalysis(
         claims=claims,
         lists=lists,
         manual_review_items=manual,
         evidence_items=evidence_items,
+        provided_claims=frozenset(raw_claims),
     )

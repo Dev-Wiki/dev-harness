@@ -12,6 +12,16 @@ python -m unittest discover -s tests -v
 
 发布前另外执行 `git diff --check`。Codebase Audit runtime、安装/export/release 完整性和 VNext 跨 Skill 契约均包含在完整回归中。
 
+关键边界由以下测试覆盖：
+
+- Context 证据完整性：workspace 源码、隐藏工程配置与完整文件内容纳入指纹，排除目录不能作为 AI 证据，Unknown、低置信度和空值不被回填。见 `tests/test_context_evidence_integrity.py`。
+- Context 写入保护：预览后的人工修改、文件替换、权限或链接变化拒绝覆盖；缺失文件独占创建，写入错误保留原文件，编码、换行与权限保持。见 `tests/test_context_write_safety.py`。
+- 规范发现：复用权威 `doc/` 或 `docs/` 根，保留有效索引优先级，冲突和越界链接需拒绝或人工处理。见 `tests/test_contract_discovery.py`。
+- Auto Fix 生命周期：依赖变化使证据失效、文档变化合理复用、终态重复检查、旧状态重验、精确暂存与提交恢复、Git 文本与权限语义、客观 skip 及已知失败不可被跳过掩盖。见 `tests/test_auto_fix_lifecycle.py`。
+- Audit 解决证据：真实历史确认问题导入、新快照下通过验证、原确认依据保留、渲染与完成门禁、再次漂移失效。见 `tests/test_audit_resolution.py`。
+
+Planning 的文档与模板由 `tests/test_planning_contract.py` 契约测试 检查。修改其维护流程时，还应在临时仓库按 [Skill](../planning/SKILL.md) 正向演练“完成→重开→再次完成”、同名 dirty 文件内容变化，以及检查块对无重复、有重复、读取错误的退出结果；这些场景验证不由文本契约测试替代。
+
 ## 1. 分层命名约定
 
 推荐至少保留三层验证：
@@ -73,10 +83,13 @@ python -m unittest discover -s tests -v
 
 ## 5. 验证证据要求
 
-任何“测试通过”“修复完成”“harness 生效”的说法，都必须基于本次重新执行得到的验证证据：
+任何“测试通过”“修复完成”“harness 生效”的说法，都必须基于对当前改动仍有效的验证证据：
 
-- 在本次任务中重新执行
+- 新验证在当前内容上执行；复用已有执行时，核对其依赖绑定仍有效，受影响的证据必须重新取得
 - 检查完整输出
 - 明确通过数量或退出码
+- 重新审查当前完整 diff，并在完成前核对工作区与最终内容
+
+未执行的检查应保留为验证缺口，不能计为通过。Auto Fix 的客观 skip 仅允许 `DONE_WITH_CONCERNS`，已有失败须由对应检查的新通过结果消除；证据绑定、复用和终态规则见 [Auto Fix 契约](../auto-fix/SKILL.md)。
 
 没有证据，不得声称完成。

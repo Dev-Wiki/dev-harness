@@ -18,7 +18,7 @@ from typing import Any, NamedTuple, Sequence
 
 MODES = {"analyze", "fix", "commit", "unattended"}
 COMPLETION_STATUSES = {"DONE", "DONE_WITH_CONCERNS", "BLOCKED", "NEEDS_CONTEXT"}
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 VALIDATION_PROFILES = {"fast", "standard", "strict"}
 PROFILE_RANK = {"fast": 0, "standard": 1, "strict": 2}
 REVIEW_MODES = {"self", "independent"}
@@ -33,6 +33,7 @@ REPEAT_REASONS = {
 }
 CHANGE_IMPACTS = {"production", "test", "documentation", "shared-infrastructure"}
 CHECK_NAMES = {"QuickCheck", "TestCheck", "BugfixCheck", "FullCheck"}
+OBJECTIVE_SKIP_REASONS = {"device-required", "ui-only", "environment-unavailable", "no-test-seam"}
 HARD_RISK_FLAGS = {
     "abi",
     "concurrency",
@@ -76,10 +77,12 @@ def _migrate_state(state: dict[str, Any]) -> dict[str, Any]:
     """Upgrade legacy run state conservatively without weakening its validation."""
     migrated = dict(state)
     version = migrated.get("SchemaVersion", 1)
-    if version not in {1, SCHEMA_VERSION}:
+    if version not in {1, 2, SCHEMA_VERSION}:
         raise StateTransitionError(f"unsupported state SchemaVersion: {version}")
     migrated["SchemaVersion"] = SCHEMA_VERSION
     migrated.setdefault("ValidationProfile", "strict")
+    if "SchemaVersion" not in state:
+        migrated["ValidationProfile"] = "strict"
     migrated.setdefault("ProfileAssessment", _default_profile_assessment())
     migrated.setdefault("VerificationPlan", [])
     migrated.setdefault("ReviewMode", None)
@@ -88,6 +91,28 @@ def _migrate_state(state: dict[str, Any]) -> dict[str, Any]:
     migrated.setdefault("ChangeImpacts", [])
     migrated.setdefault("ChangedFileImpacts", {})
     migrated.setdefault("FinalDiffHash", None)
+    migrated.setdefault("VerificationBindings", {})
+    migrated.setdefault("VerificationFailures", [])
+    migrated.setdefault("FinalFileFingerprints", {})
+    migrated.setdefault("FinalGitEntries", {})
+    migrated.setdefault("CommitReceipt", None)
+    if version < 3:
+        # Old hashes include index placement, and old executions have no dependency
+        # receipt. Preserve their history without manufacturing current evidence.
+        migrated["ReviewDiffHash"] = None
+        migrated["FinalDiffHash"] = None
+        migrated["VerificationBindings"] = {}
+        migrated["FinalFileFingerprints"] = {}
+        migrated["FinalGitEntries"] = {}
+        migrated["CommitReceipt"] = None
+        if migrated.get("Mode") != "analyze":
+            migrated["EvidenceRevalidationRequired"] = True
+            if migrated.get("CompletionStatus") in {"DONE", "DONE_WITH_CONCERNS"}:
+                migrated["CompletionStatus"] = None
+            if migrated.get("Stage") in {"review", "final-verify", "commit"} or (
+                migrated.get("Stage") == "report" and migrated.get("CompletionStatus") is None
+            ):
+                migrated["Stage"] = "verify"
     return migrated
 
 
@@ -135,6 +160,24 @@ def _validate_profile_assessment(value: dict[str, Any], profile: str) -> None:
             raise StateTransitionError("ProfileAssessment.upgraded does not match assessed profiles")
 
 
+def _validate_skip_record(record: dict[str, Any], reason: Any) -> None:
+    if not isinstance(reason, str) or reason not in OBJECTIVE_SKIP_REASONS:
+        raise StateTransitionError("skip requires an allowed objective skip_reason")
+    for field in ("skip_evidence", "alternative_verification", "remaining_risk"):
+        if not isinstance(record.get(field), str) or not record[field].strip():
+            raise StateTransitionError(f"objective skip requires {field}")
+
+
+def _regression_skip_reason(evidence: dict[str, Any]) -> str | None:
+    if "RegressionSkipReason" not in evidence and "skip_reason" not in evidence:
+        return None
+    reason = evidence.get("RegressionSkipReason", evidence.get("skip_reason"))
+    if "skip_reason" in evidence and evidence["skip_reason"] != reason:
+        raise StateTransitionError("conflicting regression skip reasons")
+    _validate_skip_record(evidence, reason)
+    return reason
+
+
 def _validate_verification_plan(plan: list[dict[str, Any]]) -> None:
     if not isinstance(plan, list):
         raise StateTransitionError("VerificationPlan must be an array")
@@ -153,6 +196,10 @@ def _validate_verification_plan(plan: list[dict[str, Any]]) -> None:
             raise StateTransitionError("VerificationPlan command and diff_hash are required")
         if item.get("status") not in {"passed", "failed", "skipped"}:
             raise StateTransitionError("VerificationPlan status is invalid")
+        if item["status"] == "skipped":
+            _validate_skip_record(item, item.get("skip_reason"))
+            if item.get("subsumes"):
+                raise StateTransitionError("skipped verification cannot subsume passed checks")
         if item.get("check") not in CHECK_NAMES:
             raise StateTransitionError("VerificationPlan check is invalid")
         depends_on = item.get("depends_on")
@@ -162,8 +209,13 @@ def _validate_verification_plan(plan: list[dict[str, Any]]) -> None:
             or not set(depends_on) <= CHANGE_IMPACTS
         ):
             raise StateTransitionError("VerificationPlan depends_on contains an invalid impact")
-        proves = item.get("proves")
-        if not isinstance(proves, list) or not proves:
+        if "depends_on_files" in item:
+            files = item["depends_on_files"]
+            if not isinstance(files, list) or not files or not all(isinstance(p, str) for p in files):
+                raise StateTransitionError("VerificationPlan depends_on_files must be a non-empty path array")
+            _normalize_paths(files)
+        proves = item.get("proves", [] if item["status"] == "skipped" else None)
+        if not isinstance(proves, list) or (not proves and item["status"] != "skipped"):
             raise StateTransitionError("VerificationPlan proves must contain evidence-backed obligations")
         obligations: set[str] = set()
         for proof in proves:
@@ -208,12 +260,13 @@ def _covered_checks(plan: list[dict[str, Any]]) -> set[str]:
     return covered
 
 
-def _git(repo: Path, *args: str) -> bytes:
+def _git(repo: Path, *args: str, input_data: bytes | None = None) -> bytes:
     result = subprocess.run(
         ["git", *args],
         cwd=repo,
         check=False,
         capture_output=True,
+        input=input_data,
     )
     if result.returncode != 0:
         message = result.stderr.decode("utf-8", errors="replace").strip()
@@ -231,8 +284,8 @@ def _nul_paths(raw: bytes) -> set[str]:
 
 def _changed_paths(repo: Path) -> set[str]:
     return (
-        _nul_paths(_git(repo, "diff", "--name-only", "-z"))
-        | _nul_paths(_git(repo, "diff", "--cached", "--name-only", "-z"))
+        _nul_paths(_git(repo, "diff", "--name-only", "--no-renames", "-z"))
+        | _nul_paths(_git(repo, "diff", "--cached", "--name-only", "--no-renames", "-z"))
         | _nul_paths(_git(repo, "ls-files", "--others", "--exclude-standard", "-z"))
     )
 
@@ -244,7 +297,7 @@ def _normalize_paths(paths: Sequence[str]) -> tuple[str, ...]:
         if path.is_absolute() or ".." in path.parts or not raw.strip():
             raise WorkspaceDrift(f"invalid changed file path: {raw!r}")
         value = path.as_posix()
-        if not value:
+        if value in {"", "."}:
             raise WorkspaceDrift(f"invalid changed file path: {raw!r}")
         normalized.add(value)
     return tuple(sorted(normalized))
@@ -330,15 +383,219 @@ def validate_workspace(
 
 def compute_diff_hash(snapshot: dict[str, Any], changed_files: Sequence[str]) -> str:
     root = _assert_snapshot_identity(snapshot)
-    paths = _normalize_paths(changed_files)
+    return _content_diff_hash(snapshot, _content_fingerprints(root, changed_files))
+
+
+def _content_fingerprint(relative: str, mode: str, content: bytes) -> str:
     digest = hashlib.sha256()
-    digest.update(f"dev-harness-diff-v1\0{snapshot['base_sha']}\0".encode())
-    for path in paths:
+    digest.update(relative.encode("utf-8", errors="surrogateescape"))
+    digest.update(b"\0" + mode.encode() + b"\0" + content)
+    return digest.hexdigest()
+
+
+def _trusts_filemode(root: Path) -> bool:
+    return _git(root, "config", "--type=bool", "--default=true", "--get", "core.filemode").strip() == b"true"
+
+
+def _regular_file_mode(root: Path, relative: str, path: Path, trust_filemode: bool) -> str:
+    if trust_filemode:
+        return "100755" if path.stat().st_mode & 0o100 else "100644"
+    # Git preserves the index mode when filesystem executable bits are unreliable.
+    # Explicit update-index --chmod changes this effective mode and must invalidate
+    # the review, while ordinary git add of the same content keeps it stable.
+    indexed = _git(root, "ls-files", "--stage", "-z", "--", relative)
+    if indexed:
+        records = indexed.rstrip(b"\0").split(b"\0")
+        if len(records) != 1:
+            raise WorkspaceDrift(f"unmerged index entry: {relative}")
+        metadata, name = records[0].split(b"\t", 1)
+        index_mode, _, stage = metadata.decode().split()
+        if stage != "0" or name.decode(errors="surrogateescape") != relative:
+            raise WorkspaceDrift(f"invalid index entry: {relative}")
+        if index_mode in {"100644", "100755"}:
+            return index_mode
+    return "100644"
+
+
+def _content_fingerprints(root: Path, paths: Sequence[str]) -> dict[str, str]:
+    """Content identity excludes index placement; ownership still uses Git diffs."""
+    fingerprints = {}
+    trust_filemode = _trusts_filemode(root)
+    for relative in _normalize_paths(paths):
+        path = root / relative
+        if path.is_symlink():
+            mode, content = "120000", os.fsencode(os.readlink(path))
+        elif path.is_file():
+            mode = _regular_file_mode(root, relative, path, trust_filemode)
+            content = path.read_bytes()
+        elif not path.exists():
+            mode, content = "missing", b""
+        else:
+            raise WorkspaceDrift(f"unsupported changed file type: {relative}")
+        fingerprints[relative] = _content_fingerprint(relative, mode, content)
+    return fingerprints
+
+
+def _content_diff_hash(snapshot: dict[str, Any], fingerprints: dict[str, str]) -> str:
+    digest = hashlib.sha256()
+    digest.update(f"dev-harness-diff-v2\0{snapshot['base_sha']}\0".encode())
+    for path, fingerprint in sorted(fingerprints.items()):
         digest.update(path.encode("utf-8", errors="surrogateescape"))
         digest.update(b"\0")
-        digest.update(_file_fingerprint(root, path).encode())
+        digest.update(fingerprint.encode())
         digest.update(b"\0")
     return digest.hexdigest()
+
+
+def _dependency_fingerprints(state: dict[str, Any], item: dict[str, Any]) -> dict[str, str]:
+    classifications = state.get("ChangedFileImpacts", {})
+    fallback = set(state.get("ChangeImpacts") or ["shared-infrastructure"])
+    paths = set(item.get("depends_on_files", []))
+    for path in state.get("ChangedFiles", []):
+        impacts = {classifications[path]} if path in classifications else fallback
+        if "shared-infrastructure" in impacts or (
+            "depends_on_files" not in item and impacts.intersection(item["depends_on"])
+        ):
+            paths.add(path)
+    return _content_fingerprints(Path(state["WorkspaceSnapshot"]["repo_root"]), sorted(paths))
+
+
+def _execution_digest(item: dict[str, Any]) -> str:
+    return hashlib.sha256(json.dumps(item, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+
+
+def _binding_is_fresh(state: dict[str, Any], item: dict[str, Any]) -> bool:
+    binding = state.get("VerificationBindings", {}).get(item["id"], {})
+    return (
+        binding.get("execution") == _execution_digest(item)
+        and binding.get("dependencies") == _dependency_fingerprints(state, item)
+    )
+
+
+def _bind_verification_plan(state: dict[str, Any]) -> None:
+    current_hash = _content_diff_hash(state["WorkspaceSnapshot"], _content_fingerprints(
+        Path(state["WorkspaceSnapshot"]["repo_root"]), state.get("ChangedFiles", [])))
+    bindings = {}
+    fresh_pass_ids = set()
+    for item in state["VerificationPlan"]:
+        if item["status"] not in {"passed", "skipped"}:
+            continue
+        if _binding_is_fresh(state, item):
+            bindings[item["id"]] = state["VerificationBindings"][item["id"]]
+        elif item["diff_hash"] == current_hash:
+            bindings[item["id"]] = {
+                "execution": _execution_digest(item),
+                "dependencies": _dependency_fingerprints(state, item),
+            }
+            if item["status"] == "passed":
+                fresh_pass_ids.add(item["id"])
+        else:
+            raise StateTransitionError("verification evidence is stale or unbound; record a fresh execution with the current diff hash")
+    state["VerificationBindings"] = bindings
+    # A skip cannot erase an observed failure, even if a later checkpoint replaces
+    # the plan array. Only a fresh passing execution can clear it; reusing a pass
+    # observed before the failure or entering implement does not establish recovery.
+    failures = {tuple(key) for key in state.get("VerificationFailures", [])}
+    for item in state["VerificationPlan"]:
+        key = (item["command"], item["check"])
+        if item["status"] == "failed":
+            failures.add(key)
+        elif item["status"] == "passed" and item["id"] in fresh_pass_ids:
+            failures.discard(key)
+    state["VerificationFailures"] = [list(key) for key in sorted(failures)]
+
+
+def _expected_git_entries(root: Path, paths: Sequence[str]) -> dict[str, dict[str, str]]:
+    """The reviewed bytes as Git will store them, including configured text filters."""
+    entries = {}
+    trust_filemode = _trusts_filemode(root)
+    for relative in _normalize_paths(paths):
+        path = root / relative
+        if path.is_symlink():
+            mode = "120000"
+            object_id = _git(root, "hash-object", "--stdin", input_data=os.fsencode(os.readlink(path))).decode().strip()
+        elif path.is_file():
+            mode = _regular_file_mode(root, relative, path, trust_filemode)
+            object_id = _git(root, "hash-object", f"--path={relative}", "--stdin", input_data=path.read_bytes()).decode().strip()
+        elif not path.exists():
+            mode, object_id = "missing", ""
+        else:
+            raise WorkspaceDrift(f"unsupported changed file type: {relative}")
+        entries[relative] = {"mode": mode, "object": object_id}
+    return entries
+
+
+def _validate_staged_content(state: dict[str, Any]) -> None:
+    root = Path(state["WorkspaceSnapshot"]["repo_root"])
+    staged = sorted(_nul_paths(_git(root, "diff", "--cached", "--name-only", "--no-renames", "-z")))
+    if staged != list(_normalize_paths(state["ChangedFiles"])):
+        raise WorkspaceDrift("staged_scope_conflict: stage exactly AutoFixChangedFiles before checkpoint commit")
+    entries = {}
+    for relative in staged:
+        raw = _git(root, "ls-files", "--stage", "-z", "--", relative)
+        if not raw:
+            mode, object_id = "missing", ""
+        else:
+            records = raw.rstrip(b"\0").split(b"\0")
+            if len(records) != 1:
+                raise WorkspaceDrift(f"unmerged index entry: {relative}")
+            metadata, name = records[0].split(b"\t", 1)
+            mode, object_id, stage = metadata.decode().split()
+            if stage != "0" or name.decode(errors="surrogateescape") != relative:
+                raise WorkspaceDrift(f"invalid index entry: {relative}")
+        entries[relative] = {"mode": mode, "object": object_id}
+    if entries != state.get("FinalGitEntries"):
+        raise WorkspaceDrift("staged content does not match the final reviewed tree")
+
+
+def _commit_receipt(state: dict[str, Any], sha: str) -> dict[str, Any]:
+    """Accept exactly the reviewed one-parent commit, never arbitrary HEAD drift."""
+    snapshot = state["WorkspaceSnapshot"]
+    root = _git_root(Path(snapshot["repo_root"]))
+    if not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", sha):
+        raise StateTransitionError("commit must be a full Git object ID")
+    if state["Mode"] not in {"commit", "unattended"} or not state.get("FinalDiffHash"):
+        raise StateTransitionError("commit requires authorization and final verification")
+    if _git(root, "rev-parse", "HEAD").decode().strip() != sha:
+        raise WorkspaceDrift("recorded commit must be the current HEAD")
+    if _git(root, "rev-parse", "--abbrev-ref", "HEAD").decode().strip() != snapshot["branch"]:
+        raise WorkspaceDrift("branch drifted since WorkspaceSnapshot")
+    parents = _git(root, "rev-list", "--parents", "-n", "1", sha).decode().split()
+    if parents != [sha, snapshot["base_sha"]]:
+        raise WorkspaceDrift("authorized commit must have the snapshot HEAD as its single parent")
+    paths = sorted(_nul_paths(_git(root, "diff-tree", "--no-commit-id", "--name-only", "--no-renames", "-r", "-z", snapshot["base_sha"], sha)))
+    if paths != list(_normalize_paths(state["ChangedFiles"])):
+        raise WorkspaceDrift("committed paths do not exactly match AutoFixChangedFiles")
+    entries = {}
+    for relative in paths:
+        entry = _git(root, "ls-tree", "-z", sha, "--", relative)
+        if not entry:
+            mode, object_id = "missing", ""
+        else:
+            metadata, name = entry.rstrip(b"\0").split(b"\t", 1)
+            mode, kind, object_id = metadata.decode().split()
+            if kind != "blob" or name.decode(errors="surrogateescape") != relative:
+                raise WorkspaceDrift(f"unsupported committed file type: {relative}")
+        entries[relative] = {"mode": mode, "object": object_id}
+    if entries != state.get("FinalGitEntries") or _content_diff_hash(snapshot, state.get("FinalFileFingerprints", {})) != state["FinalDiffHash"]:
+        raise WorkspaceDrift("committed tree does not match the final reviewed content")
+    return {"sha": sha, "parent": snapshot["base_sha"],
+            "tree": _git(root, "rev-parse", f"{sha}^{{tree}}").decode().strip(),
+            "changed_files": paths, "diff_hash": state["FinalDiffHash"]}
+
+
+def _validate_state_workspace(state: dict[str, Any]) -> WorkspaceValidation:
+    receipt = state.get("CommitReceipt")
+    if not receipt:
+        return validate_workspace(state["WorkspaceSnapshot"], state.get("ChangedFiles", []))
+    if _commit_receipt(state, receipt["sha"]) != receipt or state["Commits"] != [receipt["sha"]]:
+        raise WorkspaceDrift("authorized commit receipt is inconsistent")
+    effective = {**state["WorkspaceSnapshot"], "base_sha": receipt["sha"]}
+    validate_workspace(effective, [])
+    fingerprints = _content_fingerprints(Path(effective["repo_root"]), state["ChangedFiles"])
+    if fingerprints != state["FinalFileFingerprints"]:
+        raise WorkspaceDrift("workspace content differs from the authorized commit")
+    return WorkspaceValidation(tuple(state["ChangedFiles"]), _content_diff_hash(state["WorkspaceSnapshot"], fingerprints))
 
 
 class AutoFixStateStore:
@@ -371,11 +628,18 @@ class AutoFixStateStore:
             if existing.get("RunId") != run_id or existing.get("Mode") != mode:
                 raise StateTransitionError("existing run state does not match run_id and mode")
             _validate_profile(existing["ValidationProfile"], mode)
-            validate_workspace(
-                existing["WorkspaceSnapshot"], existing.get("ChangedFiles", [])
-            )
             if raw != existing:
                 store._write(existing)
+            head = _git(root, "rev-parse", "HEAD").decode().strip()
+            if existing.get("EvidenceRevalidationRequired") and head != existing["WorkspaceSnapshot"]["base_sha"]:
+                raise StateTransitionError("legacy evidence cannot authenticate a changed HEAD; review the committed changes and start a new run")
+            if (existing["Stage"] == "commit" and not existing.get("CommitReceipt")
+                    and head != existing["WorkspaceSnapshot"]["base_sha"]):
+                # The process may have stopped after Git committed but before the
+                # receipt checkpoint. The same exact-tree gate applies on recovery.
+                store.checkpoint("commit", commit=head)
+            else:
+                _validate_state_workspace(existing)
             return store
         snapshot = create_snapshot(root)
         store._write(
@@ -481,7 +745,7 @@ class AutoFixStateStore:
         current = state["Stage"]
         mode = state["Mode"]
         if stage != current:
-            self._validate_transition(state, stage)
+            self._validate_transition(state, stage, completion_status)
         if changed_files is not None and stage != "implement":
             normalized_changes = list(_normalize_paths(changed_files))
             if normalized_changes != state.get("ChangedFiles", []):
@@ -536,13 +800,21 @@ class AutoFixStateStore:
         if commit is not None:
             if mode not in {"commit", "unattended"}:
                 raise StateTransitionError(f"{mode} mode cannot record a commit")
-            state["Commits"].append(commit)
+            if stage != "commit":
+                raise StateTransitionError("commit receipt may only be recorded in commit")
+            receipt = _commit_receipt(state, commit)
+            if state["Commits"] and state["Commits"] != [commit]:
+                raise StateTransitionError("run already records a different commit")
+            state["Commits"] = [commit]
+            state["CommitReceipt"] = receipt
         if issue_comment_marker is not None:
             state["IssueCommentMarker"] = issue_comment_marker
         if completion_status is not None:
             if completion_status not in COMPLETION_STATUSES:
                 raise StateTransitionError(f"invalid completion status: {completion_status}")
             state["CompletionStatus"] = completion_status
+        if state.get("CompletionStatus") in {"DONE", "DONE_WITH_CONCERNS"} and stage != "report":
+            raise StateTransitionError("successful completion may only be recorded in report")
         if stage == "implement":
             if changed_file_impacts is not None:
                 if not isinstance(changed_file_impacts, dict):
@@ -584,36 +856,45 @@ class AutoFixStateStore:
                 > PROFILE_RANK[initial["profile"]]
             )
             state["ProfileAssessment"] = assessment
-            if impacts != {"documentation"}:
+            # Classification describes all task files, not just the last edit.
+            # Retain only executions whose actual dependency contents still match.
+            retained = [item for item in state.get("VerificationPlan", [])
+                        if item["status"] in {"passed", "skipped"} and _binding_is_fresh(state, item)]
+            state["VerificationPlan"] = retained
+            state["VerificationBindings"] = {
+                item["id"]: state["VerificationBindings"][item["id"]] for item in retained}
+            if not retained:
                 state["VerificationEvidence"] = {}
-                if "shared-infrastructure" in impacts:
-                    state["VerificationPlan"] = []
-                else:
-                    retained: list[dict[str, Any]] = []
-                    for item in state.get("VerificationPlan", []):
-                        dependencies = set(item.get("depends_on", CHANGE_IMPACTS))
-                        if not dependencies.intersection(impacts):
-                            retained.append(item)
-                    state["VerificationPlan"] = retained
             state["ReviewDiffHash"] = None
             state["ReviewMode"] = None
             state["ReviewOutcome"] = None
             state["FinalDiffHash"] = None
+            state["FinalFileFingerprints"] = {}
+            state["FinalGitEntries"] = {}
+        if verification_plan is not None:
+            _validate_state_workspace(state)
+            _bind_verification_plan(state)
         if stage == "final-verify":
-            state["FinalDiffHash"] = state["ReviewDiffHash"]
+            state["FinalDiffHash"] = None
+            state["FinalFileFingerprints"] = {}
+            state["FinalGitEntries"] = {}
         state["Stage"] = stage
+        self._validate_stage(state)
         self._write(state)
         return state
 
     @staticmethod
-    def _validate_transition(state: dict[str, Any], target: str) -> None:
+    def _validate_transition(
+        state: dict[str, Any], target: str, completion_status: str | None = None
+    ) -> None:
         current = state["Stage"]
         mode = state["Mode"]
         if mode == "analyze" and target not in {"context", "reproduce", "hypothesize", "report"}:
             raise StateTransitionError(f"analyze mode cannot enter {target}")
         if target == "commit" and mode not in {"commit", "unattended"}:
             raise StateTransitionError(f"{mode} mode cannot enter commit")
-
+        if target == "report" and completion_status in {"BLOCKED", "NEEDS_CONTEXT"}:
+            return
         allowed = {
             "preflight": {"context"},
             "context": {"reproduce"},
@@ -623,85 +904,130 @@ class AutoFixStateStore:
             "implement": {"verify"},
             "verify": {"implement", "review"},
             "review": {"implement", "final-verify"},
-            "final-verify": {"report", "commit"},
+            "final-verify": {"implement", "report", "commit"},
             "commit": {"report"},
             "report": set(),
         }
         if target not in allowed.get(current, set()):
             raise StateTransitionError(f"invalid stage transition: {current} -> {target}")
-        if current == "hypothesize" and target == "regress-red":
-            confirmed = any(item.get("Status") == "confirmed" for item in state["Hypotheses"])
-            if not confirmed:
-                raise StateTransitionError("a confirmed hypothesis is required before regress-red")
-            assessment = state.get("ProfileAssessment")
-            if not isinstance(assessment, dict) or assessment.get("initial") is None:
-                raise StateTransitionError("initial ProfileAssessment is required before regress-red")
-            _validate_profile_assessment(assessment, state["ValidationProfile"])
-        if current == "regress-red" and target == "implement" and not state["RegressionRedEvidence"]:
+
+    @staticmethod
+    def _require_root_evidence(state: dict[str, Any], *, red: bool = True) -> None:
+        if not any(item.get("Status") == "confirmed" for item in state["Hypotheses"]):
+            raise StateTransitionError("a confirmed hypothesis is required before regress-red")
+        assessment = state.get("ProfileAssessment")
+        if not isinstance(assessment, dict) or assessment.get("initial") is None:
+            raise StateTransitionError("initial ProfileAssessment is required before regress-red")
+        if red and not state["RegressionRedEvidence"]:
             raise StateTransitionError("regression RED evidence is required before implement")
-        if current == "verify" and target == "review":
-            if not state.get("VerificationEvidence"):
-                raise StateTransitionError("VerificationEvidence is required before review")
-            assessment = state.get("ProfileAssessment", {}).get("final")
-            if assessment is None:
-                raise StateTransitionError("final ProfileAssessment is required before review")
-            _validate_profile_assessment(
-                state["ProfileAssessment"], state["ValidationProfile"]
-            )
-            if not assessment.get("required_checks"):
-                raise StateTransitionError("final ProfileAssessment requires at least one check")
-            _validate_verification_plan(state.get("VerificationPlan", []))
-            missing_checks = set(assessment.get("required_checks", [])) - _covered_checks(
-                state.get("VerificationPlan", [])
-            )
-            if missing_checks:
-                raise StateTransitionError(
-                    "required verification checks are not covered: "
-                    + ", ".join(sorted(missing_checks))
-                )
-        if current == "review" and target == "final-verify":
-            reviewed_hash = state.get("ReviewDiffHash")
-            if not reviewed_hash:
-                raise StateTransitionError("ReviewDiffHash is required before final-verify")
-            validation = validate_workspace(
-                state["WorkspaceSnapshot"], state.get("ChangedFiles", [])
-            )
-            if validation.diff_hash != reviewed_hash:
-                raise StateTransitionError(
-                    "current diff does not match ReviewDiffHash; review evidence is stale"
-                )
-            if state.get("ReviewOutcome") not in {"pass", "pass_with_concerns"}:
-                raise StateTransitionError(
-                    "final-verify requires a passing ReviewOutcome; unavailable is not a pass"
-                )
-            if state.get("ReviewMode") not in REVIEW_MODES:
-                raise StateTransitionError("final-verify requires ReviewMode")
-            assessment = state.get("ProfileAssessment", {}).get("final")
-            if assessment is None:
-                raise StateTransitionError("final ProfileAssessment is required before final-verify")
-            _validate_profile_assessment(
-                state["ProfileAssessment"], state["ValidationProfile"]
-            )
-            if not assessment.get("required_checks"):
-                raise StateTransitionError("final ProfileAssessment requires at least one check")
-            required_checks = set(assessment.get("required_checks", []))
-            _validate_verification_plan(state.get("VerificationPlan", []))
-            missing_checks = required_checks - _covered_checks(state.get("VerificationPlan", []))
-            if missing_checks:
-                raise StateTransitionError(
-                    "required verification checks are not covered: "
-                    + ", ".join(sorted(missing_checks))
-                )
-        if current == "final-verify" and target in {"report", "commit"}:
-            if not state.get("FinalDiffHash") or state["FinalDiffHash"] != state.get("ReviewDiffHash"):
-                raise StateTransitionError("FinalDiffHash must match ReviewDiffHash")
-            validation = validate_workspace(
-                state["WorkspaceSnapshot"], state.get("ChangedFiles", [])
-            )
-            if validation.diff_hash != state["FinalDiffHash"]:
-                raise StateTransitionError(
-                    "current diff does not match FinalDiffHash; final verification evidence is stale"
-                )
+        if red:
+            evidence = state["RegressionRedEvidence"]
+            if not isinstance(evidence, dict):
+                raise StateTransitionError("regression RED evidence must be an object")
+            if _regression_skip_reason(evidence) and state.get("CompletionStatus") == "DONE":
+                raise StateTransitionError("regression skip requires DONE_WITH_CONCERNS")
+
+    @staticmethod
+    def _verification_failed(state: dict[str, Any]) -> bool:
+        if state.get("VerificationFailures"):
+            return True
+        evidence = state.get("VerificationEvidence", {})
+        if (evidence.get("result") in {"fail", "failed"}
+                or evidence.get("status") in {"fail", "failed"}
+                or (isinstance(evidence.get("exit_code"), int) and evidence["exit_code"] != 0)):
+            return True
+        failures = set()
+        for item in state.get("VerificationPlan", []):
+            key = (item["command"], item["check"])
+            if item["status"] == "failed":
+                failures.add(key)
+            elif item["status"] == "passed":
+                failures.discard(key)
+        return bool(failures)
+
+    @staticmethod
+    def _require_verification(state: dict[str, Any]) -> None:
+        if not state.get("VerificationEvidence"):
+            raise StateTransitionError("VerificationEvidence is required before review")
+        if AutoFixStateStore._verification_failed(state):
+            raise StateTransitionError("failed verification cannot certify completion")
+        assessment = state.get("ProfileAssessment", {}).get("final")
+        if assessment is None:
+            raise StateTransitionError("final ProfileAssessment is required before review")
+        _validate_profile_assessment(state["ProfileAssessment"], state["ValidationProfile"])
+        if not assessment.get("required_checks"):
+            raise StateTransitionError("final ProfileAssessment requires at least one check")
+        plan = state.get("VerificationPlan", [])
+        _validate_verification_plan(plan)
+        latest = {(item["command"], item["check"]): item for item in plan}
+        for item in latest.values():
+            if item["status"] in {"passed", "skipped"} and not _binding_is_fresh(state, item):
+                raise StateTransitionError("verification dependencies are stale or evidence has no runtime binding")
+        skipped = {item["check"] for item in latest.values() if item["status"] == "skipped"}
+        missing = set(assessment["required_checks"]) - _covered_checks(list(latest.values())) - skipped
+        if missing:
+            raise StateTransitionError("required verification checks are not covered: " + ", ".join(sorted(missing)))
+        if skipped and state.get("CompletionStatus") == "DONE":
+            raise StateTransitionError("objective verification skips require DONE_WITH_CONCERNS")
+
+    @staticmethod
+    def _require_review(state: dict[str, Any], validation: WorkspaceValidation) -> None:
+        if not state.get("ReviewDiffHash"):
+            raise StateTransitionError("ReviewDiffHash is required before final-verify")
+        if validation.diff_hash != state["ReviewDiffHash"]:
+            raise StateTransitionError("current diff does not match ReviewDiffHash; review evidence is stale")
+        if state.get("ReviewOutcome") not in {"pass", "pass_with_concerns"}:
+            raise StateTransitionError("final-verify requires a passing ReviewOutcome; unavailable is not a pass")
+        if state.get("ReviewMode") not in REVIEW_MODES:
+            raise StateTransitionError("final-verify requires ReviewMode")
+
+    @staticmethod
+    def _validate_stage(state: dict[str, Any]) -> None:
+        """Check the merged checkpoint, including repeated and terminal updates."""
+        stage = state["Stage"]
+        terminal = state.get("CompletionStatus") in {"DONE", "DONE_WITH_CONCERNS"}
+        if state["Mode"] == "analyze":
+            if stage not in {"preflight", "context", "reproduce", "hypothesize", "report"}:
+                raise StateTransitionError(f"analyze mode cannot enter {stage}")
+            if stage == "report":
+                _validate_state_workspace(state)
+            return
+        if stage == "report" and not terminal:
+            if state.get("CompletionStatus") not in {"BLOCKED", "NEEDS_CONTEXT"}:
+                raise StateTransitionError("report requires an explicit completion status")
+            return
+        if stage in {"regress-red", "implement", "verify", "review", "final-verify", "commit", "report"}:
+            AutoFixStateStore._require_root_evidence(state, red=stage != "regress-red")
+        if stage == "regress-red":
+            _validate_profile_assessment(state["ProfileAssessment"], state["ValidationProfile"])
+        if stage not in {"review", "final-verify", "commit", "report"}:
+            return
+        validation = _validate_state_workspace(state)
+        if stage == "review":
+            AutoFixStateStore._require_verification(state)
+            return
+        if stage == "final-verify" and (
+            state.get("ReviewOutcome") in {"fail", "unavailable"}
+            or AutoFixStateStore._verification_failed(state)
+        ):
+            # Negative observations must be durable. They revoke final evidence;
+            # report/DONE still applies the complete success gate below.
+            return
+        AutoFixStateStore._require_review(state, validation)
+        AutoFixStateStore._require_verification(state)
+        if stage == "final-verify":
+            state["FinalDiffHash"] = validation.diff_hash
+            state["FinalFileFingerprints"] = _content_fingerprints(
+                Path(state["WorkspaceSnapshot"]["repo_root"]), state["ChangedFiles"])
+            state["FinalGitEntries"] = _expected_git_entries(
+                Path(state["WorkspaceSnapshot"]["repo_root"]), state["ChangedFiles"])
+            state["EvidenceRevalidationRequired"] = False
+        elif not state.get("FinalDiffHash") or state["FinalDiffHash"] != validation.diff_hash:
+            raise StateTransitionError("current diff does not match FinalDiffHash; final verification evidence is stale")
+        if stage == "commit" and state["Mode"] not in {"commit", "unattended"}:
+            raise StateTransitionError(f"{state['Mode']} mode cannot enter commit")
+        if stage == "commit" and not state.get("CommitReceipt"):
+            _validate_staged_content(state)
 
 
 def _print_json(value: Any) -> None:
@@ -760,7 +1086,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         elif args.command in {"verify-workspace", "diff-hash"}:
             state = _migrate_state(json.loads(args.state.read_text(encoding="utf-8")))
             snapshot = state["WorkspaceSnapshot"]
-            if args.command == "verify-workspace":
+            if state.get("CommitReceipt"):
+                if args.changed_file and list(_normalize_paths(args.changed_file)) != state["ChangedFiles"]:
+                    raise WorkspaceDrift("changed files do not match the authorized commit receipt")
+                result = _validate_state_workspace(state)
+                if args.command == "verify-workspace":
+                    _print_json({"changed_files": result.changed_files, "diff_hash": result.diff_hash})
+                else:
+                    print(result.diff_hash)
+            elif args.command == "verify-workspace":
                 result = validate_workspace(snapshot, args.changed_file)
                 _print_json({"changed_files": result.changed_files, "diff_hash": result.diff_hash})
             else:

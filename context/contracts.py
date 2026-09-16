@@ -32,27 +32,27 @@ LABEL_TO_FIELD = {
 
 CANDIDATES = {
     "git_workflow": (
-        "docs/GIT_WORKFLOW.md",
+        "{docs_root}/GIT_WORKFLOW.md",
         ".github/CONTRIBUTING.md",
         "CONTRIBUTING.md",
         "GIT_WORKFLOW.md",
     ),
     "code_style": (
-        "docs/CODE_STYLE.md",
+        "{docs_root}/CODE_STYLE.md",
         "CODE_STYLE.md",
         ".github/CONTRIBUTING.md",
         "CONTRIBUTING.md",
     ),
     "release": (
-        "docs/RELEASE.md",
+        "{docs_root}/RELEASE.md",
         "RELEASE.md",
-        "docs/GIT_WORKFLOW.md",
+        "{docs_root}/GIT_WORKFLOW.md",
         ".github/CONTRIBUTING.md",
         "CONTRIBUTING.md",
     ),
     "changelog": (
         "CHANGELOG.md",
-        "docs/CHANGELOG.md",
+        "{docs_root}/CHANGELOG.md",
         "HISTORY.md",
     ),
 }
@@ -108,8 +108,37 @@ def _existing_index_references(repo_root: Path) -> tuple[dict[str, str], set[str
     return references, conflicts
 
 
+def _documentation_root(repo_root: Path, existing: dict[str, str]) -> tuple[str | None, bool]:
+    """Respect established doc/docs ownership; never pick a competing root."""
+    roots = []
+    for name in ("doc", "docs"):
+        directory = repo_root / name
+        try:
+            directory.resolve().relative_to(repo_root.resolve())
+        except ValueError:
+            continue
+        if directory.is_dir():
+            roots.append(name)
+    if not roots:
+        return "docs", False
+    if len(roots) == 1:
+        return roots[0], False
+    referenced_roots = {Path(path).parts[0] for path in existing.values()} & set(roots)
+    if len(referenced_roots) == 1:
+        return referenced_roots.pop(), False
+    markers = ("README.md", "DOCUMENTATION.md", "plan/Dashboard.md")
+    established = [
+        name for name in roots
+        if any(_valid_relative_file(repo_root, f"{name}/{marker}") for marker in markers)
+    ]
+    if not referenced_roots and len(established) == 1:
+        return established[0], False
+    return None, True
+
+
 def discover_contract_index(repo_root: Path) -> ContractIndex:
     existing, conflicts = _existing_index_references(repo_root)
+    docs_root, ambiguous_root = _documentation_root(repo_root, existing)
     discovered: dict[str, str] = {}
     for field, candidates in CANDIDATES.items():
         if field in conflicts:
@@ -118,8 +147,13 @@ def discover_contract_index(repo_root: Path) -> ContractIndex:
         if field in existing:
             discovered[field] = existing[field]
             continue
+        resolved_candidates = [
+            relative.format(docs_root=docs_root)
+            for relative in candidates
+            if docs_root is not None or "{docs_root}" not in relative
+        ]
         discovered[field] = next(
-            (valid for relative in candidates if (valid := _valid_relative_file(repo_root, relative)) is not None),
+            (valid for relative in resolved_candidates if (valid := _valid_relative_file(repo_root, relative)) is not None),
             "Unknown",
         )
     field_labels = {field: label for label, field in LABEL_TO_FIELD.items()}
@@ -128,4 +162,6 @@ def discover_contract_index(repo_root: Path) -> ContractIndex:
         for field in CANDIDATES
         if field in conflicts
     )
+    if ambiguous_root:
+        manual_review += ("doc/ 与 docs/ 的文档归属不明确，需人工选择权威文档根目录",)
     return ContractIndex(build="HARNESS.md", manual_review=manual_review, **discovered)

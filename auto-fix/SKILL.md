@@ -85,11 +85,15 @@ python <skill-dir>/runtime.py verify-workspace --state <state.json> --changed-fi
 
 ## 状态契约
 
-状态文件位于 Git 私有路径 `.git/dev-harness/auto-fix/<run-id>/state.json`（worktree 下使用 Git 返回的实际路径），至少保存：SchemaVersion、Mode、ValidationProfile、ProfileAssessment、Stage、WorkspaceSnapshot、Hypotheses、RegressionRedEvidence、ChangedFiles、ChangedFileImpacts、ChangeImpacts、VerificationEvidence、VerificationPlan、ReviewMode、ReviewOutcome、ReviewDiffHash、RepeatExecutions、FinalDiffHash、Commits、CompletionStatus。
+状态文件位于 Git 私有路径 `.git/dev-harness/auto-fix/<run-id>/state.json`（worktree 下使用 Git 返回的实际路径），至少保存：SchemaVersion、Mode、ValidationProfile、ProfileAssessment、Stage、WorkspaceSnapshot、Hypotheses、RegressionRedEvidence、ChangedFiles、ChangedFileImpacts、ChangeImpacts、VerificationEvidence、VerificationPlan、VerificationBindings、ReviewMode、ReviewOutcome、ReviewDiffHash、RepeatExecutions、FinalDiffHash、FinalFileFingerprints、FinalGitEntries、Commits、CommitReceipt、CompletionStatus。
+
+SchemaVersion 3 将内容指纹与暂存区所有权指纹分开。仅暂存相同内容不会使审查失效；用户已有修改仍同时校验内容和暂存状态。旧状态保留历史计划，但清除旧格式审查指纹与最终指纹，不补造依赖绑定；写模式下撤销旧 DONE，标记 EvidenceRevalidationRequired 并退回 verify，必须重新取得所需验证和审查证据。旧运行已经提交、HEAD 与基线不同时无法补造可靠回执，必须先核对已提交改动，再建立新运行。`VerificationBindings`、`FinalFileFingerprints`、`FinalGitEntries` 和 `CommitReceipt` 由运行时生成，不允许手写。
 
 状态写入的 mkdir/create/fsync/replace 分阶段失败必须返回稳定错误。权限或只读文件系统立即返回 `state_write_denied`，调用方不得自动重试；临时文件名只对 `FileExistsError` 有限重试。
 
 必须用运行时原子 checkpoint 更新状态，例如 `python <skill-dir>/runtime.py checkpoint --state <state.json> --stage context`；其他字段使用 `checkpoint --help` 中的 JSON 或重复文件参数。进程中断后从状态恢复，并先重新校验工作区；不得仅凭聊天上下文猜测已完成阶段。
+
+每次 checkpoint 对合并后的状态执行门禁，同阶段更新和再次 report 同样适用。最终验证失败或审查失败可以落盘，但会撤销 FinalDiffHash；完成状态只能在 report 登记，并再次检查根因、RED、当前依赖证据、审查和最终内容。需要继续修复时从 final-verify 返回 implement；受阻可报告 BLOCKED 或 NEEDS_CONTEXT。
 
 ## 执行流程
 
@@ -128,7 +132,7 @@ python <skill-dir>/runtime.py verify-workspace --state <state.json> --changed-fi
 
 读取 `references/bugfix-flow/regression.md`。默认先增加或固定最小回归，记录 `RegressionRedEvidence`，证明它在修复前失败且 `FailureSignature` 与目标缺陷一致。`fast` 可复用有效基线失败证据，但必须绑定 BaseSha、环境、输入和相同 FailureSignature；历史描述或无法判定的截图不能替代 RED。
 
-只有以下客观原因可设置 `RegressionSkipReason`：`device-required`、`ui-only`、`environment-unavailable`、`no-test-seam`。跳过必须说明替代验证和剩余风险，最终最多为 `DONE_WITH_CONCERNS`。用户说“别跑测试”不能伪装成测试通过。
+只有以下客观原因可设置 `RegressionSkipReason`：`device-required`、`ui-only`、`environment-unavailable`、`no-test-seam`。跳过必须说明替代验证和剩余风险，最终最多为 `DONE_WITH_CONCERNS`。运行时在 `RegressionRedEvidence` 中要求同时提供 `RegressionSkipReason`、`skip_evidence`（实际阻塞观察）、`alternative_verification` 和 `remaining_risk`，后三项为非空文本。用户说“别跑测试”不能伪装成测试通过。
 
 ### 5. Implement
 
@@ -152,6 +156,10 @@ python <skill-dir>/runtime.py verify-workspace --state <state.json> --changed-fi
 
 读取 `references/bugfix-flow/verify.md`，建立结构化 `VerificationPlan`。每项记录命令、证明义务、证据位置、依赖影响类型、diff hash 和结果；`subsumes` 只能引用同项已经证明的义务，不能由 Agent 自由声明。
 
+新执行的 `diff_hash` 必须对应当前内容。运行时同时记录每项执行与其依赖文件的指纹；旧执行只有依赖仍一致才能复用，不能只比较 ReviewDiffHash 和 FinalDiffHash。默认由 `depends_on` 与完整 `ChangedFileImpacts` 推导依赖，新增同类文件也会使旧证据失效；确有独立验证边界时可用 `depends_on_files` 显式列出依赖文件，以保留无关测试变化后的证据。共享基础设施变化始终纳入依赖。文档或无关依赖变化保留执行证据，仍须重新审查当前完整 diff。
+
+必要检查因客观条件无法执行时，用 `status=skipped` 单独记录缺口，不能记为 passed。该项必须有 `skip_reason`（与 RegressionSkipReason 相同的四项白名单）、`skip_evidence`、`alternative_verification`、`remaining_risk` 和当前 `diff_hash`；`proves` 可为空，`subsumes` 必须为空。运行时单独核对已通过义务与允许留存的缺口，有任何这样的跳过时只允许 `DONE_WITH_CONCERNS`。已有失败保留在 VerificationFailures，必须由同一 command/check 的新执行通过才能清除；进入 implement、替换成 skipped 或复用失败前的通过记录都不能消除已知失败。
+
 - `fast`：执行专项 GREEN 和未被它覆盖的必要编译；默认一次有效 RED、一次 GREEN、一次必要编译。
 - `standard`：执行专项 GREEN，并按证明义务补齐未覆盖的 quick/test/bugfix。
 - `strict`：执行完整适用验证，并在 final-verify 执行必要 full 或记录客观 skip reason。
@@ -171,6 +179,8 @@ python <skill-dir>/runtime.py verify-workspace --state <state.json> --changed-fi
 ### 9. 精确提交（仅授权模式）
 
 `fix` 和 `analyze` 在此之前结束，不得提交。`commit` / `unattended` 加载 `dev-harness-git-workflow`：只逐个暂存 AutoFixChangedFiles，复核 staged diff 与 ReviewDiffHash 后 commit。不得顺带包含 `preexisting_changes`。push、PR、Issue 回写和发布分别需要独立授权。
+
+具体顺序为：逐个暂存 → `checkpoint --stage commit` 校验暂存文件集合及内容 → 执行 Git commit → `checkpoint --stage commit --commit <完整 SHA>` 登记回执 → report。提交必须以快照 HEAD 为唯一 parent，文件集合精确等于 AutoFixChangedFiles，Git tree 中的内容与最终审查内容一致（按仓库的 Git 文本转换规则及 core.filemode 设置校验）。一次运行登记一个这样的提交，不接受额外提交、其他分支或混入文件。若 Git 已提交但回执尚未写入就中断，重新 init 仅在上述条件全部成立时补记回执；之后工作区仍检查用户已有修改和提交后新增变化。
 
 ## 平台验证门
 

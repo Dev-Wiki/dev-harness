@@ -30,6 +30,56 @@ class DocumentFormat:
 
 
 @dataclass(frozen=True)
+class DocumentSnapshot:
+    raw: bytes
+    identity: tuple[int, ...]
+
+
+def _document_identity(metadata: os.stat_result) -> tuple[int, ...]:
+    return (
+        metadata.st_dev,
+        metadata.st_ino,
+        metadata.st_mode,
+        metadata.st_size,
+        metadata.st_mtime_ns,
+        metadata.st_ctime_ns,
+    )
+
+
+def read_document_snapshot(path: Path) -> DocumentSnapshot | None:
+    """Read a regular output file without following a final-component symlink."""
+    try:
+        before = path.lstat()
+    except FileNotFoundError:
+        return None
+    if not stat.S_ISREG(before.st_mode):
+        raise ManagedDocumentError("output path must be a regular file, not a symlink or directory")
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_BINARY", 0)
+    with os.fdopen(os.open(path, flags), "rb") as handle:
+        opened = os.fstat(handle.fileno())
+        if not stat.S_ISREG(opened.st_mode) or _document_identity(opened) != _document_identity(before):
+            raise ManagedDocumentError("output changed while reading; rerun to preview the current file")
+        raw = handle.read()
+        after = os.fstat(handle.fileno())
+    if _document_identity(before) != _document_identity(after) or _document_identity(path.lstat()) != _document_identity(after):
+        raise ManagedDocumentError("output changed while reading; rerun to preview the current file")
+    return DocumentSnapshot(raw=raw, identity=_document_identity(after))
+
+
+def create_document(path: Path, raw: bytes) -> None:
+    """Create only a missing output; a newly appeared file or symlink must win."""
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0)
+    try:
+        descriptor = os.open(path, flags, 0o666)
+    except FileExistsError as exc:
+        raise ManagedDocumentError("output appeared after preview; rerun to review it") from exc
+    with os.fdopen(descriptor, "wb") as handle:
+        handle.write(raw)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+@dataclass(frozen=True)
 class ManagedBlock:
     block_id: str
     version: int
@@ -346,9 +396,22 @@ def merge_markdown_sections(
     return merged, changed_ids, legacy_ids
 
 
-def atomic_write_document(path: Path, text: str, document_format: DocumentFormat) -> None:
+def atomic_write_document(
+    path: Path,
+    text: str,
+    document_format: DocumentFormat,
+    *,
+    expected_snapshot: DocumentSnapshot | None = None,
+) -> None:
     encoded = encode_document(text, document_format)
-    original_mode = stat.S_IMODE(path.stat().st_mode) if path.exists() else 0o644
+    if expected_snapshot is None:
+        expected_snapshot = read_document_snapshot(path)
+    if expected_snapshot is None:
+        create_document(path, encoded)
+        return
+    if read_document_snapshot(path) != expected_snapshot:
+        raise ManagedDocumentError("output changed after preview; rerun to review the current file")
+    original_mode = stat.S_IMODE(expected_snapshot.identity[2])
     temporary_path: Path | None = None
     try:
         with tempfile.NamedTemporaryFile(dir=path.parent, prefix=f".{path.name}.", delete=False) as handle:
@@ -357,6 +420,8 @@ def atomic_write_document(path: Path, text: str, document_format: DocumentFormat
             handle.flush()
             os.fsync(handle.fileno())
         temporary_path.chmod(original_mode)
+        if read_document_snapshot(path) != expected_snapshot:
+            raise ManagedDocumentError("output changed after preview; rerun to review the current file")
         os.replace(temporary_path, path)
     except Exception:
         if temporary_path is not None and temporary_path.exists():

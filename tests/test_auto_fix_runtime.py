@@ -114,25 +114,32 @@ class WorkspaceSnapshotTests(GitRepoCase):
 
 
 class StateStoreTests(GitRepoCase):
-    def test_report_rejects_workspace_drift_after_final_verify(self) -> None:
-        store = self.runtime.AutoFixStateStore.initialize(
-            self.repo, "run-post-final-drift", "fix"
-        )
-        self.write("app.py", "print('verified')\n")
-        state = store.load()
-        current_hash = self.runtime.compute_diff_hash(
-            state["WorkspaceSnapshot"], ["app.py"]
-        )
-        state["Stage"] = "final-verify"
-        state["ChangedFiles"] = ["app.py"]
-        state["ReviewDiffHash"] = current_hash
-        state["FinalDiffHash"] = current_hash
-        store._write(state)
-        self.write("app.py", "raise RuntimeError('changed after final verify')\n")
+    def prepare_review(self, store, *, plans=None):
+        profile = store.load()["ValidationProfile"]
+        store.checkpoint("context")
+        store.checkpoint("reproduce")
+        assessment = self.assessment(profile, ["BugfixCheck"])
+        store.checkpoint("hypothesize", hypotheses=[{"Status": "confirmed", "Claim": "fixture bug"}],
+                         profile_assessment=assessment)
+        store.checkpoint("regress-red", regression_red={"observed_failure": "fixture signature"})
+        self.write("app.py", "print('fixed')\n")
+        store.checkpoint("implement", changed_files=["app.py"],
+                         changed_file_impacts={"app.py": "production"})
+        diff_hash = self.runtime.compute_diff_hash(store.load()["WorkspaceSnapshot"], ["app.py"])
+        plans = plans or [self.plan_item("focused")]
+        for item in plans:
+            item["diff_hash"] = diff_hash
+        store.checkpoint("verify", verification={"result": "passed"}, verification_plan=plans,
+                         profile_assessment=assessment)
+        return store.checkpoint("review", review_mode="self", review_outcome="pass",
+                                review_diff_hash=diff_hash)
 
-        with self.assertRaisesRegex(
-            self.runtime.StateTransitionError, "final verification|FinalDiffHash"
-        ):
+    def test_report_rejects_workspace_drift_after_final_verify(self) -> None:
+        store = self.runtime.AutoFixStateStore.initialize(self.repo, "run-post-final-drift", "fix")
+        self.prepare_review(store)
+        store.checkpoint("final-verify")
+        self.write("app.py", "raise RuntimeError('changed after final verify')\n")
+        with self.assertRaisesRegex(self.runtime.StateTransitionError, "stale|FinalDiffHash"):
             store.checkpoint("report", completion_status="DONE")
 
     @staticmethod
@@ -177,13 +184,13 @@ class StateStoreTests(GitRepoCase):
             item["repeat_reason"] = repeat_reason
         return item
 
-    def test_new_state_uses_schema_v2_and_explicit_profile(self) -> None:
+    def test_new_state_uses_schema_v3_and_explicit_profile(self) -> None:
         store = self.runtime.AutoFixStateStore.initialize(
             self.repo, "run-profile", "fix", validation_profile="fast"
         )
 
         state = store.load()
-        self.assertEqual(state["SchemaVersion"], 2)
+        self.assertEqual(state["SchemaVersion"], 3)
         self.assertEqual(state["ValidationProfile"], "fast")
         self.assertEqual(state["VerificationPlan"], [])
         self.assertIsNone(state["FinalDiffHash"])
@@ -212,7 +219,7 @@ class StateStoreTests(GitRepoCase):
 
         resumed = self.runtime.AutoFixStateStore.initialize(self.repo, "run-legacy", "fix")
 
-        self.assertEqual(resumed.load()["SchemaVersion"], 2)
+        self.assertEqual(resumed.load()["SchemaVersion"], 3)
         self.assertEqual(resumed.load()["ValidationProfile"], "strict")
 
     def test_profile_can_upgrade_but_not_downgrade(self) -> None:
@@ -246,47 +253,34 @@ class StateStoreTests(GitRepoCase):
         store = self.runtime.AutoFixStateStore.initialize(self.repo, "run-plan", "fix")
         item = self.plan_item("device")
         item["subsumes"] = {"QuickCheck": ["focused-green"]}
-        store.checkpoint("context", verification_plan=[item])
+        self.runtime._validate_verification_plan([item])
 
         invalid = self.plan_item("invalid")
         invalid["subsumes"] = {"QuickCheck": ["missing-obligation"]}
         with self.assertRaisesRegex(self.runtime.StateTransitionError, "subsumes"):
-            store.checkpoint("context", verification_plan=[invalid])
+            self.runtime._validate_verification_plan([invalid])
 
     def test_duplicate_command_requires_repeat_reason(self) -> None:
         store = self.runtime.AutoFixStateStore.initialize(self.repo, "run-repeat", "fix")
         first = self.plan_item("first")
         duplicate = self.plan_item("duplicate")
         with self.assertRaisesRegex(self.runtime.StateTransitionError, "repeat_reason"):
-            store.checkpoint("context", verification_plan=[first, duplicate])
+            self.runtime._validate_verification_plan([first, duplicate])
 
         duplicate["repeat_reason"] = "environment-recovery"
-        store.checkpoint("context", verification_plan=[first, duplicate])
+        self.runtime._validate_verification_plan([first, duplicate])
 
     def test_test_only_change_preserves_unaffected_build_evidence(self) -> None:
         store = self.runtime.AutoFixStateStore.initialize(self.repo, "run-impact-test", "fix")
-        state = store.load()
-        build = self.plan_item(
-            "build", obligation="compiled", check="QuickCheck", depends_on=["production"]
-        )
+        build = self.plan_item("build", command="compile fixture", obligation="compiled",
+                               check="QuickCheck", depends_on=["production"])
         focused = self.plan_item("focused", depends_on=["production", "test"])
-        state.update(
-            {
-                "Stage": "review",
-                "VerificationPlan": [build, focused],
-                "VerificationEvidence": {"result": "passed"},
-                "ReviewDiffHash": "old-review",
-                "FinalDiffHash": "old-final",
-            }
-        )
-        store._write(state)
-
-        updated = store.checkpoint(
-            "implement", changed_files=["app.py"], change_impacts=["test"]
-        )
-
+        self.prepare_review(store, plans=[build, focused])
+        self.write("test_new.py", "assert True\n")
+        updated = store.checkpoint("implement", changed_files=["app.py", "test_new.py"],
+                                   changed_file_impacts={"app.py": "production", "test_new.py": "test"})
         self.assertEqual([item["id"] for item in updated["VerificationPlan"]], ["build"])
-        self.assertEqual(updated["VerificationEvidence"], {})
+        self.assertEqual(updated["VerificationEvidence"], {"result": "passed"})
         self.assertIsNone(updated["ReviewDiffHash"])
         self.assertIsNone(updated["FinalDiffHash"])
 
@@ -296,6 +290,7 @@ class StateStoreTests(GitRepoCase):
         )
         state = store.load()
         state["Stage"] = "regress-red"
+        state["Hypotheses"] = [{"Status": "confirmed"}]
         state["RegressionRedEvidence"] = {"observed_failure": "signature"}
         state["ProfileAssessment"] = {
             "initial": {
@@ -319,34 +314,11 @@ class StateStoreTests(GitRepoCase):
         self.assertTrue(updated["ProfileAssessment"]["upgraded"])
 
     def test_shared_infrastructure_change_forces_strict_and_clears_plan(self) -> None:
-        store = self.runtime.AutoFixStateStore.initialize(
-            self.repo, "run-shared", "fix", validation_profile="fast"
-        )
-        state = store.load()
-        state.update(
-            {
-                "Stage": "regress-red",
-                "RegressionRedEvidence": {"observed_failure": "signature"},
-                "VerificationPlan": [self.plan_item("build", depends_on=["production"])],
-                "ProfileAssessment": {
-                    "initial": {
-                        "profile": "fast",
-                        "reasons": ["initially local"],
-                        "risk_flags": [],
-                    },
-                    "final": None,
-                    "upgraded": False,
-                },
-            }
-        )
-        store._write(state)
-
-        updated = store.checkpoint(
-            "implement",
-            changed_files=["build.py"],
-            changed_file_impacts={"build.py": "shared-infrastructure"},
-        )
-
+        store = self.runtime.AutoFixStateStore.initialize(self.repo, "run-shared", "fix", validation_profile="fast")
+        self.prepare_review(store)
+        self.write("build.py", "print('new builder')\n")
+        updated = store.checkpoint("implement", changed_files=["app.py", "build.py"],
+                                   changed_file_impacts={"app.py": "production", "build.py": "shared-infrastructure"})
         self.assertEqual(updated["ValidationProfile"], "strict")
         self.assertEqual(updated["VerificationPlan"], [])
 
@@ -362,24 +334,11 @@ class StateStoreTests(GitRepoCase):
 
     def test_documentation_change_keeps_execution_evidence(self) -> None:
         store = self.runtime.AutoFixStateStore.initialize(self.repo, "run-impact-docs", "fix")
-        state = store.load()
-        plan = [self.plan_item("focused")]
-        state.update(
-            {
-                "Stage": "review",
-                "VerificationPlan": plan,
-                "VerificationEvidence": {"result": "passed"},
-                "ReviewDiffHash": "old-review",
-                "FinalDiffHash": "old-final",
-            }
-        )
-        store._write(state)
-
-        updated = store.checkpoint(
-            "implement", changed_files=["notes.md"], change_impacts=["documentation"]
-        )
-
-        self.assertEqual(updated["VerificationPlan"], plan)
+        previous = self.prepare_review(store)
+        self.write("notes.md", "updated docs\n")
+        updated = store.checkpoint("implement", changed_files=["app.py", "notes.md"],
+                                   changed_file_impacts={"app.py": "production", "notes.md": "documentation"})
+        self.assertEqual(updated["VerificationPlan"], previous["VerificationPlan"])
         self.assertEqual(updated["VerificationEvidence"], {"result": "passed"})
         self.assertIsNone(updated["ReviewDiffHash"])
         self.assertIsNone(updated["FinalDiffHash"])
@@ -409,47 +368,18 @@ class StateStoreTests(GitRepoCase):
             store.checkpoint("review", review_mode="self", review_outcome="pass")
 
     def test_unavailable_independent_review_can_fall_back_to_self_review(self) -> None:
-        store = self.runtime.AutoFixStateStore.initialize(
-            self.repo, "run-review-unavailable", "fix"
-        )
-        state = store.load()
-        state.update(
-            {
-                "Stage": "review",
-                "ReviewMode": "independent",
-                "ReviewOutcome": "unavailable",
-            }
-        )
-        store._write(state)
-
+        store = self.runtime.AutoFixStateStore.initialize(self.repo, "run-review-unavailable", "fix")
+        self.prepare_review(store)
+        store.checkpoint("review", review_mode="independent", review_outcome="unavailable")
         updated = store.checkpoint("review", review_mode="self", review_outcome="pass")
-
         self.assertEqual(updated["ReviewMode"], "self")
         self.assertEqual(updated["ReviewOutcome"], "pass")
 
     def test_final_verify_rejects_uncovered_required_check(self) -> None:
-        store = self.runtime.AutoFixStateStore.initialize(
-            self.repo, "run-required-check", "fix", validation_profile="fast"
-        )
-        self.write("app.py", "print('fixed')\n")
-        state = store.load()
-        current_hash = self.runtime.compute_diff_hash(
-            state["WorkspaceSnapshot"], ["app.py"]
-        )
-        state.update(
-            {
-                "Stage": "review",
-                "ChangedFiles": ["app.py"],
-                "VerificationEvidence": {"result": "passed"},
-                "VerificationPlan": [self.plan_item("focused", diff_hash=current_hash)],
-                "ProfileAssessment": self.assessment("fast", ["QuickCheck"]),
-                "ReviewMode": "self",
-                "ReviewOutcome": "pass",
-                "ReviewDiffHash": current_hash,
-            }
-        )
+        store = self.runtime.AutoFixStateStore.initialize(self.repo, "run-required-check", "fix", validation_profile="fast")
+        state = self.prepare_review(store)
+        state["ProfileAssessment"] = self.assessment("fast", ["QuickCheck"])
         store._write(state)
-
         with self.assertRaisesRegex(self.runtime.StateTransitionError, "not covered"):
             store.checkpoint("final-verify")
 
@@ -539,50 +469,26 @@ class StateStoreTests(GitRepoCase):
 
     def test_code_change_invalidates_old_review_and_verification(self) -> None:
         store = self.runtime.AutoFixStateStore.initialize(self.repo, "run-invalidate", "fix")
-        state = store.load()
-        state["Stage"] = "review"
-        state["VerificationEvidence"] = {"quick": "passed"}
-        state["ReviewDiffHash"] = "old-hash"
-        store._write(state)
-
-        store.checkpoint("implement", changed_files=["app.py"])
+        self.prepare_review(store)
+        self.write("app.py", "print('another change')\n")
+        store.checkpoint("implement", changed_files=["app.py"], changed_file_impacts={"app.py": "production"})
         updated = store.load()
         self.assertEqual(updated["VerificationEvidence"], {})
         self.assertIsNone(updated["ReviewDiffHash"])
 
     def test_final_verify_rejects_diff_not_seen_by_review(self) -> None:
         store = self.runtime.AutoFixStateStore.initialize(self.repo, "run-review-drift", "fix")
-        self.write("app.py", "print('fixed')\n")
-        state = store.load()
-        state["Stage"] = "review"
-        state["ChangedFiles"] = ["app.py"]
-        state["ReviewDiffHash"] = "stale-review-hash"
-        store._write(state)
-
+        self.prepare_review(store)
+        store.checkpoint("review", review_diff_hash="stale-review-hash")
         with self.assertRaisesRegex(self.runtime.StateTransitionError, "ReviewDiffHash"):
             store.checkpoint("final-verify")
 
     def test_final_verify_accepts_current_reviewed_diff(self) -> None:
         store = self.runtime.AutoFixStateStore.initialize(self.repo, "run-review-current", "fix")
-        self.write("app.py", "print('fixed')\n")
-        state = store.load()
-        current_hash = self.runtime.compute_diff_hash(
-            state["WorkspaceSnapshot"], ["app.py"]
-        )
-        state["Stage"] = "review"
-        state["ChangedFiles"] = ["app.py"]
-        state["VerificationEvidence"] = {"result": "passed"}
-        state["VerificationPlan"] = [self.plan_item("focused", diff_hash=current_hash)]
-        state["ProfileAssessment"] = self.assessment("strict", ["BugfixCheck"])
-        state["ReviewMode"] = "self"
-        state["ReviewOutcome"] = "pass"
-        state["ReviewDiffHash"] = current_hash
-        store._write(state)
-
+        previous = self.prepare_review(store)
         store.checkpoint("final-verify")
-
         self.assertEqual(store.load()["Stage"], "final-verify")
-        self.assertEqual(store.load()["FinalDiffHash"], current_hash)
+        self.assertEqual(store.load()["FinalDiffHash"], previous["ReviewDiffHash"])
 
     def test_fix_mode_cannot_enter_commit(self) -> None:
         store = self.runtime.AutoFixStateStore.initialize(self.repo, "run-no-commit", "fix")

@@ -70,6 +70,23 @@ Task 的 `checkpoint` 保存计划、结果和恢复位置；每次更新按完�
 
 Finding 沿用 [finding-contract.md](finding-contract.md)。`findings` 数组每项是现有 `upsert-finding` 对象：`id/status/severity/category/summary/claim/evidence_paths_lines/relevant_call_chain_data_flow/counter_evidence_checked/risk_impact/confidence/suggested_next_action/snapshot`，加 `source_task`、别名、根因、owner、修复边界与 identity 证据（有则记录）。`snapshot` 使用 init 的 Snapshot fingerprint，`evidence_paths_lines` 用 `{"path":"app.py","lines":"1-3"}` 或 `{"command":"...","observation":"..."}`。confirmed 保留全部原门禁；resolved 需重新验证修复证据，不能只改状态名。
 
+修复后的新运行先导入原问题，再提交验证结果，两个批次之间执行实际验证：
+
+```json
+{"findings":[{"id":"AUD-001","status":"stale","source_run_id":"original-run"}]}
+```
+
+```json
+{"findings":[{"id":"AUD-001","status":"resolved","resolution":{
+  "snapshot":"<修复后当前 Snapshot fingerprint>",
+  "change_summary":"<实际修复及依据>",
+  "verification_status":"passed",
+  "evidence_paths_lines":[{"command":"<实际验证命令>","observation":"<修复后观察与退出结果>"}]
+}}]}
+```
+
+`source_run_id` 必须能读取本仓库原运行中同 ID 的历史确认记录。导入保留原主张与快照；不能用不存在的问题、旧快照、失败验证或空证据登记解决。原快照和修复后快照分别在 Finding 的 `snapshot` 与 `resolution.snapshot` 中保存。
+
 ## 写入与完成
 
 1. 每个 Task 开始前校验工作区，结果形成后将 checkpoint 和相关 Finding 放在同一批提交；当批已内部校验时不再紧邻调用一次独立 verify-workspace。工作过程中及时保存已有证据，不积累到最终答复之后补记。

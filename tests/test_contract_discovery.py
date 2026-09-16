@@ -6,6 +6,51 @@ from context.contracts import discover_contract_index
 
 
 class ContractDiscoveryTests(unittest.TestCase):
+    def test_discovers_contracts_under_existing_doc_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp)
+            (repo_root / "doc").mkdir()
+            for name in ("GIT_WORKFLOW.md", "CODE_STYLE.md", "RELEASE.md", "CHANGELOG.md"):
+                (repo_root / "doc" / name).write_text(f"# {name}\n")
+            contracts = discover_contract_index(repo_root)
+            self.assertEqual(contracts.git_workflow, "doc/GIT_WORKFLOW.md")
+            self.assertEqual(contracts.code_style, "doc/CODE_STYLE.md")
+            self.assertEqual(contracts.release, "doc/RELEASE.md")
+            self.assertEqual(contracts.changelog, "doc/CHANGELOG.md")
+
+    def test_documentation_index_selects_root_when_both_exist(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp)
+            for directory in ("doc", "docs"):
+                (repo_root / directory).mkdir()
+                (repo_root / directory / "GIT_WORKFLOW.md").write_text("# Git\n")
+            (repo_root / "doc/README.md").write_text("# Documentation index\n")
+            self.assertEqual(discover_contract_index(repo_root).git_workflow, "doc/GIT_WORKFLOW.md")
+
+    def test_ambiguous_documentation_roots_require_review(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp)
+            for directory in ("doc", "docs"):
+                (repo_root / directory).mkdir()
+                (repo_root / directory / "GIT_WORKFLOW.md").write_text("# Git\n")
+            contracts = discover_contract_index(repo_root)
+            self.assertEqual(contracts.git_workflow, "Unknown")
+            self.assertTrue(any("doc/" in item and "docs/" in item for item in contracts.manual_review))
+
+    def test_existing_index_selects_doc_root_for_other_contracts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp)
+            for directory in ("doc", "docs"):
+                (repo_root / directory).mkdir()
+                for name in ("GIT_WORKFLOW.md", "CODE_STYLE.md"):
+                    (repo_root / directory / name).write_text("# Contract\n")
+            (repo_root / "AGENTS.md").write_text(
+                "## 项目规范索引\n\n- Git 工作流：`doc/GIT_WORKFLOW.md`\n"
+            )
+            contracts = discover_contract_index(repo_root)
+            self.assertEqual(contracts.git_workflow, "doc/GIT_WORKFLOW.md")
+            self.assertEqual(contracts.code_style, "doc/CODE_STYLE.md")
+
     def test_prefers_valid_existing_agents_reference_over_default_candidate(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             repo_root = Path(tmp)

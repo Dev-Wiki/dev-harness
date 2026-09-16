@@ -7,8 +7,8 @@ Finding 在本流程中指“审计问题”。它是可追踪、可证伪并绑
 ```text
 candidate → needs-verification → confirmed
          ↘ rejected
-confirmed → stale → confirmed | rejected | resolved
-confirmed → resolved
+confirmed → stale → confirmed | rejected
+新运行导入历史 confirmed / stale(previous_status=confirmed) → stale → resolved
 ```
 
 - `candidate`（候选项）：局部证据显示值得调查，尚未通过验证门禁。
@@ -92,6 +92,17 @@ confirmed → resolved
 ## 失效与解决
 
 发现 HEAD、branch、dirty fingerprint、Context 或 scope 漂移时，将受影响 Finding 标 `stale` 并保留旧 Snapshot；不得原样复制到当前报告的 confirmed 区。外部修复完成后，只有在新 Snapshot 下重跑相关验证和 reconciliation 才能标 `resolved`。
+
+运行时按以下顺序登记解决证据：
+
+1. 初始化修复后的新运行，用 `id/status=stale/source_run_id` 导入原运行中真实登记过的 confirmed Finding（或由 confirmed 漂移为 stale 的 Finding）。不得直接创建 resolved，也不得把 candidate 当作已确认问题导入。
+2. 导入保留原主张、证据与 `snapshot`；`source_run_id` 不可替换。原状态文件只读使用，不要求恢复其旧工作区。
+3. 重新验证后提交 `status=resolved` 和 `resolution`，其中包含当前新快照 `snapshot`、修复说明 `change_summary`、`verification_status=passed` 和非空 `evidence_paths_lines`。失败、跳过或缺失验证不能标记已解决。
+4. 更新会使旧跨模块复核失效；完成新复核后才可发布。渲染与 complete 会再次检查解决证据。后续工作区漂移时，resolved 同样变为 stale，保留 `previous_status=resolved`。
+
+原问题的 `snapshot` 是历史证据快照，`resolution.snapshot` 是修复后验证快照，两者必须不同。缺少原 Git 私有状态时报告来源证据缺口，不伪造历史确认记录。字段示例见 [runtime-interface.md](runtime-interface.md)。
+
+`previous_status` 与 `stale_reason` 由运行时记录，普通 Finding 输入不得设置。解决问题时不得删改原确认依据；修复后证据只写入 `resolution`。已有旧报告仍受覆盖保护：新快照建立前按项目授权完成保留与迁移，或继续采用既有手写维护流程；不能通过删除旧报告来让 renderer 通过。
 
 ## 交接内容
 

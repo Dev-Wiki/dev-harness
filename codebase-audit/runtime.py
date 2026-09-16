@@ -42,6 +42,10 @@ SEVERITIES = {"P0", "P1", "P2", "P3"}
 RUN_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
 TASK_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
 FINDING_ID_PATTERN = re.compile(r"^AUD-[0-9]{3,}$")
+CONFIRMATION_FIELDS = (
+    "snapshot", "claim", "summary", "severity", "category", "evidence_paths_lines",
+    "counter_evidence_checked", "relevant_call_chain_data_flow", "risk_impact", "confidence",
+)
 
 
 class AuditRuntimeError(RuntimeError):
@@ -548,6 +552,24 @@ def validate_finding(
                 "confirmed finding snapshot must match the current AuditSnapshot fingerprint"
             )
         canonical["snapshot"] = snapshot_reference
+    elif status == "resolved":
+        resolution = canonical.get("resolution")
+        if not _has_content(canonical.get("source_run_id")) or not _has_content(canonical.get("snapshot")):
+            raise FindingValidationError("resolved finding requires a registered source run and original snapshot")
+        if not isinstance(resolution, Mapping):
+            raise FindingValidationError("resolved finding requires repair and reverification evidence")
+        current = snapshot["snapshot_fingerprint"]
+        if resolution.get("snapshot") != current or canonical["snapshot"] == current:
+            raise FindingValidationError("resolved finding requires reverification under a new current snapshot")
+        if not _has_content(resolution.get("change_summary")):
+            raise FindingValidationError("resolved finding requires a repair change_summary")
+        if resolution.get("verification_status") != "passed":
+            raise FindingValidationError("resolved finding requires passed repair verification")
+        evidence = resolution.get("evidence_paths_lines")
+        if not isinstance(evidence, list) or not evidence:
+            raise FindingValidationError("resolved finding requires new evidence_paths_lines")
+        for item in evidence:
+            _validate_evidence_item(item, snapshot)
     return canonical
 
 
@@ -669,8 +691,8 @@ class AuditStateStore:
         if reason not in reasons:
             reasons.append(reason)
         for finding in state.get("Findings", {}).values():
-            if finding.get("status") == "confirmed":
-                finding["previous_status"] = "confirmed"
+            if finding.get("status") in {"confirmed", "resolved"}:
+                finding["previous_status"] = finding["status"]
                 finding["status"] = "stale"
                 finding["stale_reason"] = reason
         state["Revision"] = int(state.get("Revision", 0)) + 1
@@ -793,6 +815,7 @@ class AuditStateStore:
         self.verify_workspace(context_fingerprint)
         state = self.load()
         tasks = state.get("Tasks", {})
+        self._validate_resolutions(state)
         if not tasks:
             raise StateTransitionError("cannot complete an audit without task checkpoints")
         unfinished = sorted(
@@ -839,15 +862,74 @@ class AuditStateStore:
 
     def _apply_finding(self, state: dict[str, Any], finding: Mapping[str, Any]) -> None:
         patch = _canonicalize_finding(finding)
+        if {"previous_status", "stale_reason"}.intersection(patch):
+            raise FindingValidationError("previous_status and stale_reason are runtime-owned history fields")
         finding_id = patch.get("id")
         if not isinstance(finding_id, str):
             raise FindingValidationError("finding id is required")
         existing = state["Findings"].get(finding_id, {})
+        source_run = patch.get("source_run_id")
+        if existing and source_run is not None and source_run != existing.get("source_run_id"):
+            raise FindingValidationError("a finding's registered source_run_id cannot be replaced")
+        if not existing and source_run is not None:
+            if patch.get("status") != "stale" or set(patch) != {"id", "status", "source_run_id"}:
+                raise FindingValidationError("import a previously confirmed finding as stale before resolving it")
+            historical = self._source_finding(state, source_run, finding_id)
+            existing = {**historical, "status": "stale", "previous_status": "confirmed",
+                        "source_run_id": source_run}
+        if patch.get("status") == "resolved" and not existing:
+            raise FindingValidationError("cannot create a resolved finding without a registered problem")
         merged = dict(existing)
         merged.update(patch)
+        historical_confirmation = existing.get("status") == "confirmed" or (
+            existing.get("status") == "stale" and existing.get("previous_status") == "confirmed"
+        )
+        if merged.get("status") == "stale" and historical_confirmation:
+            for field in CONFIRMATION_FIELDS:
+                if merged.get(field) != existing.get(field):
+                    raise FindingValidationError(f"stale finding must preserve confirmed history: {field}")
+        if patch.get("status") == "stale" and existing.get("status") in {"confirmed", "resolved"}:
+            merged["previous_status"] = existing["status"]
+        elif merged.get("status") != "stale":
+            merged.pop("previous_status", None)
+            merged.pop("stale_reason", None)
         validated = validate_finding(merged, state["AuditSnapshot"])
+        if validated.get("status") == "resolved":
+            if existing.get("status") not in {"stale", "resolved"}:
+                raise FindingValidationError("resolve a previously imported stale finding under a new snapshot")
+            self._validate_resolution_source(state, validated)
         self._invalidate_cross_module_review(state, f"finding:{finding_id}")
         state["Findings"][finding_id] = validated
+
+    def _source_finding(self, state: Mapping[str, Any], run_id: Any, finding_id: str) -> dict[str, Any]:
+        if not isinstance(run_id, str) or not RUN_ID_PATTERN.fullmatch(run_id) or run_id == state["RunId"]:
+            raise FindingValidationError("source_run_id must identify a different existing audit run")
+        try:
+            source = AuditStateStore.open(self.repo, run_id).load()
+        except (OSError, ValueError, AuditRuntimeError) as error:
+            raise FindingValidationError(f"source audit run is unavailable: {run_id}") from error
+        original = source.get("Findings", {}).get(finding_id, {})
+        previously_confirmed = original.get("status") == "confirmed" or (
+            original.get("status") == "stale" and original.get("previous_status") == "confirmed"
+        )
+        if (source.get("RunId") != run_id or not previously_confirmed
+                or not _has_content(original.get("claim"))
+                or not _has_content(original.get("evidence_paths_lines"))
+                or original.get("snapshot") != source.get("AuditSnapshot", {}).get("snapshot_fingerprint")):
+            raise FindingValidationError("source run must contain this previously confirmed finding and its snapshot")
+        return original
+
+    def _validate_resolution_source(self, state: Mapping[str, Any], finding: Mapping[str, Any]) -> None:
+        original = self._source_finding(state, finding.get("source_run_id"), finding["id"])
+        for field in CONFIRMATION_FIELDS:
+            if finding.get(field) != original.get(field):
+                raise FindingValidationError(f"resolved finding must preserve original confirmation evidence: {field}")
+
+    def _validate_resolutions(self, state: Mapping[str, Any]) -> None:
+        for finding in state.get("Findings", {}).values():
+            if finding.get("status") == "resolved":
+                validate_finding(finding, state["AuditSnapshot"])
+                self._validate_resolution_source(state, finding)
 
     def batch(self, payload: Mapping[str, Any], context_fingerprint: str) -> dict[str, Any]:
         """Validate a bounded batch in memory, then publish exactly one revision.
@@ -917,6 +999,7 @@ class AuditStateStore:
         state = self.load()
         if state.get("Status") == "STALE" or state.get("NeedsReverification"):
             raise StateTransitionError("cannot render current conclusions from a stale run")
+        self._validate_resolutions(state)
         documents = module.render_documents(state)
         paths = self.validate_outputs(list(documents))
         # Refuse edited or hand-authored files; never replace an old run's documents silently.

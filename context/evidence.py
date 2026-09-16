@@ -70,7 +70,8 @@ def _fingerprint(files: list[Path], repo_root: Path) -> str:
         digest.update(str(stat.st_mtime_ns).encode("ascii"))
         digest.update(b"\0")
         with path.open("rb") as stream:
-            digest.update(stream.read(65536))
+            for chunk in iter(lambda: stream.read(65536), b""):
+                digest.update(chunk)
         digest.update(b"\0")
     return digest.hexdigest()
 
@@ -120,6 +121,7 @@ def analysis_contract() -> dict[str, object]:
         "rules": [
             "Every non-Unknown value requires at least one repository-local evidence reference.",
             "Evidence line references must exist and stay within the referenced file.",
+            "Evidence paths must be covered by fingerprint_files; directory references require an included descendant.",
             "Low-confidence claims are not rendered as facts and become manual-review items.",
             "Command claims without evidence are rejected.",
             "Installation-only commands are invalid build commands; use N/A when the project has no build step.",
@@ -157,6 +159,7 @@ def collect_repository_evidence(repo_root: Path) -> dict[str, object]:
         if path.name in IMPORTANT_NAMES
         or path.name.startswith("requirements")
         or path.suffix.lower() in {".sln", ".csproj", ".vcxproj", ".gradle"}
+        or path.relative_to(root).parts[0] in {".github", ".gitlab", ".circleci", ".devcontainer", ".codex-plugin"}
     ]
     source_candidates = [
         _relative(path, root)
@@ -172,6 +175,7 @@ def collect_repository_evidence(repo_root: Path) -> dict[str, object]:
         "schema_version": SCHEMA_VERSION,
         "repository": root.name,
         "evidence_fingerprint": fingerprint,
+        "fingerprint_files": [_relative(path, root) for path in files],
         "truncated": truncated,
         "file_count": len(all_files),
         "top_level_entries": top_level[:300],

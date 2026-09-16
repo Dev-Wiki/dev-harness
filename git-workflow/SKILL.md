@@ -18,7 +18,7 @@ description: Use when you need to discover, initialize, or follow a repository-o
 ## 适用场景
 
 - 识别项目已有的分支、提交、tag、changelog 和发布规范
-- 没有规范时，根据历史提出候选并初始化 `docs/GIT_WORKFLOW.md`
+- 没有规范时，根据历史提出候选并初始化 `<docs-root>/GIT_WORKFLOW.md`
 - 新项目需要确认 GitHub 友好的默认工作流
 - 用户明确要求提交、创建 tag 或生成 release notes
 - 提交前检查调试残留、敏感文件和无关变更
@@ -30,14 +30,16 @@ description: Use when you need to discover, initialize, or follow a repository-o
 1. 读取仓库根目录 `AGENTS.md`，通过其中的项目规范索引定位权威文档。
 2. 优先读取 AGENTS“项目规范索引”中的 Git 工作流、发布规范和变更日志路径。
 3. 索引缺失时，依次检查：
-   - `docs/GIT_WORKFLOW.md`
+   - 既有文档根下的 `GIT_WORKFLOW.md`（`doc/` 或 `docs/`）
    - `.github/CONTRIBUTING.md`
    - `CONTRIBUTING.md`
    - `GIT_WORKFLOW.md`
-   - `docs/RELEASE.md` / `RELEASE.md`
-   - `CHANGELOG.md` / `docs/CHANGELOG.md` / `HISTORY.md`
+   - `<docs-root>/RELEASE.md` / `RELEASE.md`
+   - `CHANGELOG.md` / `<docs-root>/CHANGELOG.md` / `HISTORY.md`
 4. 找到项目规范后，以它为唯一事实源。缺少的主题作为 gap 报告，不得静默混入本 skill 默认值。
 5. 多个文档冲突时，列出候选并请用户选择权威文档；不得自行覆盖或合并。
+
+写入前解析 `<docs-root>`：优先用户指定根，其次已有文档索引、治理文件或活动计划归属；只有 `doc/` 或 `docs/` 时复用该根，两者皆无时才默认 `docs/`。两者都是项目所有且无法确定归属时报告冲突。与 Docs、Planning 使用同一根，不因模板新建第二套文档目录。
 
 ## 第二步：没有规范时生成候选
 
@@ -69,7 +71,7 @@ git tag --list --sort=-version:refname
 - 分支模式由用户在 `single-branch` 与 `feature-branch` 中选择
 - Conventional Commits：`<type>(<scope>): <中文描述>`；用户明确要求英文时使用英文描述
 - annotated tag：`vMAJOR.MINOR.PATCH`，预发布可用 `vMAJOR.MINOR.PATCH-PRERELEASE`
-- 发布规范默认写在 `docs/GIT_WORKFLOW.md`，也可由用户拆分到 `docs/RELEASE.md`
+- 发布规范默认写在 `<docs-root>/GIT_WORKFLOW.md`，也可由用户拆分到 `<docs-root>/RELEASE.md`
 - `CHANGELOG.md` 仅在用户确认初始化或开始首次发布时创建
 
 ## 第三步：确认和初始化
@@ -78,7 +80,7 @@ git tag --list --sort=-version:refname
 
 确认后：
 
-1. 仅当目标文件不存在时，从 `templates/GIT_WORKFLOW.template.md` 初始化 `docs/GIT_WORKFLOW.md`。
+1. 仅当目标文件不存在时，从 `templates/GIT_WORKFLOW.template.md` 初始化 `<docs-root>/GIT_WORKFLOW.md`。
 2. 把用户确认的分支模式和项目选择写入模板占位处。
 3. 按“输出语言”规则调整模板文案；英文项目不得机械保留中文占位说明。
 4. 只有用户同时确认 changelog 初始化或正在开始首次发布时，才从 `templates/CHANGELOG.template.md` 创建 `CHANGELOG.md`。
@@ -99,10 +101,10 @@ Context 只刷新 AGENTS 托管索引，不复制规范正文。
 
 用户明确要求提交时：
 
-1. 读取完整 `git status --short`、工作区 diff 和暂存区 diff；若调用方提供 `WorkspaceSnapshot`，先确认 HEAD、分支和已有修改指纹未漂移。
-2. 提交范围必须来自本轮明确维护的 `AutoFixChangedFiles`，而不是笼统的当前 diff。已有暂存内容不属于该集合时，报告 `staged_scope_conflict` 并停止，不得混入或擅自取消用户暂存。
-3. 对集合内每个文件逐个执行 `git add -- <file>`；删除文件也使用同一精确形式。禁止使用全量暂存命令。
-4. 暂存后重新比较 staged 文件集合与 AutoFixChangedFiles；不相等即报告 `staged_scope_conflict` 并停止。
+1. 读取完整 `git status --short`、工作区 diff 和暂存区 diff；使用任务开始前记录的 `WorkspaceSnapshot` 核对 HEAD、分支、既有文件内容及暂存状态。快照至少保存这些状态的指纹；仅有文件名或 status 文本不能证明内容未变。
+2. 提交范围来自本轮维护的通用 `TaskChangedFiles`；Auto Fix 调用时由 `AutoFixChangedFiles` 提供同一集合，不要求其他任务创建 Auto Fix Run。已有暂存内容不属于授权集合时，报告 `staged_scope_conflict` 并停止，不得混入或擅自取消用户暂存。
+3. 先检查文件内的变更归属。目标文件在任务开始前已修改、或缺少足以区分内容归属的基线时，不得用整文件暂存冒充精确提交。只有用户已明确将该文件完整变更纳入提交，或已审查并隔离本轮补丁时，才能继续。
+4. 可整文件提交的路径逐个执行 `git add -- <file>`；删除文件也使用同一精确形式。禁止全量暂存。复核 staged 文件集合与 TaskChangedFiles，同时逐项核对 staged 内容与已审查补丁；文件集合相等不能替代内容归属检查。
 5. 检查候选文件，发现 `.env`、密钥、凭据、大文件或明显无关变更时停止并确认。
 6. 扫描新增行中的临时调试输出，如 `Console.WriteLine`、`Debug.Log`、裸 `print(`；疑似残留时停止并确认。
 7. 按项目规范生成 commit message；只有项目没有该主题且用户已确认默认契约时才使用上述 Conventional Commits。

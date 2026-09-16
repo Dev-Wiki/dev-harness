@@ -14,7 +14,7 @@
 
 ## 阶段 0 — 前置检查 / 恢复运行
 
-1. 读取仓库级 `AGENTS.md`、`README.md`、`ARCHITECTURE.md`、`HARNESS.md`、`LESSONS.md` 和规范索引（存在时）。
+1. 读取仓库级 `AGENTS.md`、`README.md`、`ARCHITECTURE.md`、`HARNESS.md` 和规范索引（存在时）。只有用户明确要求参考复盘历史时才读取 `LESSONS.md`；其中 LESSON 不自动成为审计标准或项目硬约束。
 2. 解析唯一 `<docs-root>`；禁止为 Audit 创建第二个文档根。
 3. 确定 `output_language`：显式全英文请求使用 `en`；刷新既有文档时跟随主体语言；其他新建且未指定语言的情况使用 `zh-CN`。恢复时优先读取 Dashboard 已记录值。
 4. 只读检查 `<docs-root>/README.md` 或一个既有 route index 是否链接 `audit/Report.md`。把结果记录为 `linked` 或 `docs-refresh-required`；这不是代码 Finding，不分配 `AUD-*`。

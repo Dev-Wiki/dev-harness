@@ -1,4 +1,4 @@
-"""Pruned repository file walking for context scanning (avoids bin/obj/packages, etc.)."""
+"""Pruned repository walking that retains workspace sources and project config."""
 
 from __future__ import annotations
 
@@ -16,6 +16,18 @@ SKIP_DIR_NAMES: frozenset[str] = frozenset(
         ".vscode",
         ".cursor",
         ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".cache",
+        ".venv",
+        "venv",
+        ".tox",
+        ".nox",
+        ".next",
+        ".nuxt",
+        ".turbo",
+        ".gradle",
+        ".dart_tool",
         "__pycache__",
         "node_modules",
         "dist",
@@ -23,7 +35,6 @@ SKIP_DIR_NAMES: frozenset[str] = frozenset(
         "coverage",
         "bin",
         "obj",
-        "packages",
         "PackageCache",
         ".vs",
         "TestResults",
@@ -35,11 +46,9 @@ SKIP_DIR_NAMES: frozenset[str] = frozenset(
 
 
 def _skip_dir(name: str) -> bool:
-    if name in SKIP_DIR_NAMES:
-        return True
-    if name.startswith("."):
-        return True
-    return False
+    # Hidden project configuration (.github, .gitlab, .codex-plugin, etc.) and
+    # packages/ workspaces are evidence, not implicitly dependencies or caches.
+    return name in SKIP_DIR_NAMES
 
 
 def iter_walk_files(repo_root: Path) -> Iterator[Path]:

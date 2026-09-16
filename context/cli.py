@@ -13,12 +13,15 @@ from context.contracts import ContractIndex, discover_contract_index
 from context.evidence import collect_repository_evidence
 from context.managed import (
     DocumentFormat,
+    DocumentSnapshot,
     ManagedDocumentError,
     SECTION_SPECS,
     atomic_write_document,
+    create_document,
     decode_document,
     merge_markdown_sections,
     parse_markdown_sections,
+    read_document_snapshot,
     strip_legacy_managed_markers,
 )
 from context.platform_profiles import (
@@ -1306,25 +1309,24 @@ def generate_context_files(repo_root: Path, analysis: SemanticAnalysis | None = 
         install_step = analysis.claim("install_command", "Unknown")
         build_step = analysis.claim("build_command", "Unknown")
         run_step = analysis.claim("run_command", "Unknown")
-        test_step = analysis.claim("test_command", test_step)
+        test_step = analysis.claim("test_command", "Unknown")
         quick_step = analysis.claim("quick_command", "Unknown")
         bugfix_step = analysis.claim("bugfix_command", "Unknown")
         full_step = analysis.claim("full_command", "Unknown")
-        style_rules = analysis.claim("style_rules", style_rules)
-        architecture_rules = analysis.claim("architecture_rules", architecture_rules)
-        forbidden_operations = analysis.claim("forbidden_operations", forbidden_operations)
-        high_risk_files = merge_high_risk_files(
-            analysis.claim("high_risk_files", "Unknown"),
-            detected_high_risk_files,
-        )
-        feature_paths = analysis.claim("feature_paths", feature_paths)
-        code_safety_rules = analysis.claim("code_safety_rules", code_safety_rules)
-        multi_version_notes = analysis.claim("multi_version_notes", multi_version_notes)
-        logging_rules = analysis.claim("logging_rules", logging_rules)
-        exploration_suggestions = analysis.claim("exploration_suggestions", exploration_suggestions)
-        core_modules = analysis.items("core_modules", core_modules)
-        module_interfaces = analysis.items("module_interfaces", module_interfaces)
-        key_module_markers = analysis.items("key_module_markers", key_module_markers)
+        # The AI path may supplement risk candidates, but does not inherit
+        # offline profile facts or override explicitly uncertain conclusions.
+        style_rules = analysis.claim("style_rules", "Unknown")
+        architecture_rules = analysis.claim("architecture_rules", "Unknown")
+        forbidden_operations = analysis.claim("forbidden_operations", "Unknown")
+        high_risk_files = analysis.claim("high_risk_files", detected_high_risk_files)
+        feature_paths = analysis.claim("feature_paths", "Unknown")
+        code_safety_rules = analysis.claim("code_safety_rules", "Unknown")
+        multi_version_notes = analysis.claim("multi_version_notes", "Unknown")
+        logging_rules = analysis.claim("logging_rules", "Unknown")
+        exploration_suggestions = analysis.claim("exploration_suggestions", "Unknown")
+        core_modules = analysis.items("core_modules", [])
+        module_interfaces = analysis.items("module_interfaces", [])
+        key_module_markers = analysis.items("key_module_markers", [])
         high_risk_directories = analysis.items("high_risk_directories", high_risk_directories)
         auto_detected_candidates_list = analysis.items("auto_detected_candidates", auto_detected_candidates_list)
 
@@ -1485,20 +1487,36 @@ def write_initial_context_files(repo_root: Path, generated_files: dict[str, str]
     differing_files: list[str] = []
     created_files: list[str] = []
     unchanged_files: list[str] = []
+    missing: list[tuple[str, Path, bytes]] = []
 
     for file_name, content in generated_files.items():
+        if file_name not in TARGET_FILES:
+            print(f"错误：不支持的上下文输出路径：{file_name}")
+            return 1
         target_path = repo_root / file_name
         generated_bytes = (content + "\n").encode("utf-8")
-        if not target_path.exists():
-            target_path.write_bytes(generated_bytes)
-            created_files.append(file_name)
+        try:
+            snapshot = read_document_snapshot(target_path)
+        except (ManagedDocumentError, OSError) as exc:
+            print(f"错误：无法初始化 {file_name}：{exc}")
+            return 1
+        if snapshot is None:
+            missing.append((file_name, target_path, generated_bytes))
             continue
 
-        if target_path.read_bytes() == generated_bytes:
+        if snapshot.raw == generated_bytes:
             unchanged_files.append(file_name)
             continue
 
         differing_files.append(file_name)
+
+    for file_name, target_path, generated_bytes in missing:
+        try:
+            create_document(target_path, generated_bytes)
+        except (ManagedDocumentError, OSError) as exc:
+            print(f"错误：无法初始化 {file_name}：{exc}")
+            return 1
+        created_files.append(file_name)
 
     if created_files:
         print("已创建文件：")
@@ -1523,20 +1541,24 @@ def write_initial_context_files(repo_root: Path, generated_files: dict[str, str]
 
 
 def refresh_context_files(repo_root: Path, generated_files: dict[str, str], force: bool = False) -> int:
-    pending: list[tuple[str, Path, str, DocumentFormat, list[str], str]] = []
+    pending: list[tuple[str, Path, str, DocumentFormat, list[str], str, DocumentSnapshot]] = []
     missing: list[tuple[str, Path, bytes]] = []
     errors: list[tuple[str, str]] = []
     interactive = sys.stdin.isatty()
 
     for file_name, content in generated_files.items():
+        if file_name not in TARGET_FILES:
+            errors.append((file_name, "unsupported context output path"))
+            continue
         target_path = repo_root / file_name
         generated = content + "\n"
-        if not target_path.exists():
-            missing.append((file_name, target_path, generated.encode("utf-8")))
-            continue
         try:
-            existing, document_format = decode_document(target_path.read_bytes())
-        except ManagedDocumentError as exc:
+            snapshot = read_document_snapshot(target_path)
+            if snapshot is None:
+                missing.append((file_name, target_path, generated.encode("utf-8")))
+                continue
+            existing, document_format = decode_document(snapshot.raw)
+        except (ManagedDocumentError, OSError) as exc:
             errors.append((file_name, str(exc)))
             continue
 
@@ -1553,7 +1575,7 @@ def refresh_context_files(repo_root: Path, generated_files: dict[str, str], forc
             continue
         displayed_ids = (["legacy-markers"] if legacy_ids else []) + changed_ids
         diff_text = summarize_section_diffs(file_name, existing, merged, changed_ids)
-        pending.append((file_name, target_path, merged, document_format, displayed_ids, diff_text))
+        pending.append((file_name, target_path, merged, document_format, displayed_ids, diff_text, snapshot))
 
     if errors:
         for file_name, message in errors:
@@ -1567,7 +1589,7 @@ def refresh_context_files(repo_root: Path, generated_files: dict[str, str], forc
                 print(f"- {file_name}")
         if pending:
             print("检测到固定章节更新：")
-            for file_name, _, _, _, changed_ids, diff_text in pending:
+            for file_name, _, _, _, changed_ids, diff_text, _ in pending:
                 print(f"- {file_name}: {', '.join(changed_ids)}")
                 print(f"--- 章节差异开始：{file_name} ---")
                 print(diff_text)
@@ -1576,20 +1598,24 @@ def refresh_context_files(repo_root: Path, generated_files: dict[str, str], forc
         return 2
 
     for file_name, target_path, content in missing:
-        target_path.write_bytes(content)
+        try:
+            create_document(target_path, content)
+        except (ManagedDocumentError, OSError) as exc:
+            print(f"错误：无法创建 {file_name}：{exc}")
+            return 1
         print(f"已创建：{file_name}")
 
     if not pending:
         return 0
 
     print("检测到固定章节更新：")
-    for file_name, _, _, _, changed_ids, _ in pending:
+    for file_name, _, _, _, changed_ids, _, _ in pending:
         print(f"- {file_name}: {', '.join(changed_ids)}")
 
     updated: list[str] = []
     skipped: list[str] = []
     interactive_mode = "ask"
-    for file_name, target_path, merged, document_format, _, diff_text in pending:
+    for file_name, target_path, merged, document_format, _, diff_text, snapshot in pending:
         print(f"--- 章节差异开始：{file_name} ---")
         print(diff_text)
         print(f"--- 章节差异结束：{file_name} ---")
@@ -1609,7 +1635,11 @@ def refresh_context_files(repo_root: Path, generated_files: dict[str, str], forc
             interactive_mode = "none"
             action = "no"
         if action == "yes":
-            atomic_write_document(target_path, merged, document_format)
+            try:
+                atomic_write_document(target_path, merged, document_format, expected_snapshot=snapshot)
+            except (ManagedDocumentError, OSError) as exc:
+                print(f"错误：无法刷新 {file_name}：{exc}")
+                return 1
             updated.append(file_name)
             print(f"已更新固定章节：{file_name}")
         else:

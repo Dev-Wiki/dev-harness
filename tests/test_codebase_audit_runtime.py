@@ -372,7 +372,7 @@ class OutputAndFindingContractTests(GitRepoCase):
         with self.assertRaisesRegex(self.runtime.FindingValidationError, "high or medium"):
             store.upsert_finding(finding, "ctx-1")
 
-    def test_all_documented_finding_states_are_accepted(self) -> None:
+    def test_documented_states_require_their_evidence_contract(self) -> None:
         snapshot = self.runtime.create_audit_snapshot(
             self.repo, "ctx-1", "whole-repository", "docs"
         )
@@ -381,6 +381,10 @@ class OutputAndFindingContractTests(GitRepoCase):
             if status == "confirmed":
                 finding = self.confirmed_finding(snapshot)
                 finding["id"] = f"AUD-{index:03d}"
+            if status == "resolved":
+                with self.assertRaises(self.runtime.FindingValidationError):
+                    self.runtime.validate_finding(finding, snapshot)
+                continue
             canonical = self.runtime.validate_finding(finding, snapshot)
             self.assertEqual(canonical["status"], status)
 

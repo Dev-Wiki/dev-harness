@@ -141,6 +141,8 @@ Context 不可用、docs root 冲突、输出越界、运行状态损坏、Evide
 
 Finding 必须遵循 `candidate → verification → confirmed/rejected`，并可在仓库演进后变为 `stale`，修复且重新验证后变为 `resolved`。`confirmed` 至少需要代码或运行证据、相关调用链/数据流、反证检查、风险、置信度和 Snapshot；静态搜索不到引用不等于 dead code。
 
+修复后使用新运行先以 `source_run_id` 导入历史确认问题为 `stale`，再登记 `resolution` 中的新快照、修复依据和通过的验证证据；不能直接新建 resolved 或只改状态。字段与转换见 [finding-contract.md](references/finding-contract.md)。
+
 只建议以下 handoff，不在本运行中执行后续变更：
 
 | Finding 类型 | 建议交给 |

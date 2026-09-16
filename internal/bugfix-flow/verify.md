@@ -27,15 +27,16 @@
 - **TestSkipReason**：若 TestCheck 被跳过，必须记录跳过原因
 - **ManualReviewBoundary**：UI、资源、原生层、打包层中哪些必须人工确认
 
-### 测试执行平台门控
+### 测试执行条件
 
-TestCheck 执行前必须判定平台是否可自动执行测试：
+TestCheck 执行前按 HARNESS 中具体命令的 DeviceRequirement 和实际环境判定，平台名称本身不构成跳过理由：
 
 | 条件 | 行为 |
 |------|------|
-| Qt / WPF / WinForms / Win32 C++ 桌面项目 | 执行 TestCommand（`ctest` / `dotnet test` / `vstest.console.exe`） |
-| Harmony / Android / iOS | 跳过 TestCheck，`TestSkipReason=device-required` |
-| HARNESS.md 中 TestCommand 为 `device-required` 或不存在 | 跳过 TestCheck，记录原因 |
+| 命令可本地执行且前置条件具备，包括移动项目的纯逻辑测试 | 执行已确认的 TestCommand |
+| 命令依赖设备且设备或模拟器可用 | 执行设备测试 |
+| 命令依赖设备且设备确实不可用 | 仅跳过该命令，记录 `TestSkipReason=device-required` 和剩余人工项 |
+| 命令缺失或其他环境条件不足 | 记录具体缺口；当前档位要求该验证时不得声称通过，继续执行独立且可用的检查 |
 
 ### 结构化覆盖复用
 
@@ -64,7 +65,7 @@ TestCheck 执行前必须判定平台是否可自动执行测试：
 1. 根据 ValidationProfile 和最终风险评估列出 required_checks；`fast` 只要求专项 GREEN 与必要编译，`standard` 补齐受影响的 quick/test/bugfix，`strict` 再增加必要 full/人工验证
 2. 先运行专项 GREEN，把实际证明义务和证据写入 VerificationPlan
 3. 从已通过项目的 proves 推导 subsumes，只执行尚未覆盖的 required_checks
-4. TestCheck 执行前必须过平台门控（桌面端自动执行，移动端跳过）
+4. TestCheck 执行前逐条核对设备与环境条件；移动平台同样执行可用的本地测试
 5. 每个命令记录输入、输出、日志、错误码、环境、时间和当前 diff hash
 6. 相同 command 与 diff_hash 禁止无理由重复；允许的 RepeatReason 为 `environment-recovery`、`wrong-failure-signature`、`device-reset`、`user-requested`、`evidence-expired`、`diff-changed`
 7. `fast` 默认预算为一次有效 RED、一次 GREEN、一次未被 GREEN 覆盖的必要编译；预算外执行必须有 RepeatReason

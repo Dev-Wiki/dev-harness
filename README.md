@@ -89,6 +89,8 @@ Windows：
 
 维护者使用 `python release.py` 生成版本 zip。
 
+v1.11.7 加固 Context 写入与证据校验、Audit 修复重验和 Auto Fix 完成门禁。升级后，旧版 Auto Fix 状态需要重新验证与审查；迁移限制见 [变更日志](CHANGELOG.md) 和 [Bugfix 指南](docs/BUGFIX_GUIDE.md)。
+
 ## Skills 一览（8 个可发现 Skill）
 
 ### Project Contract / Governance

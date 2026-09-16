@@ -174,7 +174,9 @@ def render_documents(state):
                       "snapshot": ("审计快照", "Snapshot"), "source_task": ("来源任务", "Source task"),
                       "aliases": ("别名", "Aliases"), "root_cause": ("根因", "Root cause"),
                       "owner": ("职责归属", "Owner"), "fix_boundary": ("修复边界", "Fix boundary"),
-                      "identity": ("同一性证据", "Identity evidence")}
+                      "identity": ("同一性证据", "Identity evidence"),
+                      "source_run_id": ("原审计运行", "Original audit run"),
+                      "resolution": ("修复后验证", "Repair verification")}
     for finding_id, finding in sorted(findings.items()):
         registry_rows.append([f"[{finding_id}](#{finding_id.lower()})", finding.get("severity", "—"),
                               status(finding["status"]), finding.get("summary", "—")])
