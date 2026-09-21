@@ -35,6 +35,8 @@ V1 解决的问题：
 - “已验证”和“已审查”没有绑定到最终代码 diff
 - 大型代码库无法在一次会话中完整载入上下文，跨会话扫描进度、证据和 Finding 容易丢失
 
+Planning Task 的自动执行由独立的 [`dev-harness-runtime`](https://github.com/Dev-Wiki/dev-harness-runtime) 承担，协作方式见 [工作流](WORKFLOW.md#6-runtime-协作边界)。这不改变本仓库的 Skills Bundle 定位，也不将 Runtime 已实现的能力记为本仓库的 V2 功能。
+
 ## V1 边界包含
 
 以下内容描述 V1 的职责范围，不承担逐项功能统计；可独立验证的当前功能项及证据见 [`CAPABILITIES.md`](CAPABILITIES.md)。

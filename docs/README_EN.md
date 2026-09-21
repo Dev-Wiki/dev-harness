@@ -29,6 +29,12 @@ Supports Cursor, Codex CLI, OpenCode, and Antigravity.
 
 ---
 
+## Runtime integration
+
+This repository supplies the eight engineering skills and their project contracts. [`dev-harness-runtime`](https://github.com/Dev-Wiki/dev-harness-runtime) executes Planning Tasks through a shared Core, with task selection, Worker dispatch, independent acceptance, authorization, persistent state, and recovery.
+
+Install the Runtime plugin separately using its [usage guide](https://github.com/Dev-Wiki/dev-harness-runtime#使用说明). Installing this Skills Bundle does not install `dhr` or enable a host Executor. Platform support is tracked in the [Runtime capability matrix](https://github.com/Dev-Wiki/dev-harness-runtime/blob/main/docs/PLATFORM_MATRIX.md). The complete Audit / Finding / Auto Fix / QA workflow remains a composition of skills; it is not an automatic Runtime pipeline.
+
 ## Install
 
 Supports **Cursor, Codex CLI, OpenCode, and Antigravity**.

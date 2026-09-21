@@ -2,6 +2,8 @@
 
 > 本文件是“当前已支持功能”的权威维护文档，只记录有代码、契约或自动化测试证据的可独立验证功能。版本边界、非目标和封板标准见 [V1 / VNext 与 V2 边界](V1_V2_BOUNDARIES.md)，未来候选见 [V2 Backlog](V2_BACKLOG.md)，发布变化见根目录 [`CHANGELOG.md`](../CHANGELOG.md)。
 
+本清单只统计本仓库的 Skills Bundle 能力。[`dev-harness-runtime`](https://github.com/Dev-Wiki/dev-harness-runtime) 的任务执行、恢复与平台支持由其仓库维护，不计入下表。
+
 ## 汇总
 
 仓库 [`VERSION`](../VERSION) 与 [`CHANGELOG.md`](../CHANGELOG.md) 当前版本条目为 `v1.11.8`，最新 Git 标签为 `v1.11.7`。每次修改清单后必须根据下表重新统计；“待确认”不计入总数。

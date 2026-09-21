@@ -2,7 +2,7 @@
 
 > 本文说明现有八个 Skills 如何组合完成新功能交付或代码库审计；各 Skill 的精确行为、授权和状态仍以对应 `SKILL.md` 与 runtime 为准。
 >
-> 当前已支持功能以 [产品功能清单](CAPABILITIES.md) 为权威文档，版本边界与非目标见 [V1 / VNext 与 V2 边界](V1_V2_BOUNDARIES.md)。跨 Skill 自动编排属于独立的 [`dev-harness-dsh`](https://github.com/Dev-Wiki/dev-harness-dsh) 项目，不在本文维护其需求或任务状态。
+> 当前已支持功能以 [产品功能清单](CAPABILITIES.md) 为权威文档，版本边界与非目标见 [V1 / VNext 与 V2 边界](V1_V2_BOUNDARIES.md)。Planning Task 的自动执行由 [`dev-harness-runtime`](https://github.com/Dev-Wiki/dev-harness-runtime) 承担；本文说明与 Skills Bundle 的协作边界，Runtime 的平台能力和任务进度由其仓库维护。
 
 ## 1. 共同原则
 
@@ -192,6 +192,12 @@ preflight → context → reproduce → hypothesize → profile assessment → R
 
 最终报告至少包含：原 Audit Run、Finding 处理结果、Auto Fix 状态、实际提交 SHA、fresh `harness:full`、QA 与人工项、最终复核结果和剩余阻塞。
 
-## 6. 手工编排边界
+## 6. Runtime 协作边界
 
-完全使用 Skills 时，用户或 Agent 仍需维护当前路径、任务或 Finding、下游 Run 引用、失败重试、授权和最终汇总。独立的 [`dev-harness-dsh`](https://github.com/Dev-Wiki/dev-harness-dsh) 项目规划自动化这些外层编排；`dev-harness` 继续保持跨 Agent 的纯 Skills Bundle。
+`dev-harness` 提供 Context、Planning、Commands、Git Workflow、Docs 等工程契约，以及 Auto Fix 和 Codebase Audit 的证据流程。需要自动执行已规划任务时，使用独立的 [`dev-harness-runtime`](https://github.com/Dev-Wiki/dev-harness-runtime)；Runtime 通过锁定的协议来源消费这些契约。
+
+先准备项目上下文、HARNESS、Git 规范和可执行的 Planning Task，再由 Runtime 的 `run` 入口启动指定任务、下一个 ready Task 或全部 ready Task。Core 负责资格检查、快照、授权、Worker 派发、独立验收与运行状态；Worker 按上游 Planning 契约收口当前任务。`status` 查询持久化状态，`resume` 重验边界后恢复同一 Run。默认不提交，按任务提交需明确授权。
+
+Skills Bundle 安装脚本只安装本仓库的 8 个 Skill；Runtime 插件和 `dhr` 入口需按 [Runtime 使用说明](https://github.com/Dev-Wiki/dev-harness-runtime#使用说明) 单独安装。安装产物可生成与宿主可自动执行是不同能力，具体平台支持以 [Runtime 能力矩阵](https://github.com/Dev-Wiki/dev-harness-runtime/blob/main/docs/PLATFORM_MATRIX.md) 为准。
+
+Runtime 的执行单位是 Planning Task。本文第 5 节的 Audit → Finding 路由 → Auto Fix → QA → 最终复核仍需按各 Skill 的职责组织，不能视为 Runtime 已内建的完整自动流水线。只使用 Skills 时，用户或 Agent 负责阶段衔接、下游 Run 引用与最终汇总。

@@ -132,7 +132,7 @@ v1.11.8 将发布包收敛为可直接使用的 Skill 集合，并明确以上�
 | `dev-harness-auto-fix` | 以复现、根因假设、RED/GREEN 和差异证据修复已知问题，并按 `fast / standard / strict` 风险档位裁剪验证 |
 | `dev-harness-codebase-audit` | 分阶段审计大型代码库，批量持久化证据、生成紧凑文档并执行跨模块复核 |
 
-每个 Skill 的模板、references 和脚本均自包含。跨 Skill 自动编排由独立的 [`dev-harness-dsh`](https://github.com/Dev-Wiki/dev-harness-dsh) 项目规划；本仓库保持纯 Skills Bundle。
+每个 Skill 的模板、references 和脚本均自包含。本仓库提供工程契约与 Skills Bundle；Planning Task 的自动执行由 [`dev-harness-runtime`](https://github.com/Dev-Wiki/dev-harness-runtime) 承担，统一处理任务选择、Worker 派发、独立验收、授权、状态与恢复。使用方式与安装入口见 [Runtime 协作边界](docs/WORKFLOW.md#6-runtime-协作边界)。
 
 ## 权威边界
 
