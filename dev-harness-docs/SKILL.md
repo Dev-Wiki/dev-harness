@@ -1,6 +1,6 @@
 ---
 name: dev-harness-docs
-description: Use when a project needs its documentation structure initialized, organized, audited, refreshed, indexed, archived, or its verified facts updated, including doc/docs root detection, progressive navigation, SSOT boundaries, document placement rules, link validation, and fact-sync discipline
+description: Organize and maintain project documentation, including current-function catalogs, initial feature inventories, incremental updates, and repeated full reconciliation against implementation evidence. Also use for documentation navigation, SSOT, and verified-fact updates; feature inventory is distinct from code-quality auditing.
 ---
 
 # dev-harness-docs
@@ -37,9 +37,10 @@ Infer the operation from the request:
 - **Organize**: propose and, when authorized, apply a safer information architecture to existing documents.
 - **Refresh**: update indexes, navigation, placement rules, and archive links after documents change.
 - **Update**: after code or validation changes, sink only verified, reusable project facts into existing documents; produce a minimal add/correct/delete plan with evidence, preserve human-owned prose and structure, and leave unverified items as `待确认` instead of facts.
+- **Capability maintenance**: establish or reconcile what the product supports now. Select initial full inventory, incremental sync, or repeated full reconciliation from the request; read [references/capability-maintenance.md](references/capability-maintenance.md). A request to scan implemented functions belongs here, not to Codebase Audit.
 - **Archive**: move completed or superseded documents only after confirming the exact move map and link impact.
 
-Treat review, explanation, and audit requests as read-only. Treat initialize, organize, refresh, update, and archive requests as authorization to edit only the documentation files in scope. Update requires validation evidence for every fact written. Ask before broad file moves, deletions, or replacing an established documentation convention.
+Treat review, explanation, and audit requests as read-only, including questions about whether feature inventory is supported. An explicit request to inventory, reconcile, or update the feature catalog authorizes the corresponding documentation edits. Treat initialize, organize, refresh, update, and archive requests as authorization to edit only the documentation files in scope. Update requires validation evidence for every fact written. Ask before broad file moves, deletions, or replacing an established documentation convention unless that change is already authorized.
 
 ## Resolve the Documentation Root
 
@@ -105,7 +106,9 @@ When no such current-function document exists, resolve the path without creating
 1. If an established product documentation directory exists, use `<docs-root>/product/CAPABILITIES.md`.
 2. Otherwise use `<docs-root>/CAPABILITIES.md`.
 
-Use [assets/capabilities.template.md](assets/capabilities.template.md) as the semantic contract while preserving the project's language and local conventions. Keep support status, applicability, version placement, and verification method separate. Count one stable ID per independently verifiable function item, not per functional area, page, route, API, module, task, or test. Derive summary counts from the catalog rows whenever it changes.
+Use [assets/capabilities.template.md](assets/capabilities.template.md) as the semantic contract while preserving the project's language and local conventions. Lead with user-facing names, purpose, support, limitations, and usage links; keep IDs, implementation details, and verification evidence in expandable details or an equivalent local presentation. Maintain one feature record rather than separate PM and engineering catalogs. Keep support status, applicability, version placement, and verification method separate. Count one stable ID per independently verifiable function item, not per functional area, page, route, API, module, task, or test. Derive summary counts from the feature records whenever they change.
+
+Catalog maintenance connects initial full inventory, per-delivery incremental sync, and repeated full reconciliation. Preserve IDs across reruns; an unchanged rerun must not add duplicate features or renumber them. Follow the coverage, drift, pending, and completion rules in [references/capability-maintenance.md](references/capability-maintenance.md). Do not present a partial inventory as a full reconciliation or claim to have found every possible unknown feature.
 
 Localize headings and prose by meaning instead of translating the English words one by one. For a zh-CN repository, prefer this vocabulary:
 
@@ -213,6 +216,7 @@ Resolve the same `<docs-root>` before invoking or following `dev-harness-plannin
 - Keep Dashboard as the sole bounded active planning gateway; do not copy archived task bodies or implementation detail back into it.
 - Treat an existing `<docs-root>/plan/TaskDetails.md` only as a legacy migration source or a compatibility redirect to Dashboard, never as a second mutable index.
 - Planning owns task lifecycle and archive content. Docs validates placement, navigation, and links without rewriting task state or evidence.
+- Before a task is ready, Planning identifies the catalog, affected feature IDs or prospective new behavior, and documentation scope. After validation, Docs performs incremental sync; the execution owner records `updated`, `no-impact`, or `not-applicable` with a reason and evidence before completion. A missing or blocked check prevents successful closure. Keep the result in task evidence / the completion record, not as a second feature registry in Dashboard. Runtime integrations must include catalog paths and this check in the frozen scope and acceptance plan before execution; Docs does not expand authorization or rewrite frozen requirements.
 
 ## Verify
 
@@ -229,6 +233,8 @@ Also verify:
 
 - every new or moved document is reachable from `<docs-root>/README.md` or one justified navigation route;
 - every established Capability Catalog is reachable from the documentation hub, uses stable IDs for independently verifiable function items, and keeps current support separate from plans and released deltas;
+- initial/full inventories record a baseline and explicit coverage, reconcile all existing IDs, and disclose unchecked scopes; incremental updates record their documentation-impact result before task completion;
+- user-facing descriptions explain the benefit, scope, limitations, and entry point; technical evidence remains attached to the same stable feature record;
 - every existing `<docs-root>/audit/Report.md` is reachable from the documentation hub or has an explicit pending Docs Refresh handoff;
 - every relative Markdown link changed by the task resolves to an existing target or valid anchor;
 - only one project-owned documentation root is active;

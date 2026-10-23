@@ -24,6 +24,7 @@ class DocsSkillContractTests(unittest.TestCase):
         files = [
             ROOT / "dev-harness-docs" / "SKILL.md",
             ROOT / "dev-harness-docs" / "references" / "information-architecture.md",
+            ROOT / "dev-harness-docs" / "references" / "capability-maintenance.md",
             ROOT / "dev-harness-docs" / "assets" / "capabilities.template.md",
             ROOT / "dev-harness-docs" / "assets" / "docs-index.template.md",
             ROOT / "dev-harness-docs" / "assets" / "documentation-rules.template.md",

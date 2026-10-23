@@ -117,6 +117,7 @@ class InstallBundleTests(unittest.TestCase):
 
             self.assertTrue((skill_root / "SKILL.md").exists())
             self.assertTrue((skill_root / "references" / "information-architecture.md").exists())
+            self.assertTrue((skill_root / "references" / "capability-maintenance.md").exists())
             self.assertTrue((skill_root / "assets" / "capabilities.template.md").exists())
             self.assertTrue((skill_root / "assets" / "docs-index.template.md").exists())
             self.assertTrue((skill_root / "assets" / "documentation-rules.template.md").exists())
@@ -317,6 +318,9 @@ class InstallBundleTests(unittest.TestCase):
                 )
                 self.assertIn(
                     "skills/dev-harness-docs/assets/capabilities.template.md", names
+                )
+                self.assertIn(
+                    "skills/dev-harness-docs/references/capability-maintenance.md", names
                 )
                 version = zf.read("VERSION").decode().strip()
                 self.assertIn(version, zf.read("README.md").decode())

@@ -110,7 +110,9 @@ Windows：
 
 此方式无需源码和安装脚本。包内的运行脚本、模板和参考资料需要完整保留；Context、Auto Fix 和 Codebase Audit 运行时仍需要 Python 3，Git 工作区操作需要 Git。包内 `README.md` 提供独立安装说明，源码和仓库维护文档由对应版本的源码归档提供。
 
-v1.11.8 将发布包收敛为可直接使用的 Skill 集合，并明确以上两种安装方式。从 v1.11.7 之前的版本升级时，旧版 Auto Fix 状态仍需重新验证与审查；迁移限制见 [变更日志](CHANGELOG.md) 和 [Bugfix 指南](docs/BUGFIX_GUIDE.md)。
+v1.12.0 增加功能清单的首次全量盘点、日常增量同步与可重复全量复核，并将功能目录调整为普通用户和 PM 易读的形式。Planning 任务包含文档影响验收；Auto Fix 成功完成及提交前需要有效的功能文档检查。
+
+发布包继续提供可直接复制安装的 Skill 集合。升级后，旧写模式运行缺少文档检查且已有成功结论或最终凭据时，会撤销旧完成结论并要求补验；具体迁移边界见 [变更日志](CHANGELOG.md) 和 [Bugfix 指南](docs/BUGFIX_GUIDE.md)。
 
 ## Skills 一览（8 个可发现 Skill）
 

@@ -88,7 +88,7 @@ PLANNING_TEMPLATE_FILES = [
     "TaskDetails.template.md",
 ]
 DOCS_REFERENCE_DIR = DOCS_SOURCE_DIR / "references"
-DOCS_REFERENCE_FILES = ["information-architecture.md"]
+DOCS_REFERENCE_FILES = ["information-architecture.md", "capability-maintenance.md"]
 DOCS_ASSET_DIR = DOCS_SOURCE_DIR / "assets"
 DOCS_ASSET_FILES = [
     "capabilities.template.md",

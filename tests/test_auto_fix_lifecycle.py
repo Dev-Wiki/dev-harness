@@ -55,7 +55,8 @@ class AutoFixLifecycleTests(fixtures.GitRepoCase):
     def reviewed(self, store):
         state = store.load()
         diff_hash = self.runtime.compute_diff_hash(state["WorkspaceSnapshot"], state["ChangedFiles"])
-        store.checkpoint("review", review_mode="self", review_outcome="pass", review_diff_hash=diff_hash)
+        store.checkpoint("review", review_mode="self", review_outcome="pass", review_diff_hash=diff_hash,
+                         documentation_check=self.documentation_check(store))
         return diff_hash
 
     def finalized(self, store):

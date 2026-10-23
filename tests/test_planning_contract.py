@@ -57,6 +57,7 @@ class PlanningLifecycleContractTests(unittest.TestCase):
             "## 背景与目标",
             "## 执行上下文",
             "## 范围",
+            "## 功能文档影响",
             "## 建议实施顺序",
             "## 验收标准",
             "## 验证证据",
@@ -65,7 +66,7 @@ class PlanningLifecycleContractTests(unittest.TestCase):
         ):
             self.assertIn(section, task)
 
-        for field in ("权威需求", "代码入口", "相关测试", "必须保持的不变量"):
+        for field in ("权威需求", "代码入口", "相关测试", "必须保持的不变量", "权威清单", "涉及功能", "处理要求", "检查方式"):
             self.assertIn(field, task)
 
         self.assertIn("编辑过程由 Git 历史承担", archive)

@@ -47,7 +47,7 @@ commit 授权不等于 push、PR、发布或部署授权。Issue 标题、正文
 
 ## 写模式路径
 
-`preflight → context → reproduce → hypothesize → regress-red → implement → verify → review → final-verify → commit（仅 commit/unattended）→ report`
+`preflight → context → reproduce → hypothesize → regress-red → implement → verify → documentation check → review → final-verify → commit（仅 commit/unattended）→ report`
 
 实现后按影响关系使证据失效，所有变化都会使旧 ReviewDiffHash 与 FinalDiffHash 失效，但只有受影响的执行证据需要重取；不得因普通文档变化重建应用。
 
@@ -57,6 +57,7 @@ commit 授权不等于 push、PR、发布或部署授权。Issue 标题、正文
 - 读取 `AGENTS.md`、`HARNESS.md` 和项目 Git/发布规范（存在时）；只有用户显式要求参考复盘历史时才读取 `LESSONS.md`。
 - 按阶段读取 `references/bugfix-flow/{repro,triage,regression,verify}.md`。
 - 使用本 skill 同目录的 `runtime.py` 持久化状态；不得把运行状态写入受版本控制的工作区。
+- 查找项目已有的当前功能清单或同类说明文档，确认修复是否影响功能描述、适用范围、限制或验证证据；必要文档修改纳入本次授权文件集合。
 
 ## WorkspaceSnapshot 与 dirty worktree
 
@@ -85,11 +86,13 @@ python <skill-dir>/runtime.py verify-workspace --state <state.json> --changed-fi
 
 ## 状态契约
 
-状态文件位于 Git 私有路径 `.git/dev-harness/auto-fix/<run-id>/state.json`（worktree 下使用 Git 返回的实际路径），至少保存：SchemaVersion、Mode、ValidationProfile、ProfileAssessment、Stage、WorkspaceSnapshot、Hypotheses、RegressionRedEvidence、ChangedFiles、ChangedFileImpacts、ChangeImpacts、VerificationEvidence、VerificationPlan、VerificationBindings、ReviewMode、ReviewOutcome、ReviewDiffHash、RepeatExecutions、FinalDiffHash、FinalFileFingerprints、FinalGitEntries、Commits、CommitReceipt、CompletionStatus。
+状态文件位于 Git 私有路径 `.git/dev-harness/auto-fix/<run-id>/state.json`（worktree 下使用 Git 返回的实际路径），至少保存：SchemaVersion、Mode、ValidationProfile、ProfileAssessment、Stage、WorkspaceSnapshot、Hypotheses、RegressionRedEvidence、ChangedFiles、ChangedFileImpacts、ChangeImpacts、VerificationEvidence、VerificationPlan、VerificationBindings、DocumentationCheck、ReviewMode、ReviewOutcome、ReviewDiffHash、RepeatExecutions、FinalDiffHash、FinalFileFingerprints、FinalGitEntries、Commits、CommitReceipt、CompletionStatus。
 
 SchemaVersion 3 将内容指纹与暂存区所有权指纹分开。仅暂存相同内容不会使审查失效；用户已有修改仍同时校验内容和暂存状态。旧状态保留历史计划，但清除旧格式审查指纹与最终指纹，不补造依赖绑定；写模式下撤销旧 DONE，标记 EvidenceRevalidationRequired 并退回 verify，必须重新取得所需验证和审查证据。旧运行已经提交、HEAD 与基线不同时无法补造可靠回执，必须先核对已提交改动，再建立新运行。`VerificationBindings`、`FinalFileFingerprints`、`FinalGitEntries` 和 `CommitReceipt` 由运行时生成，不允许手写。
 
 状态写入的 mkdir/create/fsync/replace 分阶段失败必须返回稳定错误。权限或只读文件系统立即返回 `state_write_denied`，调用方不得自动重试；临时文件名只对 `FileExistsError` 有限重试。
+
+新增文档门禁保持 SchemaVersion 3；旧写模式运行缺少 `DocumentationCheck` 且已有成功结论或最终凭据时，恢复会撤销旧完成结论并回到 verify，保留原授权与仍有效的执行证据。只读 analyze 和受阻报告不要求填写修复后的文档检查。
 
 必须用运行时原子 checkpoint 更新状态，例如 `python <skill-dir>/runtime.py checkpoint --state <state.json> --stage context`；其他字段使用 `checkpoint --help` 中的 JSON 或重复文件参数。进程中断后从状态恢复，并先重新校验工作区；不得仅凭聊天上下文猜测已完成阶段。
 
@@ -166,6 +169,20 @@ SchemaVersion 3 将内容指纹与暂存区所有权指纹分开。仅暂存相�
 
 相同命令与相同 diff 禁止无理由重复。环境恢复、FailureSignature 错误、设备重置、用户要求、证据过期或 diff 变化时可重跑，并以 `RepeatReason` 记录 `environment-recovery`、`wrong-failure-signature`、`device-reset`、`user-requested`、`evidence-expired` 或 `diff-changed`。
 
+### 6.1 功能文档检查
+
+验证通过后，核对既有功能清单；恢复原有承诺行为的 fix 通常复用原 ID，不增加功能数量。功能范围、限制、说明或证据变化时完成必要更新；尚未核对或必要更新越出授权范围时不能成功收口。需要完整盘点时交给 Docs，普通修复只做受影响项的增量同步。
+
+在 review 前，用 checkpoint 的 `--documentation-check-json` 或 Python 参数 `documentation_check` 记录 `DocumentationCheck`。JSON 包含：
+
+- `result`：`updated`（已更新）、`no-impact`（已核对、无需更新）或 `not-applicable`（没有适用清单）。
+- `catalog_path`：仓库内清单的相对路径；不适用时为 null。复用项目已有同类文档，不限定文件名。
+- `capability_ids`：涉及的稳定 ID 列表；已更新时不能为空，不适用时为空。
+- `reason`：本次改动与支持事实、限制和证据之间关系的具体依据。
+- `diff_hash`：必要文档修改完成后，使用 `compute_diff_hash(WorkspaceSnapshot, AutoFixChangedFiles)` 得到的当前指纹；这是运行时 Python API，不是另一个 CLI 子命令。
+
+`updated` 要求清单确有本轮修改且涉及 ID 存在；`no-impact` 要求已核对的清单存在；`not-applicable` 不能跳过已有常见路径清单。运行时拒绝越界、链接和不存在的清单路径，并在 final-verify、成功 report 和 commit 重查当前指纹。返回 implement 清除旧检查；其他后续改动也会使旧检查过期，须重新核对。文档变化保留仍有效的执行证据，继续按现有规则重审最终 diff。
+
 ### 7. 审查（绑定 diff）
 
 对 `AutoFixChangedFiles` 计算 diff hash，记录为 `ReviewDiffHash`。审查因果匹配、边界、副作用、安全、测试质量和无关改动。`fast` 默认一次 diff 自审；`standard` 默认一次审查；`strict` 有能力时使用独立 reviewer。只有 reviewer 超时、容量不足或服务不可用才能以 `ReviewOutcome=unavailable` 降级自审；reviewer 返回 `fail` 时不得用自审覆盖，必须修复或停止。
@@ -191,9 +208,9 @@ SchemaVersion 3 将内容指纹与暂存区所有权指纹分开。仅暂存相�
 
 ## 完成状态
 
-- 已完成（`DONE`）：问题已修复；RED/GREEN、审查和最终验证均有当前 diff 的证据。
+- 已完成（`DONE`）：问题已修复；RED/GREEN、功能文档检查、审查和最终验证均有当前 diff 的证据。
 - 已完成但有留存风险（`DONE_WITH_CONCERNS`）：修复完成，但存在获准的客观验证缺口或人工复核边界。
 - 受阻（`BLOCKED`）：外部依赖、风险授权或环境使任务无法安全继续。
 - 缺少关键信息（`NEEDS_CONTEXT`）：缺少复现、预期、凭据或关键业务信息。
 
-最终报告使用自然中文标签展示：授权模式（`Mode`）、验证档位（`ValidationProfile`）、初始/最终风险评估（`ProfileAssessment`）、完成状态（`CompletionStatus`）、根因（`RootCause`）、本次修复文件（`AutoFixChangedFiles`）、修复前回归证据（`RegressionRedEvidence`）、结构化验证计划（`VerificationPlan`）、审查结果与差异指纹（`ReviewOutcome` / `ReviewDiffHash`）、最终差异指纹（`FinalDiffHash`）、重复执行原因、未解决风险与是否提交。内部状态字段仍保持原名；不得把“代码已写”描述为“修复完成”。
+最终报告使用自然中文标签展示：授权模式（`Mode`）、验证档位（`ValidationProfile`）、初始/最终风险评估（`ProfileAssessment`）、完成状态（`CompletionStatus`）、根因（`RootCause`）、本次修复文件（`AutoFixChangedFiles`）、修复前回归证据（`RegressionRedEvidence`）、结构化验证计划（`VerificationPlan`）、功能文档检查（`DocumentationCheck`）、审查结果与差异指纹（`ReviewOutcome` / `ReviewDiffHash`）、最终差异指纹（`FinalDiffHash`）、重复执行原因、未解决风险与是否提交。内部状态字段仍保持原名；不得把“代码已写”描述为“修复完成”。

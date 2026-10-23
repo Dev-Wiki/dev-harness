@@ -16,12 +16,13 @@
 
 - [测试说明](TESTING.md)：运行测试、理解覆盖范围并检查安装/发布产物。
 - [Git 工作流](GIT_WORKFLOW.md)：本仓库的分支、提交、tag、changelog 和发布消息契约。
+- [功能清单维护](../dev-harness-docs/references/capability-maintenance.md)：首次全量盘点、日常增量同步和可重复的全量复核。
 
 ## 当前范围、设计与未来规划
 
 | 文档 | 唯一职责 | 状态 |
 |------|----------|------|
-| [产品功能清单](CAPABILITIES.md) | 当前已支持功能、适用范围、版本归属、验证方式与证据 | 当前功能权威文档 |
+| [产品功能清单](CAPABILITIES.md) | 按使用场景查看功能、支持程度、限制和入口；技术证据按需展开 | 当前功能权威文档 |
 | [V1 / VNext 与 V2 边界](V1_V2_BOUNDARIES.md) | 版本边界、明确非目标、V1 封板标准 | 版本边界权威文档 |
 | [VNext 优化与 Codebase Audit 设计方案](dev-harness%20VNext%20%E4%BC%98%E5%8C%96%E4%B8%8E%20Codebase%20Audit%20%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md) | v1.8.0 的设计依据、取舍和实施期约束 | 已实施的设计记录 |
 | [V2 Backlog](V2_BACKLOG.md) | 超出当前边界的候选功能与启动条件 | 候选池，不代表已承诺的路线图 |

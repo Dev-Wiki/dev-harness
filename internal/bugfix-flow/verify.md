@@ -89,6 +89,7 @@ TestCheck 执行前按 HARNESS 中具体命令的 DeviceRequirement 和实际环
 ## 交接边界
 
 - 为 `dev-harness-auto-fix` 提供最终完成证据（含测试通过证据）
+- 成功收口还需根流程的 DocumentationCheck；必要功能文档更新后重审最终 diff，保留仍有效的执行证据，不把文档检查替代为重复运行测试
 - 不负责新增测试用例设计（仅执行已有测试套件）
 - 若修改触及 UI、资源、原生层或打包层，必须把人工复核要求传回根流程
 - TestCommand 来自 `dev-harness-commands` 的 `harness:test` 映射

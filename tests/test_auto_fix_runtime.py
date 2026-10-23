@@ -52,6 +52,17 @@ class GitRepoCase(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
 
+    def documentation_check(self, store, *, result="not-applicable", catalog_path=None,
+                            capability_ids=None):
+        state = store.load()
+        return {
+            "result": result,
+            "catalog_path": catalog_path,
+            "capability_ids": capability_ids or [],
+            "reason": "Fixture repository has no current-function catalog; checked project documentation.",
+            "diff_hash": self.runtime._validate_state_workspace(state).diff_hash,
+        }
+
 
 class WorkspaceSnapshotTests(GitRepoCase):
     def test_allows_new_conversation_change_with_preexisting_dirty_file(self) -> None:
@@ -114,7 +125,7 @@ class WorkspaceSnapshotTests(GitRepoCase):
 
 
 class StateStoreTests(GitRepoCase):
-    def prepare_review(self, store, *, plans=None):
+    def prepare_review(self, store, *, plans=None, documentation=True):
         profile = store.load()["ValidationProfile"]
         store.checkpoint("context")
         store.checkpoint("reproduce")
@@ -132,7 +143,8 @@ class StateStoreTests(GitRepoCase):
         store.checkpoint("verify", verification={"result": "passed"}, verification_plan=plans,
                          profile_assessment=assessment)
         return store.checkpoint("review", review_mode="self", review_outcome="pass",
-                                review_diff_hash=diff_hash)
+                                review_diff_hash=diff_hash,
+                                documentation_check=self.documentation_check(store) if documentation else None)
 
     def test_report_rejects_workspace_drift_after_final_verify(self) -> None:
         store = self.runtime.AutoFixStateStore.initialize(self.repo, "run-post-final-drift", "fix")

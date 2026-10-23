@@ -19,9 +19,12 @@ python -m unittest discover -s tests -v
 - Context 写入保护：预览后的人工修改、文件替换、权限或链接变化拒绝覆盖；缺失文件独占创建，写入错误保留原文件，编码、换行与权限保持。见 `tests/test_context_write_safety.py`。
 - 规范发现：复用权威 `doc/` 或 `docs/` 根，保留有效索引优先级，冲突和越界链接需拒绝或人工处理。见 `tests/test_contract_discovery.py`。
 - Auto Fix 生命周期：依赖变化使证据失效、文档变化合理复用、终态重复检查、旧状态重验、精确暂存与提交恢复、Git 文本与权限语义、客观 skip 及已知失败不可被跳过掩盖。见 `tests/test_auto_fix_lifecycle.py`。
+- Auto Fix 功能文档门禁：缺失或过期的检查、虚构不适用、未修改的已更新声明、清单路径或 ID 不合法时拒绝成功收口；合法更新、无需更新和旧运行补验分别验证。见 `tests/test_auto_fix_documentation.py`。
 - Audit 解决证据：真实历史确认问题导入、新快照下通过验证、原确认依据保留、渲染与完成门禁、再次漂移失效。见 `tests/test_audit_resolution.py`。
 
 Planning 的文档与模板由 `tests/test_planning_contract.py` 契约测试 检查。修改其维护流程时，还应在临时仓库按 [Skill](../planning/SKILL.md) 正向演练“完成→重开→再次完成”、同名 dirty 文件内容变化，以及检查块对无重复、有重复、读取错误的退出结果；这些场景验证不由文本契约测试替代。
+
+功能清单维护流程的行为验证使用独立临时项目：首次全量盘点，应用实际功能与行为变更后增量同步，再对同一实现连续执行两次全量复核。核对旧 ID 保留、新功能查重、数量准确、未实现候选未升级、证据类型真实和覆盖结论完整；覆盖受阻时不得覆盖上一轮完整盘点记录。它是 Agent 根据实现与证据执行的功能盘点流程，不是静态代码自动识别全部功能的 CLI。流程入口见 [功能清单维护](../dev-harness-docs/references/capability-maintenance.md)。
 
 ## 1. 分层命名约定
 

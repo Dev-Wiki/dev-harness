@@ -32,6 +32,11 @@ REPEAT_REASONS = {
     "diff-changed",
 }
 CHANGE_IMPACTS = {"production", "test", "documentation", "shared-infrastructure"}
+DOCUMENTATION_RESULTS = {"updated", "no-impact", "not-applicable"}
+DEFAULT_CATALOG_PATHS = (
+    "doc/CAPABILITIES.md", "doc/product/CAPABILITIES.md",
+    "docs/CAPABILITIES.md", "docs/product/CAPABILITIES.md",
+)
 CHECK_NAMES = {"QuickCheck", "TestCheck", "BugfixCheck", "FullCheck"}
 OBJECTIVE_SKIP_REASONS = {"device-required", "ui-only", "environment-unavailable", "no-test-seam"}
 HARD_RISK_FLAGS = {
@@ -96,6 +101,20 @@ def _migrate_state(state: dict[str, Any]) -> dict[str, Any]:
     migrated.setdefault("FinalFileFingerprints", {})
     migrated.setdefault("FinalGitEntries", {})
     migrated.setdefault("CommitReceipt", None)
+    if "DocumentationCheck" not in migrated:
+        migrated["DocumentationCheck"] = None
+        if migrated.get("Mode") != "analyze" and (
+            migrated.get("CompletionStatus") in {"DONE", "DONE_WITH_CONCERNS"}
+            or migrated.get("FinalDiffHash")
+        ):
+            # Historical success or final evidence has not satisfied the new gate.
+            # Preserve authorization and still-bound command evidence for recovery.
+            migrated["CompletionStatus"] = None
+            migrated["FinalDiffHash"] = None
+            migrated["FinalFileFingerprints"] = {}
+            migrated["FinalGitEntries"] = {}
+            migrated["Stage"] = "verify"
+            migrated["EvidenceRevalidationRequired"] = True
     if version < 3:
         # Old hashes include index placement, and old executions have no dependency
         # receipt. Preserve their history without manufacturing current evidence.
@@ -121,6 +140,68 @@ def _validate_profile(profile: str, mode: str) -> None:
         raise StateTransitionError(f"unsupported ValidationProfile: {profile}")
     if mode == "unattended" and PROFILE_RANK[profile] < PROFILE_RANK["standard"]:
         raise StateTransitionError("unattended mode requires ValidationProfile standard or strict")
+
+
+def _validate_documentation_check(
+    state: dict[str, Any], check: Any, validation: WorkspaceValidation
+) -> None:
+    if not isinstance(check, dict) or set(check) != {
+        "result", "catalog_path", "capability_ids", "reason", "diff_hash"
+    }:
+        raise StateTransitionError("DocumentationCheck requires result, catalog_path, capability_ids, reason and diff_hash")
+    if not isinstance(check["result"], str) or check["result"] not in DOCUMENTATION_RESULTS:
+        raise StateTransitionError("DocumentationCheck result is invalid")
+    if not isinstance(check["reason"], str) or not check["reason"].strip():
+        raise StateTransitionError("DocumentationCheck requires a non-empty reason")
+    ids = check["capability_ids"]
+    if (not isinstance(ids, list)
+            or not all(isinstance(item, str) and item.strip() == item and item for item in ids)
+            or len(ids) != len(set(ids))):
+        raise StateTransitionError("DocumentationCheck capability_ids must be unique non-empty strings")
+    if check["diff_hash"] != validation.diff_hash:
+        raise StateTransitionError("DocumentationCheck diff_hash is stale; check the current diff again")
+    root = Path(state["WorkspaceSnapshot"]["repo_root"])
+    relative = check["catalog_path"]
+    if check["result"] == "not-applicable":
+        if relative is not None or ids:
+            raise StateTransitionError("not-applicable DocumentationCheck requires null catalog_path and no capability_ids")
+        for default in DEFAULT_CATALOG_PATHS:
+            candidate = root / default
+            removed_catalog = False
+            if default in validation.changed_files and not candidate.is_file():
+                entry = _git(root, "ls-tree", "-z", state["WorkspaceSnapshot"]["base_sha"], "--", default)
+                if entry:
+                    metadata, name = entry.rstrip(b"\0").split(b"\t", 1)
+                    removed_catalog = metadata.split()[1] == b"blob" and name.decode() == default
+            if candidate.is_file() or candidate.is_symlink() or removed_catalog:
+                raise StateTransitionError(f"DocumentationCheck cannot be not-applicable: catalog exists or was removed at {default}")
+        return
+    if (not isinstance(relative, str) or not relative.strip()
+            or "\\" in relative or "\0" in relative
+            or re.match(r"^[A-Za-z]:", relative)):
+        raise StateTransitionError("DocumentationCheck catalog_path must be a repository-relative path")
+    try:
+        paths = _normalize_paths([relative])
+    except WorkspaceDrift as exc:
+        raise StateTransitionError("DocumentationCheck catalog_path must stay inside the repository") from exc
+    if paths != (relative,) or ".git" in Path(relative).parts:
+        raise StateTransitionError("DocumentationCheck catalog_path must be a canonical project path")
+    path = root
+    for part in Path(relative).parts:
+        path = path / part
+        if path.is_symlink():
+            raise StateTransitionError("DocumentationCheck catalog_path may not contain a symlink")
+    if not path.is_file() or not path.resolve().is_relative_to(root.resolve()):
+        raise StateTransitionError("DocumentationCheck catalog_path must name an existing regular file")
+    if check["result"] == "updated":
+        if relative not in validation.changed_files or not ids:
+            raise StateTransitionError("updated DocumentationCheck requires a changed catalog and capability_ids")
+    if ids:
+        content = path.read_bytes()
+        for capability_id in ids:
+            if not re.search(rb"(?<![A-Za-z0-9._-])" + re.escape(capability_id.encode("utf-8"))
+                             + rb"(?![A-Za-z0-9._-])", content):
+                raise StateTransitionError(f"DocumentationCheck capability ID is absent from catalog: {capability_id}")
 
 
 def _validate_profile_assessment(value: dict[str, Any], profile: str) -> None:
@@ -667,6 +748,7 @@ class AutoFixStateStore:
                 "Commits": [],
                 "IssueCommentMarker": None,
                 "CompletionStatus": None,
+                "DocumentationCheck": None,
             }
         )
         return store
@@ -740,6 +822,7 @@ class AutoFixStateStore:
         commit: str | None = None,
         issue_comment_marker: str | None = None,
         completion_status: str | None = None,
+        documentation_check: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         state = self.load()
         current = state["Stage"]
@@ -871,6 +954,7 @@ class AutoFixStateStore:
             state["FinalDiffHash"] = None
             state["FinalFileFingerprints"] = {}
             state["FinalGitEntries"] = {}
+            state["DocumentationCheck"] = None
         if verification_plan is not None:
             _validate_state_workspace(state)
             _bind_verification_plan(state)
@@ -878,6 +962,10 @@ class AutoFixStateStore:
             state["FinalDiffHash"] = None
             state["FinalFileFingerprints"] = {}
             state["FinalGitEntries"] = {}
+        if documentation_check is not None:
+            validation = _validate_state_workspace(state)
+            _validate_documentation_check(state, documentation_check, validation)
+            state["DocumentationCheck"] = documentation_check
         state["Stage"] = stage
         self._validate_stage(state)
         self._write(state)
@@ -1015,6 +1103,7 @@ class AutoFixStateStore:
             return
         AutoFixStateStore._require_review(state, validation)
         AutoFixStateStore._require_verification(state)
+        _validate_documentation_check(state, state.get("DocumentationCheck"), validation)
         if stage == "final-verify":
             state["FinalDiffHash"] = validation.diff_hash
             state["FinalFileFingerprints"] = _content_fingerprints(
@@ -1059,6 +1148,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     checkpoint_parser.add_argument("--regression-red-json")
     checkpoint_parser.add_argument("--changed-file", action="append")
     checkpoint_parser.add_argument("--verification-json")
+    checkpoint_parser.add_argument("--documentation-check-json")
     checkpoint_parser.add_argument("--validation-profile", choices=sorted(VALIDATION_PROFILES))
     checkpoint_parser.add_argument("--profile-assessment-json")
     checkpoint_parser.add_argument("--verification-plan-json")
@@ -1109,6 +1199,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 (args.hypotheses_json, "hypotheses"),
                 (args.regression_red_json, "regression_red"),
                 (args.verification_json, "verification"),
+                (args.documentation_check_json, "documentation_check"),
                 (args.profile_assessment_json, "profile_assessment"),
                 (args.verification_plan_json, "verification_plan"),
                 (args.repeat_execution_json, "repeat_execution"),
