@@ -107,6 +107,20 @@ class InstallBundleTests(unittest.TestCase):
             self.assertIn("[Dashboard.md](Dashboard.md)", compatibility_redirect)
             self.assertNotIn("tasks/{任务编号}.md", compatibility_redirect)
 
+    def test_planning_runtime_handoff_is_delivered_and_linked(self) -> None:
+        source = Path(__file__).resolve().parents[1] / "planning/references/runtime-handoff.md"
+        for operation in (install.install_bundle_to_root, install.export_bundle):
+            with self.subTest(operation=operation.__name__), tempfile.TemporaryDirectory() as tmp:
+                bundle = operation(Path(tmp) / "bundle-root", ["dev-harness-planning"])
+                skill = bundle / "skills/dev-harness-planning"
+                self.assertIn(
+                    "](references/runtime-handoff.md)",
+                    (skill / "SKILL.md").read_text(encoding="utf-8"),
+                )
+                reference = skill / "references/runtime-handoff.md"
+                self.assertTrue(reference.is_file(), "Planning links to an undelivered Runtime reference")
+                self.assertEqual(reference.read_bytes(), source.read_bytes())
+
     def test_installed_docs_skill_is_self_contained(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -315,6 +329,9 @@ class InstallBundleTests(unittest.TestCase):
                 )
                 self.assertIn(
                     "skills/dev-harness-planning/references/legacy-migration.md", names
+                )
+                self.assertIn(
+                    "skills/dev-harness-planning/references/runtime-handoff.md", names
                 )
                 self.assertIn(
                     "skills/dev-harness-docs/assets/capabilities.template.md", names

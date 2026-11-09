@@ -19,13 +19,17 @@
 
 ## 已确认命令（人工维护）
 
-- **build**: `Unknown`
-- **test**: `Unknown`
-- **quick**: `Unknown`
-- **bugfix**: `Unknown`
-- **full**: `Unknown`
+| 用途 | 命令 | 状态 |
+|---|---|---|
+| build | `Unknown` | missing |
+| test | `Unknown` | missing |
+| quick | `Unknown` | missing |
+| bugfix | `Unknown` | missing |
+| full | `Unknown` | missing |
 
-复杂项目可为同一用途（Purpose）维护多条已确认记录。每条记录使用以下内部字段：`Purpose / Command / WorkingDirectory / Platform / Variant / Preconditions / DeviceRequirement / Shell / Environment / Evidence / Status`。面向读者时依次理解为用途、命令、工作目录、平台、构建变体、前置条件、设备要求、终端、环境、证据和状态；简单项目继续使用上面的单值字段。
+本区由 Commands 根据仓库证据维护；Context 不自动确认候选，也不改写已有人工确认区。确认可执行入口后才将状态改为 `confirmed`；未知或缺失入口保持 `missing`，未完成验证的候选为 `candidate`。命令单元格仅包含一段行内代码，前置条件与证据放在独立列或表外说明。
+
+多平台项目可增加工作目录、平台、构建变体、前置条件、设备要求、终端和证据列。交给 Runtime 自动执行前，每个用途须只有一条适用的 `confirmed` 记录，命令工作目录为仓库根，至少确认 test / quick / bugfix / full 中的一项。平台或设备条件尚未唯一确定时，不进入自动执行。
 
 ## 高风险目录
 - {目录1: 风险说明}

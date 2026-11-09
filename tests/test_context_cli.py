@@ -347,12 +347,12 @@ class ContextCliTests(unittest.TestCase):
             (repo_root / "package.json").write_text('{"name":"demo-repo"}', encoding="utf-8")
             self.assertEqual(main(["scan", str(repo_root)]), 0)
             harness_path = repo_root / "HARNESS.md"
+            generated = harness_path.read_text(encoding="utf-8")
+            before, remaining = generated.split("## 已确认命令（人工维护）\n", 1)
+            _, after = remaining.split("\n## 高风险目录", 1)
             harness_path.write_text(
-                harness_path.read_text(encoding="utf-8").replace(
-                    "## 已确认命令（人工维护）\n\n- **build**: `Unknown`",
-                    "## 已确认命令（人工维护）\n\n- **build**: `team-build`",
-                    1,
-                ),
+                before + "## 已确认命令（人工维护）\n\n- **build**: `team-build`\n"
+                + "\n## 高风险目录" + after,
                 encoding="utf-8",
             )
             (repo_root / "CMakeLists.txt").write_text("project(Demo)\n", encoding="utf-8")

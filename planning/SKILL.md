@@ -90,6 +90,12 @@ Use the bundled templates:
 
 Honor an existing equivalent partitioned convention instead of renaming it to match these defaults.
 
+### 交接 Runtime 自动执行
+
+只有用户要求交给 `dev-harness-runtime` 自动执行时，读取 [Runtime 交接](references/runtime-handoff.md)，按当前 Runtime 支持的 Markdown 子集和冻结声明准备 Dashboard、HARNESS 与本次任务。普通人工执行计划不要求添加 Runtime JSON。自动执行的“待执行”还要求逐项确认命令、作用范围、验收覆盖、归档路径和验证输入；不能只靠任务包正文完整就宣称可自动派发。
+
+已有计划缺少声明时，在运行开始前按 Task ID 做有界刷新，保留目标、验收与已有修改；发现需要扩大授权或改变验收时返回用户确认的规划范围，不在 Run 内补造配置或放宽验证。
+
 ## Workflow
 
 1. Resolve `<docs-root>` and inventory the existing plan without loading all historical detail.

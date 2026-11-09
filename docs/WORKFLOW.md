@@ -212,6 +212,8 @@ preflight → context → reproduce → hypothesize → profile assessment → R
 
 `dev-harness` 提供 Context、Planning、Commands、Git Workflow、Docs 等工程契约，以及 Auto Fix 和 Codebase Audit 的证据流程。需要自动执行已规划任务时，使用独立的 [`dev-harness-runtime`](https://github.com/Dev-Wiki/dev-harness-runtime)；Runtime 通过锁定的协议来源消费这些契约。
 
+交接前按 [Runtime 交接说明](../planning/references/runtime-handoff.md)核对 confirmed 命令表、Dashboard 的无阻塞值、任务独立章节与 `dhr-runtime` 冻结声明；普通人工计划不受这些自动派发格式限制。旧计划先做有界刷新，不能在已启动的 Run 中补造或放宽配置。
+
 先准备项目上下文、HARNESS、Git 规范和可执行的 Planning Task，再由 Runtime 的 `run` 入口启动指定任务、下一个 ready Task 或全部 ready Task。Core 负责资格检查、快照、授权、Worker 派发、独立验收与运行状态；Worker 按上游 Planning 契约收口当前任务。`status` 查询持久化状态，`resume` 重验边界后恢复同一 Run。默认不提交，按任务提交需明确授权。
 
 Skills Bundle 安装脚本只安装本仓库的 8 个 Skill；Runtime 插件和 `dhr` 入口需按 [Runtime 使用说明](https://github.com/Dev-Wiki/dev-harness-runtime#使用说明) 单独安装。安装产物可生成与宿主可自动执行是不同能力，具体平台支持以 [Runtime 能力矩阵](https://github.com/Dev-Wiki/dev-harness-runtime/blob/main/docs/PLATFORM_MATRIX.md) 为准。

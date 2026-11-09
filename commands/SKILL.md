@@ -35,7 +35,18 @@ description: Use when you need to standardize build, test, quick, bugfix, and fu
 
 除非用户明确要求英文，否则新建且未指定语言的文档默认使用简体中文；更新既有文档时沿用其主体语言。标题、表格、说明、验证结论和最终报告应使用中国开发团队常用的自然中文，不做生硬逐字翻译。路径、命令、代码符号、API、协议、产品名、必要缩写和以下内部字段或枚举保持原样；首次出现且容易误解时，可补充简短中文解释。此规则只约束本次新建或更新的内容，不借机翻译无关正文。
 
-简单项目可以继续使用单值字段；多平台、多设备或多 Variant 项目使用命令记录列表。同一个语义入口允许有多条已确认记录，但必须能由 Platform / Variant 唯一选择。
+新建或整理人工确认区时，使用一个 `## 已确认命令（人工维护）` 二级标题与顶层 Markdown 表格，至少包含 `用途 / 命令 / 状态` 列。命令单元格只放一段行内代码；说明、条件和证据使用独立列或表外文字。状态使用 `candidate / confirmed / missing`，不会因为位于“已确认命令”标题下就自动获得执行资格。
+
+多平台、多设备或多 Variant 项目可以增加记录，但须能由 Platform / Variant 唯一选择。既有单值字段继续供人工工作流读取；交给 Runtime 自动执行前，将本次所需且有证据的入口整理为表格，不根据旧列表标题或自动识别结果批量确认命令。保留原条件、证据与编码格式，迁移不能借机扩大命令权限。
+
+```markdown
+| 用途 | 命令 | 状态 |
+|---|---|---|
+| test | `node --test` | confirmed |
+| build | `Unknown` | missing |
+```
+
+这里的 `node --test` 仅为格式示例，不能替代目标仓库证据。当前 Runtime 声明要求每个用途唯一、命令从仓库根运行，并至少有一个 `test / quick / bugfix / full` 用途；它不会按额外的平台列选择重复用途。自动执行使用 literal argv，不执行 `source`、环境赋值、管道、重定向、`&&` 或 shell 展开；需要这些条件时，先记录仓库已有且等价的独立入口，并确认 Adapter 的工具链和依赖可用，无法确认则保留缺口。
 
 每条命令记录至少包含：
 
@@ -49,7 +60,7 @@ description: Use when you need to standardize build, test, quick, bugfix, and fu
 - **证据（Evidence）**：真实文件、配置或成功执行证据
 - **状态（Status）**：`candidate / confirmed / missing`
 
-兼容的单值字段仍为 **BuildCommand**、**TestCommand**、**QuickCommand**、**BugfixCommand** 和 **FullCommand**；同时报告 **MissingCommands**。
+兼容的单值字段仍为 **BuildCommand**、**TestCommand**、**QuickCommand**、**BugfixCommand** 和 **FullCommand**；同时报告 **MissingCommands**。它们不替代表格形式的 Runtime 执行契约。
 
 ## 统一命名约定
 

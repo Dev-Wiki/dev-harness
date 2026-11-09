@@ -53,14 +53,25 @@ AI Agent 在执行构建、测试或验证命令前必须先读取该文件，�
 - **full**: `<自动识别候选或 Unknown>`
 
 ## 已确认命令（人工维护）
-- **build**: `<真实构建命令或 Unknown>`
-- **test**: `<真实测试命令、device-required 或 Unknown>`
-- **quick**: `<真实快速验证命令或 Unknown>`
-- **bugfix**: `<真实问题专项验证命令或 Unknown>`
-- **full**: `<真实完整验证命令或 Unknown>`
+
+| 用途 | 命令 | 状态 |
+|---|---|---|
+| build | `Unknown` | missing |
+| test | `Unknown` | missing |
+| quick | `Unknown` | missing |
+| bugfix | `Unknown` | missing |
+| full | `Unknown` | missing |
 ```
 
 自动识别结果只作为候选；`dev-harness-context` 按该固定标题刷新候选章节，`dev-harness-commands` 只能更新“已确认命令（人工维护）”，不得写入或覆盖候选章节。执行时以已确认命令为准；仍为 `Unknown` 时必须停止并补齐，不能直接执行候选。
+
+### 交给 Runtime 自动执行
+
+只有根据真实入口与证据确认的命令才改为 `confirmed`。命令单元格只含一段行内代码；前置条件、设备要求和证据放在额外列或表外说明。`Unknown`、`Missing`、`N/A` 与 `candidate` 不可自动执行。
+
+旧版列表和 BuildCommand 等字段仍可供人工工作流使用；Context 刷新会保留它们。迁移 Runtime 前由 Commands 按证据整理成人工确认表，不能把旧标题或自动识别候选当作批量确认依据。当前 Runtime 要求同一用途唯一、验证工作目录为仓库根，至少确认 test / quick / bugfix / full 之一；它不会根据额外平台列选择重复用途。
+
+自动执行命令使用 literal argv，不解释 `source`、环境赋值、管道、重定向、`&&` 或 shell 展开。需要虚拟环境时，先确认 Adapter 的工具链、依赖与受控验证环境确实支持；改写命令不授予新的挂载或读取权限。自动执行任务还需 [Runtime 交接声明](../planning/references/runtime-handoff.md)，普通人工计划无需添加该声明。
 
 ### 推荐包含的字段
 

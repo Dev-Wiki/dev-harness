@@ -139,7 +139,7 @@ dev-harness 帮助团队统一项目规则、安排开发任务、验证交付�
 - **工程条件**：首次初始化项目
 - **验证方式**：自动化测试 + 代码证据
 - **证据**：[tests/test_context_cli.py](../tests/test_context_cli.py)；[tests/test_context_write_safety.py](../tests/test_context_write_safety.py)；[tests/test_install.py](../tests/test_install.py)
-- **技术详情**：`scan` 以独占创建方式补齐缺失的 README、AGENTS、ARCHITECTURE、HARNESS，拒绝链接目标并保留已有同名文件；详细规则见 [Context 契约](../context/SKILL.md)。
+- **技术详情**：`scan` 以独占创建方式补齐缺失的 README、AGENTS、ARCHITECTURE、HARNESS，拒绝链接目标并保留已有同名文件；新 HARNESS 的人工区使用命令表，状态初始为 `missing`，候选不会自动获得执行资格。格式与旧人工区保留回归见 [交接测试](../tests/test_runtime_handoff.py)；详细规则见 [Context 契约](../context/SKILL.md)。
 
 </details>
 
@@ -447,7 +447,7 @@ dev-harness 帮助团队统一项目规则、安排开发任务、验证交付�
 - **支持状态**：已支持
 - **适用范围**：规划与开发由不同人员或不同会话承担的团队
 - **使用入口**：[开发任务工作流](WORKFLOW.md#4-新功能交付工作流)
-- **使用限制**：材料不齐时保持规划中；自动执行前须把必要文档修改和检查纳入任务范围。
+- **使用限制**：材料不齐时保持规划中；交给 Runtime 自动执行还需准备其支持的计划格式、命令表与冻结声明，必要文档修改和检查纳入任务范围。普通人工计划无需 Runtime 声明。
 - **版本归属**：v1.11.3 起支持；v1.12.0 增强
 
 <details>
@@ -458,7 +458,7 @@ dev-harness 帮助团队统一项目规则、安排开发任务、验证交付�
 - **工程条件**：规划与执行分属不同对话或外部工作流的项目
 - **验证方式**：契约测试 + 模板安装测试
 - **证据**：[tests/test_planning_contract.py](../tests/test_planning_contract.py)；[tests/test_install.py](../tests/test_install.py)；[planning/templates/Task.template.md](../planning/templates/Task.template.md)
-- **技术详情**：用 `规划中` 与 `待执行` 区分任务包完整性，并在单任务执行包中固定权威需求、代码与测试入口、不变量、已确认决策和停止条件；就绪前声明功能文档影响与授权路径，验收包含文档检查；详细规则见 [Planning 契约](../planning/SKILL.md)。
+- **技术详情**：用 `规划中` 与 `待执行` 区分任务包完整性，并在单任务执行包中固定权威需求、代码与测试入口、不变量、已确认决策和停止条件；就绪前声明功能文档影响与授权路径，验收包含文档检查。自动执行的命令、范围、验收覆盖和归档输入按 [Runtime 交接](../planning/references/runtime-handoff.md) 准备，格式样例由 [交接测试](../tests/test_runtime_handoff.py) 检查；详细规则见 [Planning 契约](../planning/SKILL.md)。
 
 </details>
 
@@ -486,7 +486,7 @@ dev-harness 帮助团队统一项目规则、安排开发任务、验证交付�
 - **工程条件**：已存在真实构建或验证入口的项目；无独立构建可记为 N/A
 - **验证方式**：契约测试 + 契约证据
 - **证据**：[tests/test_vnext_contract.py](../tests/test_vnext_contract.py)；[commands/SKILL.md](../commands/SKILL.md)
-- **技术详情**：把仓库真实命令映射为稳定的 `build / test / quick / bugfix / full` 语义入口，支持 Platform / Variant 多记录；单条命令缺口不阻止其他已确认记录写入 HARNESS 人工确认区；详细规则见 [Commands 契约](../commands/SKILL.md)。
+- **技术详情**：把仓库真实命令映射为稳定的 `build / test / quick / bugfix / full` 语义入口，支持 Platform / Variant 多记录；单条命令缺口不阻止其他已确认记录写入 HARNESS 人工确认区。新维护的人工区采用带状态的表格，旧列表交接 Runtime 前按证据迁移，并核对唯一用途与 literal argv 限制；详细规则见 [Commands 契约](../commands/SKILL.md)。
 
 </details>
 

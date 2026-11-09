@@ -51,6 +51,7 @@ Context 采用三层职责，不以硬编码 profile 作为项目识别白名单
 - 每个 AI 结论必须标记 `high`、`medium` 或 `low` 置信度；低置信度结论只能进入“需人工确认”，不得渲染成事实
 - build / run / test / quick / bugfix / full 等命令没有仓库内证据时必须拒绝，不得用生态惯例猜测
 - install、build、run、test、quick、bugfix、full 必须按真实语义区分；依赖安装不得冒充构建
+- 首次创建 HARNESS 时，人工确认区使用 `用途 / 命令 / 状态` 表格，未知入口保留 `missing`；自动识别只更新候选区。刷新保留既有人工区，包括旧列表；Runtime 交接前由 Commands 按证据整理，不在 Context 中自动确认或迁移。
 - 证据明细保留在分析 JSON 中，不得把 `AI field[index] [confidence]` 等内部审计字段写入 AGENTS/HARNESS
 - AI 分析必须绑定 `evidence_fingerprint`；仓库在分析后发生漂移时必须重新扫描，不得写入旧结论
 - 每个证据引用都必须位于 `fingerprint_files` 覆盖范围；目录引用至少包含一个已纳入快照的后代文件。被排除、空目录或未纳入指纹的路径不能作为写入事实的证据。
