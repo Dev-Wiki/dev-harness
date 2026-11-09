@@ -226,6 +226,8 @@ dev-harness/
 
 ## V1 / V2 Boundary
 
+v1.12.1 clarifies validation ownership: Auto Fix selects checks based on actual impact, projects define commands and mandatory gates, and the Context AGENTS template keeps only brief defaults. Strict validation does not automatically require repository-wide regression, and valid evidence can be reused. The release also aligns Planning and Commands with Runtime command-table and task-declaration requirements. See the [changelog](../CHANGELOG.md).
+
 v1.12.0 adds an initial full feature inventory, per-delivery incremental updates, and repeatable full reconciliation. The capability catalog leads with user goals, scope, limitations, and usage links, with technical evidence in expandable details. Planning packets declare documentation impact before execution; Auto Fix requires a current-diff-bound documentation decision before successful completion or commit. Older successful or finalized write-mode runs without that decision return to verification while preserving valid execution evidence. See the [capability-maintenance workflow](../dev-harness-docs/references/capability-maintenance.md) and [upgrade guidance](BUGFIX_GUIDE.md). The V1 / VNext boundary remains unchanged.
 
 v1.11.8 distributes ready-to-use skills in the versioned zip, with source code and repository maintenance documentation kept in the corresponding source archive. The installation guide distinguishes source-and-script installation from copying the dist package into a host's skills directory. Skill capabilities and the V1 / VNext boundary remain unchanged.

@@ -18,7 +18,7 @@
 - **QuickCheck**：最快反馈命令（构建/编译检查）
 - **TestCheck**：自动化测试执行命令（平台门控，见下方规则）
 - **BugfixCheck**：本次问题专属验证命令
-- **FullCheck**：完整回归命令
+- **FullCheck**：仅在本轮确有完整回归义务时列入；命令范围以 HARNESS 的真实定义为准
 - **PassCriteria**：通过标准
 - **FailureReport**：失败时至少需要记录的信息
 - **FreshVerificationEvidence**：绑定当前 diff hash 的命令、时间、退出码和关键输出
@@ -26,6 +26,15 @@
 - **RepeatReason**：同一 diff 重复相同命令时的枚举化理由
 - **TestSkipReason**：若 TestCheck 被跳过，必须记录跳过原因
 - **ManualReviewBoundary**：UI、资源、原生层、打包层中哪些必须人工确认
+
+### 验证范围与全仓回归
+
+- 先把行为变化、调用者、依赖、数据和接口传播路径映射到证明义务，选择能覆盖它们的最小充分验证集合。`strict` 和 `shared-infrastructure` 决定证据严谨度与失效规则，不能单独决定运行全仓测试。
+- 默认先做专项和受影响模块验证。发现跨模块影响、失败或覆盖缺口时，补充能验证该风险的集成或更大范围测试；影响不明时先检查依赖与调用关系，不能只写“保险起见”就扩大到全仓。
+- 全仓回归须有以下至少一项依据：用户明确要求；项目契约对当前任务规定了全仓门禁；已确认风险无法被较小验证集合覆盖（例如影响全仓的公共契约变化，或现有测试无法隔离受影响范围）。在 `ProfileAssessment.reasons` 中记录要求来源或缺口，以及为何专项、模块或集成验证不足。
+- `HARNESS.md` 定义了 full 命令不代表每次修复都要执行。按真实命令边界判断是否属于全仓；不能把局部测试改名为 full，也不能把“完整适用验证”自动解释为 HARNESS 的 full。没有 FullCheck 义务时从 required_checks 中省略，不伪造通过或 skipped。
+- 已有验证覆盖全部义务且证据仍有效时停止增加或重复命令。共享基础设施使旧证据失效后，重新取得本轮所需证据即可，不自动增加检查范围。未执行且不适用的检查不是验证缺口。
+- 修复和提交不自动授权构建部署包、发布或部署；必要编译使用对应验证入口。不得仅为执行其内嵌测试而启动发布打包入口。
 
 ### 测试执行条件
 
@@ -69,8 +78,8 @@ TestCheck 执行前按 HARNESS 中具体命令的 DeviceRequirement 和实际环
 5. 每个命令记录输入、输出、日志、错误码、环境、时间和当前 diff hash
 6. 相同 command 与 diff_hash 禁止无理由重复；允许的 RepeatReason 为 `environment-recovery`、`wrong-failure-signature`、`device-reset`、`user-requested`、`evidence-expired`、`diff-changed`
 7. `fast` 默认预算为一次有效 RED、一次 GREEN、一次未被 GREEN 覆盖的必要编译；预算外执行必须有 RepeatReason
-8. review 后若 FinalDiffHash 等于 ReviewDiffHash，且档位为 fast/standard、required_checks 已覆盖，则只做工作区与 hash 终检，不重复执行耗时命令
-9. `strict` 按最终评估执行必要 FullCheck；没有必要的 full 义务时不得为了流程形式堆命令
+8. review 后若 FinalDiffHash 等于 ReviewDiffHash、依赖与环境及证据有效期仍满足要求、required_checks 已覆盖，则所有档位（包括 strict）只做工作区、依赖绑定与 hash 终检，不重复执行耗时命令
+9. `strict` 按最终评估补齐尚未覆盖的必要 FullCheck；没有必要的 full 义务时不得为了流程形式堆命令
 10. 最终 diff hash 与 ReviewDiffHash 不一致时，审查无效；按影响关系只清除受影响证据，再回到 verify/review
 
 ## 停止条件

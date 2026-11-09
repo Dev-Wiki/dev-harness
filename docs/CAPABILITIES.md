@@ -30,12 +30,12 @@ dev-harness 帮助团队统一项目规则、安排开发任务、验证交付�
 
 ## 汇总
 
-仓库 [VERSION](../VERSION) 为 `v1.12.0`，包含本次功能盘点流程、阅读格式和完成检查增强。下表分别统计当前开发版本与本次发布范围，版本内容见 [CHANGELOG](../CHANGELOG.md#v1120--2026-10-23)，发行状态以 [GitHub Releases](https://github.com/Dev-Wiki/dev-harness/releases) 为准。
+仓库 [VERSION](../VERSION) 为 `v1.12.1`，本版明确验证范围与项目门禁的职责分工，并对齐 Runtime 自动执行交接要求，功能数量不变。下表分别统计当前开发版本与本次发布范围，版本内容见 [CHANGELOG](../CHANGELOG.md#v1121--2026-11-09)，发行状态以 [GitHub Releases](https://github.com/Dev-Wiki/dev-harness/releases) 为准。
 
 | 版本范围 | 已支持 | 部分支持 | 试验性 | 已弃用 |
 |---|---:|---:|---:|---:|
-| 当前开发版本（v1.12.0） | 36 | 0 | 0 | 0 |
-| 本次发布范围（v1.12.0） | 36 | 0 | 0 | 0 |
+| 当前开发版本（v1.12.1） | 36 | 0 | 0 | 0 |
+| 本次发布范围（v1.12.1） | 36 | 0 | 0 | 0 |
 
 待确认和已移除项不计入已支持数量。分类、任务、页面和测试数量不作为功能数量。
 
@@ -139,7 +139,7 @@ dev-harness 帮助团队统一项目规则、安排开发任务、验证交付�
 - **工程条件**：首次初始化项目
 - **验证方式**：自动化测试 + 代码证据
 - **证据**：[tests/test_context_cli.py](../tests/test_context_cli.py)；[tests/test_context_write_safety.py](../tests/test_context_write_safety.py)；[tests/test_install.py](../tests/test_install.py)
-- **技术详情**：`scan` 以独占创建方式补齐缺失的 README、AGENTS、ARCHITECTURE、HARNESS，拒绝链接目标并保留已有同名文件；新 HARNESS 的人工区使用命令表，状态初始为 `missing`，候选不会自动获得执行资格。格式与旧人工区保留回归见 [交接测试](../tests/test_runtime_handoff.py)；详细规则见 [Context 契约](../context/SKILL.md)。
+- **技术详情**：`scan` 以独占创建方式补齐缺失的 README、AGENTS、ARCHITECTURE、HARNESS，拒绝链接目标并保留已有同名文件；默认 AGENTS 包含按影响范围验证、全仓回归须有依据和复用有效证据的约束。新 HARNESS 的人工区使用命令表，状态初始为 `missing`，候选不会自动获得执行资格。格式与旧人工区保留回归见 [交接测试](../tests/test_runtime_handoff.py)；详细规则见 [Context 契约](../context/SKILL.md)。
 
 </details>
 
@@ -163,7 +163,7 @@ dev-harness 帮助团队统一项目规则、安排开发任务、验证交付�
 - **工程条件**：固定标题结构有效的已初始化项目
 - **验证方式**：自动化测试
 - **证据**：[tests/test_context_cli.py](../tests/test_context_cli.py)；[tests/test_managed_context.py](../tests/test_managed_context.py)；[tests/test_context_write_safety.py](../tests/test_context_write_safety.py)
-- **技术详情**：`refresh` 只更新固定 Markdown 章节，保留人工内容、编码、换行和权限；结构异常或预览后目标变化时拒绝写入；非交互且未使用 `--force` 时仅预览；详细规则见 [Context 契约](../context/SKILL.md)。
+- **技术详情**：`refresh` 只更新固定 Markdown 章节，保留这些章节之外的人工内容、编码、换行和权限；固定章节按模板整段替换，Agent 预览发现人工规则将丢失时先跳过该文件的刷新，不能依赖 Writer 自动合并。结构异常或预览后目标变化时拒绝写入；非交互且未使用 `--force` 时仅预览；详细规则见 [Context 契约](../context/SKILL.md)。
 
 </details>
 
@@ -686,7 +686,7 @@ dev-harness 帮助团队统一项目规则、安排开发任务、验证交付�
 - **工程条件**：fast / standard / strict 修复；风险不明时 fail-safe，保留客观验证缺口
 - **验证方式**：运行时测试 + 契约测试
 - **证据**：[tests/test_auto_fix_runtime.py](../tests/test_auto_fix_runtime.py)；[tests/test_auto_fix_lifecycle.py](../tests/test_auto_fix_lifecycle.py)；[tests/test_auto_fix_contract.py](../tests/test_auto_fix_contract.py)；[auto-fix/SKILL.md](../auto-fix/SKILL.md)
-- **技术详情**：授权 Mode 与验证档位正交；按实际依赖使证据失效或复用，文档变化仍要求重审；已知失败只能由同命令/检查的新通过证据清除，状态写入权限失败快速终止；详细规则见 [Auto Fix 契约](../auto-fix/SKILL.md)。
+- **技术详情**：授权 Mode 与验证档位正交；技能要求按实际影响选择验证范围，strict 或共享基础设施分类不单独触发全仓回归，全仓须记录明确要求或较小范围不足的证据。运行时按依赖使证据失效或复用，文档变化仍要求重审；已知失败只能由同命令/检查的新通过证据清除，状态写入权限失败快速终止；详细规则见 [Auto Fix 契约](../auto-fix/SKILL.md)。
 
 </details>
 
