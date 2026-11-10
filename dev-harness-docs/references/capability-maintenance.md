@@ -1,5 +1,7 @@
 # 产品功能清单维护
 
+[简体中文](capability-maintenance.md) | [English](capability-maintenance.en.md)
+
 用于首次盘点已经实现的功能、每次交付后的增量同步，以及反复全量复核。核对“当前支持什么”，不执行代码质量审计，也不从看板完成状态推断支持情况。
 
 ## 选择环节

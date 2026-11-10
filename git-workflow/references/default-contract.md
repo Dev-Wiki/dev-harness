@@ -1,5 +1,7 @@
 # 可确认的默认 Git 契约
 
+[简体中文](default-contract.md) | [English](default-contract.en.md)
+
 仅当仓库缺少相应主题的权威规范，并且用户已经明确接受默认值时，才使用本参考。
 
 ## 分支和提交

@@ -1,5 +1,7 @@
 # dev-harness 产品功能清单
 
+[简体中文](CAPABILITIES.md) | [English](CAPABILITIES.en.md)
+
 dev-harness 帮助团队统一项目规则、安排开发任务、验证交付结果，并在项目变化后维护文档。你可以先按目标查找功能，再展开对应的技术证据。
 
 本文件是当前已支持功能的权威维护文档，覆盖本仓库的 8 个工程助手（Skill）及安装分发。[Runtime](https://github.com/Dev-Wiki/dev-harness-runtime) 的自动执行、恢复和平台能力由其仓库维护，不计入本清单。未来候选见 [V2 Backlog](V2_BACKLOG.md)，版本边界见 [范围说明](V1_V2_BOUNDARIES.md)，版本变化见 [CHANGELOG](../CHANGELOG.md)。

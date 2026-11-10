@@ -1,5 +1,7 @@
 # HARNESS — dev-harness 仓库验证契约
 
+[简体中文](HARNESS.md) | [English](HARNESS.en.md)
+
 命令在仓库根目录执行，要求 Python 3 与 Git。验证入口来自 [测试说明](docs/TESTING.md)；本仓库的 Python 源码与 Skill 文档无需单独编译。
 
 ## 已确认命令（人工维护）

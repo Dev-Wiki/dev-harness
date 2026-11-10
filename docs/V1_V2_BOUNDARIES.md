@@ -1,5 +1,7 @@
 # V1 / VNext 与 V2 边界
 
+[简体中文](V1_V2_BOUNDARIES.md) | [English](V1_V2_BOUNDARIES.en.md)
+
 > 文档角色：本文件是 V1 / VNext 与 V2 版本边界、非目标和封板标准的唯一事实源。
 > 当前已支持功能、适用范围、版本归属和验证证据以 [`CAPABILITIES.md`](CAPABILITIES.md) 为准；[`dev-harness VNext 优化与 Codebase Audit 设计方案`](dev-harness%20VNext%20%E4%BC%98%E5%8C%96%E4%B8%8E%20Codebase%20Audit%20%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md) 记录 v1.8.0 的设计依据；[`V2_BACKLOG.md`](V2_BACKLOG.md) 只记录未来候选。
 

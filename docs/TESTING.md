@@ -1,5 +1,7 @@
 # TESTING
 
+[简体中文](TESTING.md) | [English](TESTING.en.md)
+
 用于约定 bugfix harness 的分层验证方式。目标不是“多跑测试”，而是让 AI 和人工都知道每条命令分别证明什么。
 
 ## dev-harness 仓库自身验证

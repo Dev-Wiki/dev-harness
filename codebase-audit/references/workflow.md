@@ -1,5 +1,7 @@
 # 代码库审计流程
 
+[简体中文](workflow.md) | [English](workflow.en.md)
+
 本文件定义长任务的阶段、checkpoint 和 fail-closed 门禁。语义判断由 AI 完成；快照、状态和路径边界由 `runtime.py` 执行。
 
 ## 运行不变量

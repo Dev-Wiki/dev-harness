@@ -1,5 +1,7 @@
 # CLIENT_PROJECT_ONBOARDING
 
+[简体中文](CLIENT_PROJECT_ONBOARDING.md) | [English](CLIENT_PROJECT_ONBOARDING.en.md)
+
 用于把一个从未做过 AI 工程化的客户端项目接入 `dev-harness`。
 
 ## 1. 接入目标

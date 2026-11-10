@@ -60,6 +60,27 @@ class InstallBundleTests(unittest.TestCase):
             self.assertEqual(agents.read_text(encoding="utf-8"), "# Existing agent rules\n")
             self.assertFalse((bundle_root / "LESSONS.md").exists())
 
+    def test_english_usage_references_survive_install_and_export(self) -> None:
+        resources = {
+            "dev-harness-commands": ("commands", ("platform-command-mapping", "windows-shell")),
+            "dev-harness-planning": ("planning", ("legacy-migration", "runtime-handoff")),
+            "dev-harness-docs": ("dev-harness-docs", ("information-architecture", "capability-maintenance")),
+            "dev-harness-git-workflow": ("git-workflow", ("default-contract",)),
+            "dev-harness-codebase-audit": ("codebase-audit", ("workflow", "partitioning", "finding-contract", "cross-module-review", "runtime-interface")),
+        }
+        source_root = Path(__file__).resolve().parents[1]
+        for operation in (install.install_bundle_to_root, install.export_bundle):
+            with self.subTest(operation=operation.__name__), tempfile.TemporaryDirectory() as tmp:
+                bundle = operation(Path(tmp) / "bundle-root")
+                for skill, (directory, names) in resources.items():
+                    for name in names:
+                        relative = f"references/{name}.en.md"
+                        self.assertEqual(
+                            (bundle / "skills" / skill / relative).read_bytes(),
+                            (source_root / directory / relative).read_bytes(),
+                            f"English reference missing or changed: {skill}/{relative}",
+                        )
+
     def test_installed_context_templates_are_skill_local(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -309,7 +330,7 @@ class InstallBundleTests(unittest.TestCase):
                 names = set(zf.namelist())
                 self.assertEqual(
                     {name.split("/")[0] for name in names},
-                    {"skills", "README.md", "README.en.md", "VERSION", "CHANGELOG.md"},
+                    {"skills", "README.md", "README.en.md", "VERSION", "CHANGELOG.md", "CHANGELOG.en.md"},
                 )
                 exported_skills = {
                     path.relative_to(dist_dir / "bundle").as_posix(): path

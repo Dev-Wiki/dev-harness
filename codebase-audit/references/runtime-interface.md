@@ -1,5 +1,7 @@
 # 批量执行与文档生成
 
+[简体中文](runtime-interface.md) | [English](runtime-interface.en.md)
+
 `runtime.py --help` 是命令事实源；本页定义结构化输入，通常无需读取 runtime 源码。旧单项命令保留兼容；新运行优先用 `batch`、`validate-outputs`、`render-output`。它们不降低 Finding 验证、漂移或跨模块门禁。
 
 ## 命令与输入

@@ -174,7 +174,7 @@ dev-harness 不以覆盖完整 SDLC 或堆叠通用开发教程为目标，也�
 
 ## 语言支持范围
 
-中英文 README 提供对应的项目概览、工作流、安装、Skill、权威边界和文档导航。专题指南在[英文文档索引](docs/README.en.md)中标注语言，目前多数为中文；详细行为仍以链接指向的专题文档为准。
+中英文 README、用户指南、功能清单、版本与升级说明、进阶参考及贡献者文档均提供对应正文，入口见[英文文档索引](docs/README.en.md)。历史设计、原始验证记录和 Agent 内部执行契约保留原文并标注语言；详细行为仍以链接指向的专题文档为准。
 
 多个 Skill 支持显式要求英文报告；Codebase Audit 的双语渲染器支持 `output_language=zh-CN/en`。完整英文项目契约与 Runtime Planning 尚未支持：Context 生成与刷新，以及 Runtime 的 Planning 和验收检查，仍依赖固定中文标题或标签。准备 Runtime 任务时须保留这些结构标签，英文提示词不会自动让所有产物改用英文。
 

@@ -1,5 +1,7 @@
 # dev-harness 端到端工作流
 
+[简体中文](WORKFLOW.md) | [English](WORKFLOW.en.md)
+
 > 本文说明现有八个 Skills 如何组合完成新功能交付或代码库审计；各 Skill 的精确行为、授权和状态仍以对应 `SKILL.md` 与 runtime 为准。
 >
 > 当前已支持功能以 [产品功能清单](CAPABILITIES.md) 为权威文档，版本边界与非目标见 [V1 / VNext 与 V2 边界](V1_V2_BOUNDARIES.md)。Planning Task 的自动执行由 [`dev-harness-runtime`](https://github.com/Dev-Wiki/dev-harness-runtime) 承担；本文说明与 Skills Bundle 的协作边界，Runtime 的平台能力和任务进度由其仓库维护。

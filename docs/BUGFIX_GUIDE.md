@@ -1,5 +1,7 @@
 # BUGFIX_GUIDE
 
+[简体中文](BUGFIX_GUIDE.md) | [English](BUGFIX_GUIDE.en.md)
+
 用于统一项目中 bugfix harness 的记录格式，减少 AI 与人工在复现和定位时需要读取的上下文。
 
 ## 1. Bug 描述模板

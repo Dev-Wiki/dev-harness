@@ -1,5 +1,7 @@
 # 平台命令映射指南
 
+[简体中文](platform-command-mapping.md) | [English](platform-command-mapping.en.md)
+
 仅在仓库证据已经识别出相关平台后读取本指南。以下内容只是映射启发，不是命令存在或可执行的证据。
 
 ## 桌面端与原生项目

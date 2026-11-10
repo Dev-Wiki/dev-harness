@@ -1,5 +1,7 @@
 # 旧版单体计划迁移
 
+[简体中文](legacy-migration.md) | [English](legacy-migration.en.md)
+
 当既有 `TaskDetails.md` 与 Dashboard 重复维护活跃状态、超过 Planning 容量护栏，或用户要求拆分任务、归档历史时，读取本参考。
 
 迁移必须保留每段任务正文和每条有意义的链接。目标是缩短活跃读取路径，而不是通过摘要丢弃历史。

@@ -1,5 +1,7 @@
 # 文档信息架构
 
+[简体中文](information-architecture.md) | [English](information-architecture.en.md)
+
 定义导航、划分权威事实来源或整理现有文档树时使用本参考。
 
 ## 目录

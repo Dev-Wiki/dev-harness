@@ -18,7 +18,10 @@ VERSION = (SCRIPT_DIR / "VERSION").read_text(encoding="utf-8").strip()
 
 COMMANDS_SKILL_SOURCE = SCRIPT_DIR / "commands" / "SKILL.md"
 COMMANDS_REFERENCE_DIR = SCRIPT_DIR / "commands" / "references"
-COMMANDS_REFERENCE_FILES = ("platform-command-mapping.md", "windows-shell.md")
+COMMANDS_REFERENCE_FILES = (
+    "platform-command-mapping.md", "platform-command-mapping.en.md",
+    "windows-shell.md", "windows-shell.en.md",
+)
 CONTEXT_SOURCE_DIR = SCRIPT_DIR / "context"
 CONTEXT_SKILL_SOURCE = SCRIPT_DIR / "context" / "SKILL.md"
 CONTEXT_REFERENCE_DIR = CONTEXT_SOURCE_DIR / "references"
@@ -26,7 +29,10 @@ CONTEXT_REFERENCE_FILES = ("platform-enhancements.md",)
 PLANNING_SOURCE_DIR = SCRIPT_DIR / "planning"
 PLANNING_SKILL_SOURCE = SCRIPT_DIR / "planning" / "SKILL.md"
 PLANNING_REFERENCE_DIR = PLANNING_SOURCE_DIR / "references"
-PLANNING_REFERENCE_FILES = ("legacy-migration.md", "runtime-handoff.md")
+PLANNING_REFERENCE_FILES = (
+    "legacy-migration.md", "legacy-migration.en.md",
+    "runtime-handoff.md", "runtime-handoff.en.md",
+)
 DOCS_SOURCE_DIR = SCRIPT_DIR / "dev-harness-docs"
 DOCS_SKILL_SOURCE = DOCS_SOURCE_DIR / "SKILL.md"
 INTERNAL_BUGFIX_FLOW_DIR = SCRIPT_DIR / "internal" / "bugfix-flow"
@@ -38,7 +44,7 @@ GIT_WORKFLOW_TEMPLATE_FILES = (
     "CHANGELOG.template.md",
 )
 GIT_WORKFLOW_REFERENCE_DIR = SCRIPT_DIR / "git-workflow" / "references"
-GIT_WORKFLOW_REFERENCE_FILES = ("default-contract.md",)
+GIT_WORKFLOW_REFERENCE_FILES = ("default-contract.md", "default-contract.en.md")
 AUTO_FIX_SKILL_SOURCE = SCRIPT_DIR / "auto-fix" / "SKILL.md"
 AUTO_FIX_RUNTIME_SOURCE = SCRIPT_DIR / "auto-fix" / "runtime.py"
 RETRO_SKILL_SOURCE = SCRIPT_DIR / "retro" / "SKILL.md"
@@ -49,10 +55,15 @@ CODEBASE_AUDIT_RENDER_SOURCE = CODEBASE_AUDIT_SOURCE_DIR / "render.py"
 CODEBASE_AUDIT_REFERENCE_DIR = CODEBASE_AUDIT_SOURCE_DIR / "references"
 CODEBASE_AUDIT_REFERENCE_FILES = (
     "workflow.md",
+    "workflow.en.md",
     "partitioning.md",
+    "partitioning.en.md",
     "finding-contract.md",
+    "finding-contract.en.md",
     "cross-module-review.md",
+    "cross-module-review.en.md",
     "runtime-interface.md",
+    "runtime-interface.en.md",
 )
 CODEBASE_AUDIT_TEMPLATE_DIR = CODEBASE_AUDIT_SOURCE_DIR / "templates"
 CODEBASE_AUDIT_TEMPLATE_FILES = (
@@ -88,7 +99,10 @@ PLANNING_TEMPLATE_FILES = [
     "TaskDetails.template.md",
 ]
 DOCS_REFERENCE_DIR = DOCS_SOURCE_DIR / "references"
-DOCS_REFERENCE_FILES = ["information-architecture.md", "capability-maintenance.md"]
+DOCS_REFERENCE_FILES = [
+    "information-architecture.md", "information-architecture.en.md",
+    "capability-maintenance.md", "capability-maintenance.en.md",
+]
 DOCS_ASSET_DIR = DOCS_SOURCE_DIR / "assets"
 DOCS_ASSET_FILES = [
     "capabilities.template.md",

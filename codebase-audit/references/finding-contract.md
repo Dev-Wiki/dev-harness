@@ -1,5 +1,7 @@
 # 问题登记契约
 
+[简体中文](finding-contract.md) | [English](finding-contract.en.md)
+
 Finding 在本流程中指“审计问题”。它是可追踪、可证伪并绑定仓库快照的工程缺陷主张，不是代码气味清单或泛化建议。
 
 ## 状态机

@@ -1,5 +1,7 @@
 # dev-harness HARNESS 使用指南
 
+[简体中文](HARNESS_GUIDE.md) | [English](HARNESS_GUIDE.en.md)
+
 本文只说明如何维护和使用业务仓库中的 `HARNESS.md` 验证契约，适用于 Cursor、Codex CLI、OpenCode 和 Antigravity。安装及首次接入见[项目概览](../README.md#安装)和[客户端项目接入](CLIENT_PROJECT_ONBOARDING.md)，跨 Skill 阶段顺序见[端到端工作流](WORKFLOW.md)。
 
 各项目的具体命令和执行环境以仓库根目录 `HARNESS.md` 为唯一事实源；行为、安全和修改边界以 `AGENTS.md` 为准。

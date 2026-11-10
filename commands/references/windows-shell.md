@@ -1,5 +1,7 @@
 # Windows 终端与证据指南
 
+[简体中文](windows-shell.md) | [English](windows-shell.en.md)
+
 仅在命令需要 Windows 宿主，或终端与编码问题影响证据判断时读取本指南。
 
 - 优先使用仓库或工具链要求的终端。Visual Studio/MSBuild 项目通常需要已加载相应开发环境的 PowerShell 或 cmd。

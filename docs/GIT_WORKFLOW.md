@@ -1,5 +1,7 @@
 # Git 工作流规范
 
+[简体中文](GIT_WORKFLOW.md) | [English](GIT_WORKFLOW.en.md)
+
 本文件是 dev-harness 仓库自己的 Git、提交、tag、changelog 与发布消息契约。其他项目应优先使用其仓库内已有规范；本文件不是强加给目标项目的公司级规则。
 
 ## 1. 分支模式

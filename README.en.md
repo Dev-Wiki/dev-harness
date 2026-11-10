@@ -38,7 +38,7 @@ Audit → Confirmed Findings → Route by category → Auto Fix / Planning / Doc
       → Full verification → QA → Final review
 ```
 
-See the [end-to-end workflow](docs/WORKFLOW.md) (Chinese) for the complete stages, evidence requirements, and authorization boundaries.
+See the [end-to-end workflow](docs/WORKFLOW.en.md) for the complete stages, evidence requirements, and authorization boundaries.
 
 ## Quick start
 
@@ -126,7 +126,7 @@ v1.12.1 clarifies that Auto Fix selects verification based on actual impact; str
 
 v1.12.0 adds initial full capability inventory, incremental updates, and repeatable full reconciliation, and makes the capability catalog easier for users and PMs to read. Planning tasks include documentation-impact acceptance; Auto Fix requires a valid capability-documentation check before successful completion or commit.
 
-Release packages continue to provide skills that can be installed by copying their folders. After an upgrade, older write-mode runs that lack the documentation check but already have a successful outcome or final receipt lose their previous completion claim and require revalidation. See the [changelog](CHANGELOG.md) and [Bugfix guide](docs/BUGFIX_GUIDE.md) (Chinese) for migration boundaries.
+Release packages continue to provide skills that can be installed by copying their folders. After an upgrade, older write-mode runs that lack the documentation check but already have a successful outcome or final receipt lose their previous completion claim and require revalidation. See the [changelog](CHANGELOG.en.md) and [Bugfix guide](docs/BUGFIX_GUIDE.en.md) for migration boundaries.
 
 ## Skills (8 discoverable skills)
 
@@ -148,9 +148,9 @@ Release packages continue to provide skills that can be installed by copying the
 | `dev-harness-auto-fix` | Repair known bugs with reproduction, root-cause hypotheses, RED/GREEN, and diff-bound evidence, with verification selected by the `fast / standard / strict` risk profile. |
 | `dev-harness-codebase-audit` | Audit large codebases in stages, persist evidence in batches, generate compact documents, and reconcile cross-module findings. |
 
-Each skill carries its own templates, references, and scripts. This repository provides the engineering contracts and Skills Bundle; [dev-harness-runtime](https://github.com/Dev-Wiki/dev-harness-runtime/blob/main/README.en.md) executes Planning Tasks, handling task selection, Worker dispatch, independent acceptance, authorization, state, and recovery. See the [Runtime integration boundary](docs/WORKFLOW.md#6-runtime-协作边界) (Chinese) for usage and the [Runtime installation guide](https://github.com/Dev-Wiki/dev-harness-runtime/blob/main/README.en.md#install-the-codex-plugin) (English) for installation.
+Each skill carries its own templates, references, and scripts. This repository provides the engineering contracts and Skills Bundle; [dev-harness-runtime](https://github.com/Dev-Wiki/dev-harness-runtime/blob/main/README.en.md) executes Planning Tasks, handling task selection, Worker dispatch, independent acceptance, authorization, state, and recovery. See the [Runtime integration boundary](docs/WORKFLOW.en.md#6-runtime-integration-boundary) for usage and the [Runtime installation guide](https://github.com/Dev-Wiki/dev-harness-runtime/blob/main/README.en.md#install-the-codex-plugin) (English) for installation.
 
-Installing this Skills Bundle does not install `dhr` or enable a host Executor. Consult the [Runtime platform matrix](https://github.com/Dev-Wiki/dev-harness-runtime/blob/main/docs/PLATFORM_MATRIX.md) (Chinese) for platform evidence. The complete Audit / Finding / Auto Fix / QA workflow remains a composition of skills rather than a built-in Runtime pipeline.
+Installing this Skills Bundle does not install `dhr` or enable a host Executor. Consult the [Runtime platform matrix](https://github.com/Dev-Wiki/dev-harness-runtime/blob/main/docs/PLATFORM_MATRIX.en.md) for platform evidence. The complete Audit / Finding / Auto Fix / QA workflow remains a composition of skills rather than a built-in Runtime pipeline.
 
 ## Sources of truth
 
@@ -169,12 +169,12 @@ Plans do not establish current support, and commit history does not replace the 
 ## Documentation
 
 - [Documentation index](docs/README.en.md): routes for use, maintenance, scope, and design records, with translation status.
-- [End-to-end workflow](docs/WORKFLOW.md) (Chinese): recommended stages for feature delivery and codebase audit / repair.
-- [Capability catalog](docs/CAPABILITIES.md) (Chinese): currently supported capabilities and their verification evidence.
-- [Client project onboarding](docs/CLIENT_PROJECT_ONBOARDING.md) (Chinese): initialize the project contracts.
-- [Testing](docs/TESTING.md) (Chinese): verification entry points and evidence requirements for this repository.
-- [Git workflow](docs/GIT_WORKFLOW.md) (Chinese): commit and release rules for this repository.
-- [Version boundaries](docs/V1_V2_BOUNDARIES.md) and [V2 backlog](docs/V2_BACKLOG.md) (Chinese): current commitments and future candidates.
+- [End-to-end workflow](docs/WORKFLOW.en.md): recommended stages for feature delivery and codebase audit / repair.
+- [Capability catalog](docs/CAPABILITIES.en.md): currently supported capabilities and their verification evidence.
+- [Client project onboarding](docs/CLIENT_PROJECT_ONBOARDING.en.md): initialize the project contracts.
+- [Testing](docs/TESTING.en.md): verification entry points and evidence requirements for this repository.
+- [Git workflow](docs/GIT_WORKFLOW.en.md): commit and release rules for this repository.
+- [Version boundaries](docs/V1_V2_BOUNDARIES.en.md) and [V2 backlog](docs/V2_BACKLOG.en.md): current commitments and future candidates.
 
 ## Design boundaries
 
@@ -182,7 +182,7 @@ dev-harness does not aim to cover the entire SDLC or accumulate generic developm
 
 ## Language coverage
 
-The Chinese and English READMEs cover the same project overview, workflows, installation, skills, ownership boundaries, and documentation routes. Specialist guides are marked by language in the [documentation index](docs/README.en.md); most are currently Chinese. Their linked source documents remain authoritative for detailed behavior.
+The READMEs, user guides, capability catalog, version and upgrade information, advanced references, and contributor documents have corresponding Chinese and English bodies; start from the [English documentation index](docs/README.en.md). Historical design records, original verification evidence, and internal Agent execution contracts retain their original language and are identified explicitly. Linked specialist documents remain authoritative for detailed behavior.
 
 Several skills accept explicit requests for English reports. Codebase Audit has a bilingual renderer with `output_language` set to `zh-CN` or `en`. End-to-end English project contracts and Runtime Planning are not yet supported: Context generation and refresh, as well as Runtime's Planning and acceptance checks, still depend on fixed Chinese headings or labels. Preserve those structural labels when preparing tasks for Runtime.
 
@@ -194,7 +194,7 @@ Initialize a codebase audit from the project Context. Write all audit artifacts 
 
 ## Local verification
 
-The [repository verification contract](HARNESS.md) (Chinese) owns commands and verification boundaries. From this repository's root, with Python 3 and Git installed:
+The [repository verification contract](HARNESS.en.md) owns commands and verification boundaries. From this repository's root, with Python 3 and Git installed:
 
 ```bash
 python3 -m unittest discover -s tests -v

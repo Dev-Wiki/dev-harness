@@ -4,6 +4,8 @@
 
 本目录是 dev-harness 唯一的项目文档根。根 [`README.md`](../README.md) 提供产品入口；本页按读者任务导航，不复制专题文档的详细事实。
 
+用户指南、功能清单、版本边界、进阶使用参考和贡献者说明均提供对应英文正文。历史设计记录与 Agent 内部执行契约保留原文，并在英文导航中标明语言。
+
 ## 使用 dev-harness
 
 1. [端到端工作流](WORKFLOW.md)：从共享 Project Contract 进入新功能交付或代码库审计 / 修复闭环。
@@ -32,10 +34,20 @@
 
 四类文档分别回答“现在支持什么”“当前版本边界是什么”“为什么这样设计”“以后可能做什么”。变动状态只在相应文档中维护，其他入口仅提供链接。
 
+## 进阶使用与配置
+
+- [Runtime 自动执行交接](../planning/references/runtime-handoff.md)与[旧计划迁移](../planning/references/legacy-migration.md)：准备执行声明、迁移已有计划和归档。
+- [功能清单维护](../dev-harness-docs/references/capability-maintenance.md)与[文档信息架构](../dev-harness-docs/references/information-architecture.md)：维护当前能力、文档归属与导航。
+- [审计运行流程](../codebase-audit/references/workflow.md)、[问题登记契约](../codebase-audit/references/finding-contract.md)与[批量接口](../codebase-audit/references/runtime-interface.md)：执行审计、理解问题状态并保存证据。
+- [平台命令映射](../commands/references/platform-command-mapping.md)与[Windows 终端说明](../commands/references/windows-shell.md)：确认不同平台的验证入口和执行环境。
+- [默认 Git 契约](../git-workflow/references/default-contract.md)：理解可供项目确认的默认约定。
+
 ## 文档维护边界
 
 - 根 README 只保留概览和入口，不复制深层设计。
 - 中英文 README 按章节保持信息对应，工作流、示例、命令、版本说明与文档入口不能因语言版本删减；修改任一版本时同步核对另一版本。
+- 用户文档沿用同目录 `文件名.en.md`，保留完整章节、示例、表格、限制与证据引用；英文阅读路径优先链接对应英文正文。中文来源与英文译文在同一变更中核对更新，不维护两套独立事实。
+- 机器识别的标题、状态、字段、命令与路径按实际协议保留；英文说明解释原值，不能仅为翻译修改可执行示例的结构。
 - 安装、Skill 范围或 Runtime 协作入口变化时，同步更新受影响的英文概览与导航；尚未翻译的指南明确标注语言。旧英文入口 `README_EN.md` 仅保留跳转。
 - 当前行为以代码、测试、对应 Skill/reference 和已经验证的命令为准。
 - 已完成的实施计划不继续作为活动文档维护；历史由 Git 保存。

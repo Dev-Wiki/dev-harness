@@ -1,5 +1,7 @@
 # 跨模块复核
 
+[简体中文](cross-module-review.md) | [English](cross-module-review.en.md)
+
 这是每次审计的强制全局阶段。任务结果是局部证据，不能直接拼接成最终报告。
 
 最终收敛必须完整经过：

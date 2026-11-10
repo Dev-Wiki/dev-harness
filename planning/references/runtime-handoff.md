@@ -1,5 +1,7 @@
 # Runtime 自动执行交接
 
+[简体中文](runtime-handoff.md) | [English](runtime-handoff.en.md)
+
 仅在用户选择 `dev-harness-runtime` 自动执行时使用。Planning 负责准备可审查的声明；任务选择、冻结快照、授权、执行与验收仍由 Runtime Core 负责。下面记录当前 `schemaVersion: 1` 的输入格式；安装版本不支持时报告差异，不通过修改 Worker 或跳过检查兼容。
 
 ## 就绪条件

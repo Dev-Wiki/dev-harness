@@ -1,5 +1,7 @@
 # 基于 Context 的审计分区
 
+[简体中文](partitioning.md) | [English](partitioning.en.md)
+
 目标是把超出单次上下文的代码库拆成可验证的行为域，同时保留跨边界关系。不要维护语言或框架 checklist。
 
 ## 从 Context 提取分区事实

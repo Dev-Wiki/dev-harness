@@ -48,7 +48,7 @@ def _release_readme(version: str) -> str:
 Context、Auto Fix 和 Codebase Audit 的运行脚本需要 Python 3，Git 工作区操作需要 Git。
 Python 脚本是 Skill 的运行资源，请与模板和参考资料一并保留。
 
-版本信息见 `VERSION`，版本变化见 `CHANGELOG.md`。
+版本信息见 `VERSION`，版本变化见 `CHANGELOG.md` 或 `CHANGELOG.en.md`。
 """
 
 
@@ -102,8 +102,8 @@ generation and refresh, and Runtime Planning and acceptance, still depend on fix
 Chinese headings or labels. Preserve those structural labels for Runtime tasks.
 The Runtime plugin is installed separately from this Skills Bundle.
 
-See [VERSION](VERSION) for the package version and [CHANGELOG.md](CHANGELOG.md)
-(Chinese) for released changes.
+See [VERSION](VERSION) for the package version and [CHANGELOG.en.md](CHANGELOG.en.md)
+for released changes. English usage references are included with their skills.
 """
 
 
@@ -142,6 +142,9 @@ def main() -> None:
         changelog = SCRIPT_DIR / "CHANGELOG.md"
         if changelog.exists():
             zf.write(changelog, "CHANGELOG.md")
+        english_changelog = SCRIPT_DIR / "CHANGELOG.en.md"
+        if english_changelog.exists():
+            zf.write(english_changelog, "CHANGELOG.en.md")
 
     size_kb = zip_path.stat().st_size // 1024
     print(f"\n[ok] {zip_name} ({size_kb} KB)")
