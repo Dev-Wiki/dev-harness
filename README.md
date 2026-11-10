@@ -93,7 +93,9 @@ Windows：
 ./install.sh --export dist
 ```
 
-维护者使用 `python release.py` 生成版本 zip。
+`--target` 指定安装根目录，Skill 放在其 `skills/` 下；`--export dist` 生成 `dist/bundle/`。不带参数时，交互终端显示安装菜单，非交互环境默认安装到 Cursor。
+
+维护者使用 `python release.py` 生成版本 zip；此命令不发布版本。
 
 ### 方式二：dist 包直接复制安装
 
@@ -110,7 +112,7 @@ Windows：
 
 建议复制全部 8 个 Skill。单独安装时，`dev-harness-codebase-audit` 还需要 `dev-harness-context`，`dev-harness-auto-fix` 还需要 `dev-harness-git-workflow`。升级时替换对应的 Skill 文件夹，先保留自己的修改，并保留其他 Skill；完成后重新加载宿主的 Skill 列表。
 
-此方式无需源码和安装脚本。包内的运行脚本、模板和参考资料需要完整保留；Context、Auto Fix 和 Codebase Audit 运行时仍需要 Python 3，Git 工作区操作需要 Git。包内 `README.md` 和 `README.en.md` 提供中英文独立安装说明，源码和仓库维护文档由对应版本的源码归档提供。
+此方式无需源码和安装脚本。包内的运行脚本、模板和参考资料需要完整保留；Context、Auto Fix 和 Codebase Audit 运行时仍需要 Python 3，Git 工作区操作需要 Git。新生成的发布包内 `README.md` 和 `README.en.md` 提供中英文独立安装说明；旧发布包可能只有中文说明，上述复制安装步骤同样适用。源码和仓库维护文档由对应版本的源码归档提供。
 
 v1.12.1 明确 Auto Fix 按实际影响安排验证，strict 不自动触发全仓回归；项目定义具体命令与门禁，Context 模板保留简要默认约束。本版还对齐 Planning、Commands 与 Runtime 的命令表和任务声明交接要求。
 
@@ -140,6 +142,8 @@ v1.12.0 增加功能清单的首次全量盘点、日常增量同步与可重复
 
 每个 Skill 的模板、references 和脚本均自包含。本仓库提供工程契约与 Skills Bundle；Planning Task 的自动执行由 [`dev-harness-runtime`](https://github.com/Dev-Wiki/dev-harness-runtime) 承担，统一处理任务选择、Worker 派发、独立验收、授权、状态与恢复。使用方式与安装入口见 [Runtime 协作边界](docs/WORKFLOW.md#6-runtime-协作边界)。
 
+Skills Bundle 不安装 `dhr`，也不启用宿主 Executor。Runtime 插件需要[单独安装](https://github.com/Dev-Wiki/dev-harness-runtime/blob/main/README.md#安装-codex-插件)，平台支持证据见其[能力矩阵](https://github.com/Dev-Wiki/dev-harness-runtime/blob/main/docs/PLATFORM_MATRIX.md)。完整 Audit / Finding / Auto Fix / QA 流程仍由多个 Skill 组合，不是 Runtime 内建的自动流水线。
+
 ## 权威边界
 
 | 变化中的事实 | 权威维护位置 |
@@ -167,6 +171,27 @@ v1.12.0 增加功能清单的首次全量盘点、日常增量同步与可重复
 ## 设计边界
 
 dev-harness 不以覆盖完整 SDLC 或堆叠通用开发教程为目标，也不替代项目工具链、UI 自动化平台、可观测平台或发布系统。它负责让上下文、计划、验证、文档、Git 边界和长期证据在不同 Agent 之间保持一致。
+
+## 语言支持范围
+
+中英文 README 提供对应的项目概览、工作流、安装、Skill、权威边界和文档导航。专题指南在[英文文档索引](docs/README.en.md)中标注语言，目前多数为中文；详细行为仍以链接指向的专题文档为准。
+
+多个 Skill 支持显式要求英文报告；Codebase Audit 的双语渲染器支持 `output_language=zh-CN/en`。完整英文项目契约与 Runtime Planning 尚未支持：Context 生成与刷新，以及 Runtime 的 Planning 和验收检查，仍依赖固定中文标题或标签。准备 Runtime 任务时须保留这些结构标签，英文提示词不会自动让所有产物改用英文。
+
+需要英文审计产物时可以明确指定：
+
+```text
+基于项目 Context 初始化 codebase audit，所有审计文档使用全英文
+```
+
+## 本地验证
+
+具体命令和验证边界以[仓库验证契约](HARNESS.md)为准。在仓库根目录执行，要求 Python 3 和 Git：
+
+```bash
+python3 -m unittest discover -s tests -v
+git diff --check
+```
 
 ## License
 
