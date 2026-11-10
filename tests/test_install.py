@@ -1,4 +1,5 @@
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -308,7 +309,7 @@ class InstallBundleTests(unittest.TestCase):
                 names = set(zf.namelist())
                 self.assertEqual(
                     {name.split("/")[0] for name in names},
-                    {"skills", "README.md", "VERSION", "CHANGELOG.md"},
+                    {"skills", "README.md", "README.en.md", "VERSION", "CHANGELOG.md"},
                 )
                 exported_skills = {
                     path.relative_to(dist_dir / "bundle").as_posix(): path
@@ -340,7 +341,17 @@ class InstallBundleTests(unittest.TestCase):
                     "skills/dev-harness-docs/references/capability-maintenance.md", names
                 )
                 version = zf.read("VERSION").decode().strip()
-                self.assertIn(version, zf.read("README.md").decode())
+                for readme_name in ("README.md", "README.en.md"):
+                    with self.subTest(readme=readme_name):
+                        readme = zf.read(readme_name).decode("utf-8")
+                        self.assertIn(version, readme)
+                        other_readme = (
+                            "README.en.md" if readme_name == "README.md" else "README.md"
+                        )
+                        targets = re.findall(r"\[[^\]]+\]\(([^)]+)\)", readme)
+                        self.assertIn(other_readme, targets)
+                        for target in targets:
+                            self.assertIn(target, names, f"Broken archive link in {readme_name}")
                 for skill in SKILL_SOURCES:
                     self.assertIn(
                         f"bundle_version: {version}",

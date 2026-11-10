@@ -87,7 +87,7 @@ dev-harness 帮助团队统一项目规则、安排开发任务、验证交付�
 - **工程条件**：维护者发布与离线分发
 - **验证方式**：自动化测试 + 代码证据
 - **证据**：[tests/test_install.py](../tests/test_install.py)；[install.py](../install.py)；[release.py](../release.py)
-- **技术详情**：原子导出便携 `bundle/`，失败时保留旧产物；版本 zip 包含可直接使用的 Skill 及其运行资源、专用安装说明、VERSION 和 CHANGELOG，解压后复制安装；详细规则见 [安装与发布入口](../README.md#安装)。
+- **技术详情**：原子导出便携 `bundle/`，失败时保留旧产物；版本 zip 包含可直接使用的 Skill 及其运行资源、中英文专用安装说明、VERSION 和 CHANGELOG，解压后复制安装；详细规则见 [安装与发布入口](../README.md#安装)。
 
 </details>
 

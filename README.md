@@ -1,5 +1,7 @@
 # dev-harness
 
+[简体中文](README.md) | [English](README.en.md)
+
 **AI 编码助手的项目工程约束层**：统一项目上下文、文档、规划、验证命令和 Git 流程，并为新功能交付、Bug 修复与大型代码库审计提供可持久化、可验证的工作流。
 
 dev-harness 关注三个跨 Agent、跨会话都需要稳定的问题：
@@ -108,7 +110,7 @@ Windows：
 
 建议复制全部 8 个 Skill。单独安装时，`dev-harness-codebase-audit` 还需要 `dev-harness-context`，`dev-harness-auto-fix` 还需要 `dev-harness-git-workflow`。升级时替换对应的 Skill 文件夹，先保留自己的修改，并保留其他 Skill；完成后重新加载宿主的 Skill 列表。
 
-此方式无需源码和安装脚本。包内的运行脚本、模板和参考资料需要完整保留；Context、Auto Fix 和 Codebase Audit 运行时仍需要 Python 3，Git 工作区操作需要 Git。包内 `README.md` 提供独立安装说明，源码和仓库维护文档由对应版本的源码归档提供。
+此方式无需源码和安装脚本。包内的运行脚本、模板和参考资料需要完整保留；Context、Auto Fix 和 Codebase Audit 运行时仍需要 Python 3，Git 工作区操作需要 Git。包内 `README.md` 和 `README.en.md` 提供中英文独立安装说明，源码和仓库维护文档由对应版本的源码归档提供。
 
 v1.12.1 明确 Auto Fix 按实际影响安排验证，strict 不自动触发全仓回归；项目定义具体命令与门禁，Context 模板保留简要默认约束。本版还对齐 Planning、Commands 与 Runtime 的命令表和任务声明交接要求。
 

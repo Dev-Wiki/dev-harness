@@ -17,6 +17,8 @@ DIST_DIR = SCRIPT_DIR / "dist"
 def _release_readme(version: str) -> str:
     return f"""# dev-harness v{version}
 
+[简体中文](README.md) | [English](README.en.md)
+
 本包包含可直接使用的 Skill，每个 `skills/dev-harness-*` 目录均包含所需的
 说明、运行脚本、模板和参考资料。源码及维护文档见对应版本的源码归档。
 
@@ -50,6 +52,61 @@ Python 脚本是 Skill 的运行资源，请与模板和参考资料一并保留
 """
 
 
+def _release_readme_en(version: str) -> str:
+    return f"""# dev-harness v{version}
+
+[English](README.en.md) | [简体中文](README.md)
+
+This package contains ready-to-use skills. Each `skills/dev-harness-*` directory
+includes its instructions, runtime scripts, templates, and references. Source code
+and maintenance documentation are available in the corresponding source archive.
+
+## Install
+
+Extract this archive, then copy the `dev-harness-*` folders inside `skills/` into
+your host's skills directory:
+
+| Host | Skills directory |
+|---|---|
+| Cursor | `~/.cursor/skills/` |
+| Codex | `~/.codex/skills/` |
+| OpenCode | `~/.config/opencode/skills/`; on Windows with APPDATA set, `%APPDATA%/opencode/skills/` |
+| Antigravity | `~/.gemini/antigravity/skills/` |
+
+`~` means your home directory. Create the destination if needed, or use your host's
+configured skills directory. The resulting path should look like
+`<skills-directory>/dev-harness-context/SKILL.md`, without an extra `skills/` level.
+For upgrades, preserve custom changes before replacing the corresponding skill
+folders, keep unrelated skills, and reload the host's skill list.
+
+Copying all eight skills is recommended. If copying individual skills, include
+`dev-harness-context` with `dev-harness-codebase-audit`, and include
+`dev-harness-git-workflow` with `dev-harness-auto-fix`.
+
+## Use
+
+Invoke the installed skills by name in your AI assistant. For example:
+
+```text
+Use dev-harness-context to scan this repository and generate project context.
+Use dev-harness-auto-fix in fix mode for this bug: <description>. Write the report in English.
+Use dev-harness-codebase-audit to audit this repository. Write all audit artifacts in English only.
+```
+
+See each skill's `SKILL.md` for its contract. Context, Auto Fix, and Codebase Audit
+require Python 3 at runtime; Git workspace operations require Git. Keep the runtime
+scripts, templates, and references with their skill folders.
+
+English report requests do not enable fully English project contracts. Context
+generation and refresh, and Runtime Planning and acceptance, still depend on fixed
+Chinese headings or labels. Preserve those structural labels for Runtime tasks.
+The Runtime plugin is installed separately from this Skills Bundle.
+
+See [VERSION](VERSION) for the package version and [CHANGELOG.md](CHANGELOG.md)
+(Chinese) for released changes.
+"""
+
+
 def main() -> None:
     if not VERSION_FILE.exists():
         print("ERROR: VERSION 文件不存在", file=sys.stderr)
@@ -80,6 +137,7 @@ def main() -> None:
             if file.is_file():
                 zf.write(file, file.relative_to(bundle_dir))
         zf.writestr("README.md", _release_readme(version))
+        zf.writestr("README.en.md", _release_readme_en(version))
         zf.writestr("VERSION", version + "\n")
         changelog = SCRIPT_DIR / "CHANGELOG.md"
         if changelog.exists():

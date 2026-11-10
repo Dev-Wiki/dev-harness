@@ -1,5 +1,7 @@
 # dev-harness 文档中心
 
+[简体中文](README.md) | [English](README.en.md)
+
 本目录是 dev-harness 唯一的项目文档根。根 [`README.md`](../README.md) 提供产品入口；本页按读者任务导航，不复制专题文档的详细事实。
 
 ## 使用 dev-harness
@@ -8,7 +10,7 @@
 2. [客户端项目接入](CLIENT_PROJECT_ONBOARDING.md)：在真实项目中安装、初始化 Context 并确认契约。
 3. [HARNESS 使用指南](HARNESS_GUIDE.md)：维护和使用 build / test / quick / bugfix / full 验证接口。
 4. [Bugfix 指南](BUGFIX_GUIDE.md)：使用证据驱动的已知问题分析与修复流程。
-5. [English README](README_EN.md)：英文项目概览与安装入口。
+5. [English README](../README.en.md) 与 [English documentation index](README.en.md)：英文概览、快速开始及标注翻译状态的指南导航。
 6. [Runtime 协作边界](WORKFLOW.md#6-runtime-协作边界)：准备工程契约后，交给 [dev-harness-runtime](https://github.com/Dev-Wiki/dev-harness-runtime) 自动执行 Planning Task。
 7. [Audit 批量接口](../codebase-audit/references/runtime-interface.md)：结构化证据输入、紧凑文档生成与完成门禁。
 
@@ -32,6 +34,7 @@
 ## 文档维护边界
 
 - 根 README 只保留概览和入口，不复制深层设计。
+- 安装、Skill 范围或 Runtime 协作入口变化时，同步更新受影响的英文概览与导航；尚未翻译的指南明确标注语言。旧英文入口 `README_EN.md` 仅保留跳转。
 - 当前行为以代码、测试、对应 Skill/reference 和已经验证的命令为准。
 - 已完成的实施计划不继续作为活动文档维护；历史由 Git 保存。
 - Codebase Audit 负责维护目标项目中的 `<docs-root>/audit/` 内容，Docs 只管理导航、链接和归档。
